@@ -1,20 +1,17 @@
 import { useState } from 'react';
-import { Select, Input, Toggle, Button, Modal } from '@moondreamsdev/dreamer-ui/components';
-import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
+import { useNavigate } from 'react-router-dom';
+import { Select, Input, Toggle, Button } from '@moondreamsdev/dreamer-ui/components';
 import { MealCard } from '@components/MealCard';
-import { MealForm } from '@components/MealForm';
 import { useMeals } from '@hooks/useMeals';
 import { Meal } from '@lib/meals';
 
 export function Meals() {
-  const { meals, createMeal, updateMeal, deleteMeal } = useMeals();
-  const { confirm } = useActionModal();
+  const { meals } = useMeals();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [timeFilter, setTimeFilter] = useState<string>('all');
   const [noPrepTime, setNoPrepTime] = useState(false);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingMeal, setEditingMeal] = useState<Meal | undefined>(undefined);
 
   const categoryOptions = [
     { value: 'all', text: 'All Categories' },
@@ -65,43 +62,11 @@ export function Meals() {
   });
 
   const handleCreateMeal = () => {
-    setEditingMeal(undefined);
-    setIsFormOpen(true);
+    navigate('/meals/new');
   };
 
-  const handleEditMeal = (meal: Meal) => {
-    setEditingMeal(meal);
-    setIsFormOpen(true);
-  };
-
-  const handleDeleteMeal = async (meal: Meal) => {
-    const confirmed = await confirm({
-      title: 'Delete Meal',
-      message: `Are you sure you want to delete "${meal.title}"? This action cannot be undone.`,
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-      destructive: true,
-    });
-
-    if (confirmed) {
-      deleteMeal(meal.id);
-    }
-  };
-
-  const handleFormSubmit = (mealData: Omit<Meal, 'id'>) => {
-    if (editingMeal) {
-      updateMeal(editingMeal.id, mealData);
-    } else {
-      createMeal(mealData);
-    }
-    
-    setIsFormOpen(false);
-    setEditingMeal(undefined);
-  };
-
-  const handleFormCancel = () => {
-    setIsFormOpen(false);
-    setEditingMeal(undefined);
+  const handleMealClick = (meal: Meal) => {
+    navigate(`/meals/${meal.id}`);
   };
 
   return (
@@ -168,25 +133,11 @@ export function Meals() {
             <MealCard
               key={meal.id}
               meal={meal}
-              onEdit={handleEditMeal}
-              onDelete={handleDeleteMeal}
+              onClick={handleMealClick}
             />
           ))
         )}
       </div>
-
-      {/* Meal Form Modal */}
-      <Modal
-        isOpen={isFormOpen}
-        onClose={handleFormCancel}
-        title={editingMeal ? 'Edit Meal' : 'Create New Meal'}
-      >
-        <MealForm
-          meal={editingMeal}
-          onSubmit={handleFormSubmit}
-          onCancel={handleFormCancel}
-        />
-      </Modal>
     </div>
   );
 }

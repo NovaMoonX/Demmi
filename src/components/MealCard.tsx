@@ -22,15 +22,19 @@ const categoryEmojis: Record<MealCategory, string> = {
 
 interface MealCardProps {
   meal: Meal;
-  onEdit?: (meal: Meal) => void;
-  onDelete?: (meal: Meal) => void;
+  onClick?: (meal: Meal) => void;
 }
 
-export function MealCard({ meal, onEdit, onDelete }: MealCardProps) {
+export function MealCard({ meal, onClick }: MealCardProps) {
   const totalTime = meal.prepTime + meal.cookTime;
 
+  const handleClick = () => {
+    onClick?.(meal);
+  };
+
   return (
-    <Card className="flex flex-col h-full overflow-hidden">
+    <Card className="flex flex-col h-full overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]">
+      <div onClick={handleClick}>
       {/* Cover Image */}
       <div className="w-full h-48 overflow-hidden bg-muted">
         <img
@@ -101,30 +105,7 @@ export function MealCard({ meal, onEdit, onDelete }: MealCardProps) {
             </span>
           </div>
         </div>
-
-        {/* Action buttons */}
-        {(onEdit || onDelete) && (
-          <div className="flex gap-2 mt-4 pt-4 border-t border-border">
-            {onEdit && (
-              <button
-                onClick={() => onEdit(meal)}
-                aria-label={`Edit ${meal.title}`}
-                className="flex-1 px-3 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-md transition-colors"
-              >
-                Edit
-              </button>
-            )}
-            {onDelete && (
-              <button
-                onClick={() => onDelete(meal)}
-                aria-label={`Delete ${meal.title}`}
-                className="flex-1 px-3 py-2 text-sm font-medium text-destructive bg-destructive/10 hover:bg-destructive/20 rounded-md transition-colors"
-              >
-                Delete
-              </button>
-            )}
-          </div>
-        )}
+      </div>
       </div>
     </Card>
   );

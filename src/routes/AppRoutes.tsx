@@ -3,6 +3,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import Chat from '@screens/Chat';
 import Ingredients from '@screens/Ingredients';
 import Meals from '@screens/Meals';
+import MealDetail from '@screens/MealDetail';
 import CalendarScreen from '@screens/CalendarScreen';
 import Account from '@screens/Account';
 import Layout from '@ui/Layout';
@@ -24,6 +25,10 @@ export const router = createBrowserRouter([
       {
         path: 'meals',
         element: <Meals />,
+      },
+      {
+        path: 'meals/:id',
+        element: <MealDetail />,
       },
       {
         path: 'calendar',
