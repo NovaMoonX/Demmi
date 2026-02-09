@@ -4,6 +4,21 @@ A cooking app powered with local LLM using Ollama.
 
 ## Features
 
+### 💬 Chat
+- **AI Chat Interface**: Modern ChatGPT-style interface for cooking assistance
+- **Message Bubbles**: User messages (orange) and assistant responses (gray) with distinct styling
+- **Chat History**: Collapsible sidebar showing all conversations
+- **Pinned Chats**: Pin important conversations to keep them at the top
+- **New Chat**: Start fresh conversations with a single click
+- **Mock AI Responses**: Context-aware responses based on keywords (recipe, ingredient, meal prep)
+- **Auto-scroll**: Messages automatically scroll into view
+- **Typing Indicator**: Animated loading state while waiting for responses
+- **Empty State**: Beautiful prompt for new conversations
+- **Keyboard Support**: Enter to send, Shift+Enter for new lines
+- **Message Count**: Shows number of messages in each conversation
+- **Delete Chats**: Remove conversations from history
+- **Responsive Design**: Works seamlessly on mobile and desktop
+
 ### 🍳 Cooking-Themed Design
 - **Orange Accent Color**: Warm, cooking-inspired orange accent color throughout the app
 - **Modern & Clean**: Simple black and white base with orange highlights
@@ -72,6 +87,24 @@ Built with [Dreamer UI](https://www.npmjs.com/package/@moondreamsdev/dreamer-ui)
 
 ## Data Schema
 
+### Chat Interfaces
+```typescript
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number; // milliseconds timestamp
+}
+
+interface ChatConversation {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  isPinned: boolean;
+  lastUpdated: number; // milliseconds timestamp
+}
+```
+
 ### Meal Interface
 ```typescript
 interface Meal {
@@ -91,14 +124,19 @@ interface Meal {
 
 ```
 src/
-├── components/     # Reusable UI components
-├── lib/           # Utilities and data
-│   ├── app/       # App constants
-│   └── meals/     # Meal types and mock data
-├── routes/        # Router configuration
-├── screens/       # Page components
-│   ├── Meals.tsx  # Meal browsing screen
+├── components/       # Reusable UI components
+│   ├── ChatHistory.tsx  # Chat sidebar navigation
+│   ├── ChatMessage.tsx  # Message bubble component
+│   └── Sidebar.tsx      # Main app sidebar
+├── lib/             # Utilities and data
+│   ├── app/         # App constants
+│   ├── chat/        # Chat types and mock data
+│   └── meals/       # Meal types and mock data
+├── routes/          # Router configuration
+├── screens/         # Page components
+│   ├── Chat.tsx     # AI chat interface
+│   ├── Meals.tsx    # Meal browsing screen
 │   └── ...
-└── ui/            # Layout components
+└── ui/              # Layout components
 ```
 
