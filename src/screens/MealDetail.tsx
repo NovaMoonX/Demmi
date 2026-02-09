@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Input, Textarea, Select, Button, DynamicList } from '@moondreamsdev/dreamer-ui/components';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
 import { Meal, MealCategory } from '@lib/meals';
@@ -103,6 +103,12 @@ export function MealDetail() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-8">
+        <Link
+          to="/meals"
+          className="text-sm text-muted-foreground mt-10 sm:mt-0 hover:text-foreground inline-block mb-4"
+        >
+          ← Back to Meals
+        </Link>
         <h1 className="text-4xl font-bold text-foreground mb-2">
           {isEditing ? 'Edit Meal' : 'Create New Meal'}
         </h1>

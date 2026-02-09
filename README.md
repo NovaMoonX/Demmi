@@ -56,9 +56,10 @@ A cooking app powered with local LLM using Ollama.
 - **Detailed Meal View**: Full-screen dedicated view for creating and editing meals
   - **Create Meals**: Navigate to `/meals/new` to add new meals
   - **Edit Meals**: Click on any meal card to edit it with pre-populated form data
+  - **Back to Meals**: Quick link to return to the meals list from the detail view
   - **Delete Meals**: Delete button on detailed view with confirmation dialog
   - **File Upload**: Upload meal images with live preview
-  - **Dynamic Instructions**: Use DynamicList component for adding, reordering, and removing instruction steps
+  - **Dynamic Instructions**: Use DynamicList component for adding, reordering, and removing instruction steps (editing controls available only in edit mode)
   - Form includes: title, description, category, prep time, cook time, servings, image upload, and interactive instructions list
 - **Responsive Grid**: Adapts from 1 column (mobile) to 3 columns (desktop)
 - **Mock Data**: 8 sample meals across all categories for demonstration
