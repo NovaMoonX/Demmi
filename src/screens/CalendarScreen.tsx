@@ -104,6 +104,95 @@ export function CalendarScreen() {
     const plansForDate = getMealPlansForDate(date);
     const hasMeals = plansForDate.length > 0;
 
+    // Day view: Show all meals for the day with details
+    if (view === 'day') {
+      return (
+        <div className="w-full h-full p-2 overflow-y-auto">
+          <div className={join(
+            'text-lg font-semibold mb-2',
+            isToday && 'text-primary',
+            isDisabled && 'opacity-50'
+          )}>
+            {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+          </div>
+          {hasMeals ? (
+            <div className="space-y-2">
+              {plansForDate.map((plan) => {
+                const meal = meals.find((m) => m.id === plan.mealId);
+                if (!meal) return null;
+
+                return (
+                  <div
+                    key={plan.id}
+                    className="p-2 rounded-md border border-border bg-muted/30 text-left"
+                  >
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="text-sm">{mealTypeEmojis[plan.mealType]}</span>
+                      <Badge variant="base" className={join('text-xs capitalize', mealTypeColors[plan.mealType])}>
+                        {plan.mealType}
+                      </Badge>
+                      {plan.time && (
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {plan.time}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm font-medium text-foreground">
+                      {meal.title}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground italic">
+              No meals planned
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Week view: Show meal count and first few meal type indicators
+    if (view === 'week') {
+      return (
+        <div className="w-full h-full p-1 flex flex-col">
+          <div className={join(
+            'text-sm font-medium mb-1',
+            isToday && 'text-primary',
+            isDisabled && 'opacity-50'
+          )}>
+            {date.getDate()}
+          </div>
+          {hasMeals && (
+            <div className="flex-1 flex flex-col gap-0.5">
+              {plansForDate.slice(0, 4).map((plan) => {
+                const meal = meals.find((m) => m.id === plan.mealId);
+                
+                return (
+                  <div
+                    key={plan.id}
+                    className={join(
+                      'text-xs px-1 py-0.5 rounded truncate',
+                      mealTypeColors[plan.mealType]
+                    )}
+                  >
+                    {mealTypeEmojis[plan.mealType]} {meal?.title || 'Meal'}
+                  </div>
+                );
+              })}
+              {plansForDate.length > 4 && (
+                <div className="text-xs text-muted-foreground">
+                  +{plansForDate.length - 4} more
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Month view: Show date number with meal indicators (dots)
     return (
       <div className="relative w-full h-full flex flex-col items-center justify-center">
         <div className={join(
@@ -142,31 +231,43 @@ export function CalendarScreen() {
         </p>
       </div>
 
-      {/* View Toggle */}
-      <div className="mb-6 flex gap-2">
+      {/* View Toggle and Plan Meal Button */}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex gap-2">
+          <Button
+            variant={view === 'day' ? 'primary' : 'secondary'}
+            onClick={() => setView('day')}
+          >
+            Day
+          </Button>
+          <Button
+            variant={view === 'week' ? 'primary' : 'secondary'}
+            onClick={() => setView('week')}
+          >
+            Week
+          </Button>
+          <Button
+            variant={view === 'month' ? 'primary' : 'secondary'}
+            onClick={() => setView('month')}
+          >
+            Month
+          </Button>
+        </div>
         <Button
-          variant={view === 'day' ? 'primary' : 'secondary'}
-          onClick={() => setView('day')}
+          variant="primary"
+          onClick={() => {
+            setSelectedDate(new Date());
+            setIsModalOpen(true);
+          }}
         >
-          Day
-        </Button>
-        <Button
-          variant={view === 'week' ? 'primary' : 'secondary'}
-          onClick={() => setView('week')}
-        >
-          Week
-        </Button>
-        <Button
-          variant={view === 'month' ? 'primary' : 'secondary'}
-          onClick={() => setView('month')}
-        >
-          Month
+          + Plan Meal
         </Button>
       </div>
 
       {/* Calendar */}
       <div className="bg-card rounded-lg border border-border p-4 mb-6">
         <Calendar
+          key={view}
           mode="single"
           view={view}
           size="auto"
