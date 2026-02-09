@@ -34,22 +34,48 @@ A cooking app powered with local LLM using Ollama.
 - **Theme Toggle**: Switch component for seamless light/dark mode switching
 - **Mobile Responsive**: Collapsible sidebar with hamburger menu on mobile devices
 
+### 🍎 Ingredients
+- **Ingredient Cards**: Beautiful card-based layout displaying ingredient inventory
+- **Cover Images**: Each ingredient features an attractive cover image
+- **Ingredient Types**: Organized by `meat`, `produce`, `dairy`, `grains`, `legumes`, `oils`, `spices`, `nuts`, `seafood`, and `other`
+- **Type Badges**: Color-coded badges with unique colors for each ingredient type (fully visible in both light and dark modes)
+- **Type Emojis**: Visual indicators for quick ingredient type identification (🥩 🥬 🥛 🌾 🫘 🫒 🧂 🥜 🐟 📦)
+- **Search Functionality**: Search ingredients by name in real-time
+- **Filter by Type**: Dropdown filter to show only specific ingredient types
+- **Out of Stock Toggle**: Switch to view only ingredients that are out of stock
+- **Sort Options**: Sort ingredients by name or servings in both ascending and descending order
+- **Inventory Details**:
+  - Ingredient name and type
+  - Servings available based on serving size
+  - Serving size per ingredient (aligned to unit)
+  - Price per unit
+- **Comprehensive Nutrition Profile** (per 100g):
+  - **Macronutrients**: Protein, Carbs, Fat
+  - **Additional Nutrients**: Calories, Fiber, Sugar, Sodium
+- **Responsive Grid**: Adapts from 1 column (mobile) to 3 columns (desktop)
+- **Mock Data**: 12 sample ingredients across all types, including out-of-stock examples
+- **User-Centric Content**: Displays your ingredient inventory with personalized messaging
+
 ### 🍽️ Meals
 - **Meal Cards**: Beautiful card-based layout displaying meal recipes
-- **Cover Images**: Each meal features an attractive cover image
-- **Meal Categories**: Organized by breakfast, lunch, dinner, snack, dessert, and drink
-- **Category Badges**: Color-coded badges with unique colors for each category (fully visible in both light and dark modes)
-- **Category Emojis**: Visual indicators for quick meal type identification
+  - Reusable MealCard component for consistent display
+  - Clickable cards that navigate to detailed view
+  - Cover Images: Each meal features an attractive cover image
+  - Category Badges: Color-coded badges with unique colors for each category (fully visible in both light and dark modes)
+  - Category Emojis: Visual indicators for quick meal type identification
+  - Recipe Details: Title, description, prep time, cook time, serving size, total cooking time, and step-by-step instructions count
 - **Search Functionality**: Search recipes by name or description in real-time
-- **Filter by Category**: Dropdown filter to show only specific meal types
-- **Filter by Total Time**: Dropdown filter to show meals by total cooking time (prep + cook time: under 15 min, 15-30 min, 30-60 min, over 60 min)
+- **Filter by Category**: Dropdown filter to show only specific meal types (`breakfast`, `lunch`, `dinner`, `snack`, `dessert`, `drink`)
+- **Filter by Total Time**: Dropdown filter to show meals by total cooking time (prep + cook time: `under-15`, `15-30`, `30-60`, `over-60`)
 - **No Prep Time Toggle**: Filter switch to show only meals that require no preparation time
-- **Recipe Details**: 
-  - Title and description
-  - Prep time and cook time
-  - Serving size
-  - Total cooking time
-  - Step-by-step instructions count
+- **Detailed Meal View**: Full-screen dedicated view for creating and editing meals
+  - **Create Meals**: Navigate to `/meals/new` to add new meals
+  - **Edit Meals**: Click on any meal card to edit it with pre-populated form data
+  - **Back to Meals**: Quick link to return to the meals list from the detail view
+  - **Delete Meals**: Delete button on detailed view with confirmation dialog
+  - **File Upload**: Upload meal images with live preview
+  - **Dynamic Instructions**: Use DynamicList component for adding, reordering, and removing instruction steps (editing controls available only in edit mode)
+  - Form includes: title, description, category, prep time, cook time, servings, image upload, and interactive instructions list
 - **Responsive Grid**: Adapts from 1 column (mobile) to 3 columns (desktop)
 - **Mock Data**: 8 sample meals across all categories for demonstration
 - **User-Centric Content**: Displays your meal recipes with personalized messaging
@@ -105,6 +131,58 @@ interface ChatConversation {
 }
 ```
 
+### Ingredient Interface
+```typescript
+type IngredientType = 
+  | 'meat' 
+  | 'produce' 
+  | 'dairy' 
+  | 'grains' 
+  | 'legumes' 
+  | 'oils' 
+  | 'spices' 
+  | 'nuts' 
+  | 'seafood' 
+  | 'other';
+
+type MeasurementUnit = 
+  | 'lb' 
+  | 'oz' 
+  | 'kg' 
+  | 'g' 
+  | 'cup' 
+  | 'tbsp' 
+  | 'tsp' 
+  | 'piece' 
+  | 'can' 
+  | 'bag';
+
+interface NutrientProfile {
+  // Macros (per 100g/100ml)
+  protein: number; // grams
+  carbs: number; // grams
+  fat: number; // grams
+  // Additional nutrients
+  fiber: number; // grams
+  sugar: number; // grams
+  sodium: number; // milligrams
+  calories: number; // kcal
+}
+
+interface Ingredient {
+  id: string;
+  name: string;
+  type: IngredientType;
+  imageUrl: string;
+  nutrients: NutrientProfile;
+  currentAmount: number;
+  servingSize: number; // portion size in the same unit as `unit`
+  unit: MeasurementUnit;
+  otherUnit: string | null;
+  pricePerUnit: number; // in dollars
+}
+```
+
 ### Meal Interface
 ```typescript
 interface Meal {
@@ -125,18 +203,27 @@ interface Meal {
 ```
 src/
 ├── components/       # Reusable UI components
-│   ├── ChatHistory.tsx  # Chat sidebar navigation
-│   ├── ChatMessage.tsx  # Message bubble component
-│   └── Sidebar.tsx      # Main app sidebar
-├── lib/             # Utilities and data
-│   ├── app/         # App constants
-│   ├── chat/        # Chat types and mock data
-│   └── meals/       # Meal types and mock data
-├── routes/          # Router configuration
-├── screens/         # Page components
-│   ├── Chat.tsx     # AI chat interface
-│   ├── Meals.tsx    # Meal browsing screen
+│   ├── ChatHistory.tsx   # Chat sidebar navigation
+│   ├── ChatMessage.tsx   # Message bubble component
+│   ├── MealCard.tsx      # Meal card display component (clickable)
+│   └── Sidebar.tsx       # Main app sidebar
+├── hooks/            # Custom React hooks
+│   └── useMeals.ts    # Meal state management hook
+├── lib/              # Utilities and data
+│   ├── app/           # App constants
+│   ├── chat/          # Chat types and mock data
+│   ├── ingredients/   # Ingredient types and mock data
+│   └── meals/         # Meal types and mock data
+├── routes/           # Router configuration
+├── screens/          # Page components
+│   ├── Chat.tsx       # AI chat interface
+│   ├── Ingredients.tsx # Ingredient inventory screen
+│   ├── MealDetail.tsx  # Detailed meal view for create/edit
+│   ├── Meals.tsx       # Meal browsing screen with search/filters
 │   └── ...
-└── ui/              # Layout components
+└── ui/               # Layout components
+    ├── Layout.tsx     # App shell layout
+    ├── Loading.tsx    # Loading state UI
+    └── ThemeToggle.tsx # Theme switcher
 ```
 
