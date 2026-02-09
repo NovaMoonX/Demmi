@@ -19,6 +19,25 @@ A cooking app powered with local LLM using Ollama.
 - **Theme Toggle**: Switch component for seamless light/dark mode switching
 - **Mobile Responsive**: Collapsible sidebar with hamburger menu on mobile devices
 
+### 🍎 Ingredients
+- **Ingredient Cards**: Beautiful card-based layout displaying ingredient inventory
+- **Cover Images**: Each ingredient features an attractive cover image
+- **Ingredient Types**: Organized by meat, produce, dairy, grains, legumes, oils, spices, nuts, seafood, and other
+- **Type Badges**: Color-coded badges with unique colors for each ingredient type (fully visible in both light and dark modes)
+- **Type Emojis**: Visual indicators for quick ingredient type identification (🥩 🥬 🥛 🌾 🫘 🫒 🧂 🥜 🐟 📦)
+- **Search Functionality**: Search ingredients by name in real-time
+- **Filter by Type**: Dropdown filter to show only specific ingredient types
+- **Inventory Details**:
+  - Ingredient name and type
+  - Current stock amount with units (lb, oz, kg, g, cup, tbsp, tsp, piece, can, bag)
+  - Price per unit
+- **Comprehensive Nutrition Profile** (per 100g):
+  - **Macronutrients**: Protein, Carbs, Fat
+  - **Additional Nutrients**: Calories, Fiber, Sugar, Sodium
+- **Responsive Grid**: Adapts from 1 column (mobile) to 3 columns (desktop)
+- **Mock Data**: 12 sample ingredients across all types for demonstration
+- **User-Centric Content**: Displays your ingredient inventory with personalized messaging
+
 ### 🍽️ Meals
 - **Meal Cards**: Beautiful card-based layout displaying meal recipes
 - **Cover Images**: Each meal features an attractive cover image
@@ -72,6 +91,56 @@ Built with [Dreamer UI](https://www.npmjs.com/package/@moondreamsdev/dreamer-ui)
 
 ## Data Schema
 
+### Ingredient Interface
+```typescript
+type IngredientType = 
+  | 'meat' 
+  | 'produce' 
+  | 'dairy' 
+  | 'grains' 
+  | 'legumes' 
+  | 'oils' 
+  | 'spices' 
+  | 'nuts' 
+  | 'seafood' 
+  | 'other';
+
+type MeasurementUnit = 
+  | 'lb' 
+  | 'oz' 
+  | 'kg' 
+  | 'g' 
+  | 'cup' 
+  | 'tbsp' 
+  | 'tsp' 
+  | 'piece' 
+  | 'can' 
+  | 'bag';
+
+interface NutrientProfile {
+  // Macros (per 100g/100ml)
+  protein: number; // grams
+  carbs: number; // grams
+  fat: number; // grams
+  // Additional nutrients
+  fiber: number; // grams
+  sugar: number; // grams
+  sodium: number; // milligrams
+  calories: number; // kcal
+}
+
+interface Ingredient {
+  id: string;
+  name: string;
+  type: IngredientType;
+  imageUrl: string;
+  nutrients: NutrientProfile;
+  currentAmount: number;
+  unit: MeasurementUnit;
+  pricePerUnit: number; // in dollars
+}
+```
+
 ### Meal Interface
 ```typescript
 interface Meal {
@@ -91,14 +160,16 @@ interface Meal {
 
 ```
 src/
-├── components/     # Reusable UI components
-├── lib/           # Utilities and data
-│   ├── app/       # App constants
-│   └── meals/     # Meal types and mock data
-├── routes/        # Router configuration
-├── screens/       # Page components
-│   ├── Meals.tsx  # Meal browsing screen
+├── components/       # Reusable UI components
+├── lib/             # Utilities and data
+│   ├── app/         # App constants
+│   ├── ingredients/ # Ingredient types and mock data
+│   └── meals/       # Meal types and mock data
+├── routes/          # Router configuration
+├── screens/         # Page components
+│   ├── Ingredients.tsx # Ingredient inventory screen
+│   ├── Meals.tsx    # Meal browsing screen
 │   └── ...
-└── ui/            # Layout components
+└── ui/              # Layout components
 ```
 
