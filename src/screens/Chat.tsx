@@ -13,7 +13,10 @@ import {
   generateMockResponse,
 } from '@lib/chat';
 
-// Detect if the device is mobile
+// Delay to allow UI to render before scrolling to bottom
+const SCROLL_DELAY_MS = 100;
+
+// Detect if the device is mobile (initial check)
 const isMobileDevice = () => {
   return window.innerWidth < 768; // md breakpoint
 };
@@ -31,7 +34,7 @@ export function Chat() {
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    }, SCROLL_DELAY_MS);
   }, []);
 
   useEffect(() => {
