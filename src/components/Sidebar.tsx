@@ -1,0 +1,133 @@
+import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Avatar } from '@moondreamsdev/dreamer-ui/components';
+import { Toggle } from '@moondreamsdev/dreamer-ui/components';
+import { useTheme } from '@moondreamsdev/dreamer-ui/hooks';
+import { join } from '@moondreamsdev/dreamer-ui/utils';
+import {
+  Plus,
+  Apple,
+  Window,
+  GitHub,
+  DotsVertical,
+} from '@moondreamsdev/dreamer-ui/symbols';
+
+type Tab = {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  path: string;
+};
+
+const tabs: Tab[] = [
+  { id: 'chat', label: 'Chat', icon: Plus, path: '/' },
+  { id: 'ingredients', label: 'Ingredients', icon: Apple, path: '/ingredients' },
+  { id: 'meals', label: 'Meals', icon: Window, path: '/meals' },
+  { id: 'calendar', label: 'Calendar', icon: GitHub, path: '/calendar' },
+];
+
+export function Sidebar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  const handleTabClick = (path: string) => {
+    navigate(path);
+    setIsMobileOpen(false);
+  };
+
+  const currentPath = location.pathname;
+
+  return (
+    <>
+      {/* Mobile menu button */}
+      <button
+        onClick={() => setIsMobileOpen(!isMobileOpen)}
+        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-card border border-border md:hidden"
+        aria-label="Toggle menu"
+      >
+        {isMobileOpen ? (
+          <DotsVertical className="size-6 text-foreground" />
+        ) : (
+          <DotsVertical className="size-6 text-foreground" />
+        )}
+      </button>
+
+      {/* Overlay for mobile */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={join(
+          'fixed left-0 top-0 h-full w-64 bg-card border-r border-border z-40 transition-transform duration-300 flex flex-col',
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full',
+          'md:translate-x-0'
+        )}
+      >
+        {/* Tabs section */}
+        <nav className="flex-1 p-4 space-y-2">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-3">
+            Navigation
+          </h2>
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = currentPath === tab.path;
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab.path)}
+                className={join(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
+                  isActive
+                    ? 'bg-accent text-accent-foreground font-medium'
+                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+                )}
+              >
+                <Icon className="size-5" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Bottom section: Theme toggle and Account */}
+        <div className="p-4 border-t border-border space-y-4">
+          {/* Theme toggle */}
+          <div className="flex items-center justify-between px-3">
+            <span className="text-sm text-foreground/80">Dark Mode</span>
+            <Toggle
+              checked={theme === 'dark'}
+              onCheckedChange={toggleTheme}
+              aria-label="Toggle dark mode"
+            />
+          </div>
+
+          {/* Account section */}
+          <button
+            onClick={() => handleTabClick('/account')}
+            className={join(
+              'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
+              currentPath === '/account'
+                ? 'bg-accent text-accent-foreground'
+                : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+            )}
+          >
+            <Avatar
+              preset="astronaut"
+              size="sm"
+              alt="User account"
+            />
+            <span className="font-medium">Account</span>
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+}
