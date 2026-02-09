@@ -108,6 +108,7 @@ export function MealCard({ meal, onEdit, onDelete }: MealCardProps) {
             {onEdit && (
               <button
                 onClick={() => onEdit(meal)}
+                aria-label={`Edit ${meal.title}`}
                 className="flex-1 px-3 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-md transition-colors"
               >
                 Edit
@@ -116,6 +117,7 @@ export function MealCard({ meal, onEdit, onDelete }: MealCardProps) {
             {onDelete && (
               <button
                 onClick={() => onDelete(meal)}
+                aria-label={`Delete ${meal.title}`}
                 className="flex-1 px-3 py-2 text-sm font-medium text-destructive bg-destructive/10 hover:bg-destructive/20 rounded-md transition-colors"
               >
                 Delete
