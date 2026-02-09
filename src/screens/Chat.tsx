@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@moondreamsdev/dreamer-ui/components';
 import { Textarea } from '@moondreamsdev/dreamer-ui/components';
 import { ScrollArea } from '@moondreamsdev/dreamer-ui/components';
@@ -13,25 +13,30 @@ import {
   generateMockResponse,
 } from '@lib/chat';
 
-const CHAT_HISTORY_WIDTH = 256; // Width in pixels (matches w-64 = 16rem = 256px)
+// Detect if the device is mobile
+const isMobileDevice = () => {
+  return window.innerWidth < 768; // md breakpoint
+};
 
 export function Chat() {
   const [conversations, setConversations] = useState<ChatConversation[]>(mockChatConversations);
   const [currentChatId, setCurrentChatId] = useState<string | null>(mockChatConversations[0]?.id || null);
   const [inputValue, setInputValue] = useState('');
-  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(!isMobileDevice());
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const currentChat = conversations.find((c) => c.id === currentChatId);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [currentChat?.messages]);
+  }, [currentChat?.messages, scrollToBottom]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isSending) {
@@ -180,11 +185,10 @@ export function Chat() {
       {/* Toggle History Button */}
       <button
         onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-        className="absolute left-0 top-4 z-10 p-2 bg-card border border-border rounded-r-lg hover:bg-muted transition-colors"
-        style={{
-          left: isHistoryOpen ? `${CHAT_HISTORY_WIDTH}px` : '0px',
-          transition: 'left 0.3s',
-        }}
+        className={join(
+          'absolute z-10 p-2 bg-card border border-border hover:bg-muted transition-all duration-300',
+          isHistoryOpen ? 'left-64 top-4 rounded-r-lg' : 'left-0 top-16 rounded-r-lg md:top-4'
+        )}
         aria-label={isHistoryOpen ? 'Hide history' : 'Show history'}
       >
         {isHistoryOpen ? (
