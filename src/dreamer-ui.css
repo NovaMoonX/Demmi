@@ -9,10 +9,10 @@
 	--color-muted: var(--color-gray-50);
 	--color-muted-foreground: var(--color-gray-600);
 
-	--color-accent: var(--color-blue-500); /* Blue accent color */
+	--color-accent: var(--color-orange-500); /* Orange accent color for cooking theme */
 	--color-accent-foreground: var(--color-white);
 
-	--color-success: var(--color-green-600);
+	--color-success: var(--color-emerald-600);
 	--color-success-foreground: var(--color-white);
 	--color-warning: var(--color-amber-500);
 	--color-warning-foreground: var(--color-black);
@@ -37,10 +37,10 @@
 	--color-muted: var(--color-gray-800);
 	--color-muted-foreground: var(--color-gray-400);
 
-	--color-accent: var(--color-blue-400); /* Lighter blue for dark backgrounds */
+	--color-accent: var(--color-orange-400); /* Lighter orange for dark backgrounds */
 	--color-accent-foreground: var(--color-gray-900);
 
-	--color-success: var(--color-green-500); /* Adjusted green for dark mode */
+	--color-success: var(--color-emerald-500); /* Adjusted green for dark mode */
 	--color-success-foreground: var(--color-gray-900);
 	--color-warning: var(--color-amber-400); /* Adjusted amber for dark mode */
 	--color-warning-foreground: var(--color-gray-900);
