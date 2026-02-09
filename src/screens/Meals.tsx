@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Badge, Select, Input } from '@moondreamsdev/dreamer-ui/components';
+import { Card, Badge, Select, Input, Toggle } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { mockMeals, MealCategory } from '@lib/meals';
 
@@ -25,6 +25,7 @@ export function Meals() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [timeFilter, setTimeFilter] = useState<string>('all');
+  const [noPrepTime, setNoPrepTime] = useState(false);
 
   const categoryOptions = [
     { value: 'all', text: 'All Categories' },
@@ -37,7 +38,7 @@ export function Meals() {
   ];
 
   const timeOptions = [
-    { value: 'all', text: 'All Cook Times' },
+    { value: 'all', text: 'All Total Times' },
     { value: 'under-15', text: 'Under 15 minutes' },
     { value: '15-30', text: '15-30 minutes' },
     { value: '30-60', text: '30-60 minutes' },
@@ -68,7 +69,10 @@ export function Meals() {
       matchesTime = totalTime > 60;
     }
     
-    return matchesSearch && matchesCategory && matchesTime;
+    // Filter by no prep time
+    const matchesNoPrepTime = !noPrepTime || meal.prepTime === 0;
+    
+    return matchesSearch && matchesCategory && matchesTime && matchesNoPrepTime;
   });
 
   return (
@@ -90,7 +94,7 @@ export function Meals() {
           />
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-start">
           <Select
             options={categoryOptions}
             value={categoryFilter}
@@ -103,9 +107,18 @@ export function Meals() {
             options={timeOptions}
             value={timeFilter}
             onChange={(value) => setTimeFilter(value)}
-            placeholder="Filter by cook time"
+            placeholder="Filter by total time"
             className="sm:w-64"
           />
+          
+          <div className="flex items-center gap-3 px-3 py-2">
+            <Toggle
+              checked={noPrepTime}
+              onCheckedChange={setNoPrepTime}
+              aria-label="Filter by no prep time"
+            />
+            <span className="text-sm text-foreground">No Prep Time</span>
+          </div>
         </div>
       </div>
 
@@ -145,7 +158,7 @@ export function Meals() {
                         {categoryEmojis[meal.category]}
                       </span>
                     </div>
-                    <Badge className={join('capitalize', categoryColors[meal.category])}>
+                    <Badge variant="base" className={join('capitalize', categoryColors[meal.category])}>
                       {meal.category}
                     </Badge>
                   </div>
