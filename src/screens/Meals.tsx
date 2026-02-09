@@ -1,7 +1,114 @@
+import { Card } from '@moondreamsdev/dreamer-ui/components';
+import { Badge } from '@moondreamsdev/dreamer-ui/components';
+import { join } from '@moondreamsdev/dreamer-ui/utils';
+import { mockMeals, MealCategory } from '@lib/meals';
+
+const categoryColors: Record<MealCategory, string> = {
+  breakfast: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  lunch: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+  dinner: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
+  snack: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
+  dessert: 'bg-pink-500/10 text-pink-700 dark:text-pink-400',
+  drink: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400',
+};
+
+const categoryEmojis: Record<MealCategory, string> = {
+  breakfast: '🌅',
+  lunch: '🌞',
+  dinner: '🌙',
+  snack: '🍿',
+  dessert: '🍰',
+  drink: '🥤',
+};
+
 export function Meals() {
   return (
-    <div className="flex items-center justify-center h-full">
-      <h1 className="text-4xl font-bold text-foreground">Meals</h1>
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-foreground mb-2">Meals</h1>
+        <p className="text-muted-foreground">
+          Browse our collection of delicious meal recipes
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {mockMeals.map((meal) => {
+          const totalTime = meal.prepTime + meal.cookTime;
+          
+          return (
+            <Card key={meal.id} className="flex flex-col h-full overflow-hidden">
+              {/* Cover Image */}
+              <div className="w-full h-48 overflow-hidden bg-muted">
+                <img
+                  src={meal.imageUrl}
+                  alt={meal.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div className="p-6 flex flex-col h-full">
+                {/* Header */}
+                <div className="mb-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h3 className="text-xl font-semibold text-foreground">
+                      {meal.title}
+                    </h3>
+                    <span className="text-2xl flex-shrink-0">
+                      {categoryEmojis[meal.category]}
+                    </span>
+                  </div>
+                  <Badge className={join('capitalize', categoryColors[meal.category])}>
+                    {meal.category}
+                  </Badge>
+                </div>
+
+                {/* Description */}
+                <p className="text-sm text-muted-foreground mb-4 flex-grow">
+                  {meal.description}
+                </p>
+
+                {/* Metadata */}
+                <div className="grid grid-cols-3 gap-3 mb-4 text-sm">
+                  <div className="text-center">
+                    <div className="font-semibold text-foreground">
+                      {meal.prepTime}m
+                    </div>
+                    <div className="text-xs text-muted-foreground">Prep</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-semibold text-foreground">
+                      {meal.cookTime}m
+                    </div>
+                    <div className="text-xs text-muted-foreground">Cook</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-semibold text-foreground">
+                      {meal.servingSize}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Servings</div>
+                  </div>
+                </div>
+
+                {/* Total time */}
+                <div className="pt-4 border-t border-border">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total Time</span>
+                    <span className="font-semibold text-foreground">
+                      {totalTime} minutes
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm mt-2">
+                    <span className="text-muted-foreground">Instructions</span>
+                    <span className="font-semibold text-foreground">
+                      {meal.instructions.length} steps
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }

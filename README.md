@@ -13,11 +13,26 @@ A cooking app powered with local LLM using Ollama.
 - **Sidebar Navigation**: ChatGPT-style sidebar with intuitive navigation
   - **Chat**: AI-powered cooking assistant
   - **Ingredients**: Manage your ingredients
-  - **Meals**: Plan and organize meals
+  - **Meals**: Browse and manage meal recipes
   - **Calendar**: Schedule your cooking
   - **Account**: User settings and profile
 - **Theme Toggle**: Switch component for seamless light/dark mode switching
 - **Mobile Responsive**: Collapsible sidebar with hamburger menu on mobile devices
+
+### 🍽️ Meals
+- **Meal Cards**: Beautiful card-based layout displaying meal recipes
+- **Cover Images**: Each meal features an attractive cover image
+- **Meal Categories**: Organized by breakfast, lunch, dinner, snack, dessert, and drink
+- **Category Badges**: Color-coded badges with unique colors for each category
+- **Category Emojis**: Visual indicators for quick meal type identification
+- **Recipe Details**: 
+  - Title and description
+  - Prep time and cook time
+  - Serving size
+  - Total cooking time
+  - Step-by-step instructions count
+- **Responsive Grid**: Adapts from 1 column (mobile) to 3 columns (desktop)
+- **Mock Data**: 8 sample meals across all categories for demonstration
 
 ### 📱 Mobile-First Design
 - Fully responsive sidebar that adapts to screen size
@@ -48,3 +63,37 @@ Built with [Dreamer UI](https://www.npmjs.com/package/@moondreamsdev/dreamer-ui)
 - Avatar component for user account
 - Responsive sidebar navigation
 - Card and layout components
+- Badge components for categorization
+
+## Data Schema
+
+### Meal Interface
+```typescript
+interface Meal {
+  id: string;
+  title: string;
+  description: string;
+  category: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'dessert' | 'drink';
+  prepTime: number; // in minutes
+  cookTime: number; // in minutes
+  servingSize: number;
+  instructions: string[];
+  imageUrl: string;
+}
+```
+
+## Project Structure
+
+```
+src/
+├── components/     # Reusable UI components
+├── lib/           # Utilities and data
+│   ├── app/       # App constants
+│   └── meals/     # Meal types and mock data
+├── routes/        # Router configuration
+├── screens/       # Page components
+│   ├── Meals.tsx  # Meal browsing screen
+│   └── ...
+└── ui/            # Layout components
+```
+
