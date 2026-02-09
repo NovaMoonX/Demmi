@@ -4,26 +4,20 @@ import { Avatar } from '@moondreamsdev/dreamer-ui/components';
 import { Toggle } from '@moondreamsdev/dreamer-ui/components';
 import { useTheme } from '@moondreamsdev/dreamer-ui/hooks';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
-import {
-  Plus,
-  Apple,
-  Window,
-  GitHub,
-  DotsVertical,
-} from '@moondreamsdev/dreamer-ui/symbols';
+import { DotsVertical } from '@moondreamsdev/dreamer-ui/symbols';
 
 type Tab = {
   id: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  emoji: string;
   path: string;
 };
 
 const tabs: Tab[] = [
-  { id: 'chat', label: 'Chat', icon: Plus, path: '/' },
-  { id: 'ingredients', label: 'Ingredients', icon: Apple, path: '/ingredients' },
-  { id: 'meals', label: 'Meals', icon: Window, path: '/meals' },
-  { id: 'calendar', label: 'Calendar', icon: GitHub, path: '/calendar' },
+  { id: 'chat', label: 'Chat', emoji: '💬', path: '/' },
+  { id: 'meals', label: 'Meals', emoji: '🍽️', path: '/meals' },
+  { id: 'ingredients', label: 'Ingredients', emoji: '🍎', path: '/ingredients' },
+  { id: 'calendar', label: 'Calendar', emoji: '📅', path: '/calendar' },
 ];
 
 export function Sidebar() {
@@ -74,7 +68,6 @@ export function Sidebar() {
             Navigation
           </h2>
           {tabs.map((tab) => {
-            const Icon = tab.icon;
             const isActive = currentPath === tab.path;
 
             return (
@@ -88,7 +81,7 @@ export function Sidebar() {
                     : 'text-foreground/80 hover:bg-muted hover:text-foreground'
                 )}
               >
-                <Icon className="size-5" />
+                <span className="text-xl">{tab.emoji}</span>
                 <span>{tab.label}</span>
               </button>
             );
