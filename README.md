@@ -25,6 +25,7 @@ A cooking app powered with local LLM using Ollama.
 - **Meal Categories**: Organized by breakfast, lunch, dinner, snack, dessert, and drink
 - **Category Badges**: Color-coded badges with unique colors for each category
 - **Category Emojis**: Visual indicators for quick meal type identification
+- **Search Functionality**: Filter recipes by name, description, or category in real-time
 - **Recipe Details**: 
   - Title and description
   - Prep time and cook time
@@ -33,6 +34,7 @@ A cooking app powered with local LLM using Ollama.
   - Step-by-step instructions count
 - **Responsive Grid**: Adapts from 1 column (mobile) to 3 columns (desktop)
 - **Mock Data**: 8 sample meals across all categories for demonstration
+- **User-Created Content**: Displays user-created meal recipes
 
 ### 📱 Mobile-First Design
 - Fully responsive sidebar that adapts to screen size
