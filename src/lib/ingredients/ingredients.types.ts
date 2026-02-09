@@ -20,7 +20,18 @@ export type MeasurementUnit =
   | 'tsp' 
   | 'piece' 
   | 'can' 
-  | 'bag';
+  | 'bag'
+  | 'bottle'
+  | 'box'
+  | 'jar'
+  | 'pack'
+  | 'slice' 
+  | 'jug'
+  | 'bunch'
+  | 'container'
+  | 'carton'
+  | 'gallon'
+  | 'other';
 
 export interface NutrientProfile {
   // Macros (per 100g/100ml)
@@ -42,5 +53,6 @@ export interface Ingredient {
   nutrients: NutrientProfile;
   currentAmount: number;
   unit: MeasurementUnit;
+  otherUnit: string | null; // For custom units if 'other' is selected
   pricePerUnit: number; // in dollars
 }

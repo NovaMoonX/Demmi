@@ -1,11 +1,12 @@
 import { Ingredient } from './ingredients.types';
 
-export const mockIngredients: Ingredient[] = [
+export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
   {
     id: 'ing-001',
     name: 'Chicken Breast',
     type: 'meat',
-    imageUrl: 'https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=800&q=80',
+    imageUrl:
+      'https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=800&q=80',
     nutrients: {
       protein: 31,
       carbs: 0,
@@ -23,7 +24,8 @@ export const mockIngredients: Ingredient[] = [
     id: 'ing-002',
     name: 'Broccoli',
     type: 'produce',
-    imageUrl: 'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&q=80',
+    imageUrl:
+      'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&q=80',
     nutrients: {
       protein: 2.8,
       carbs: 6.6,
@@ -41,7 +43,8 @@ export const mockIngredients: Ingredient[] = [
     id: 'ing-003',
     name: 'Whole Milk',
     type: 'dairy',
-    imageUrl: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=800&q=80',
+    imageUrl:
+      'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=800&q=80',
     nutrients: {
       protein: 3.2,
       carbs: 4.8,
@@ -52,14 +55,15 @@ export const mockIngredients: Ingredient[] = [
       calories: 61,
     },
     currentAmount: 1,
-    unit: 'piece',
+    unit: 'carton',
     pricePerUnit: 4.99,
   },
   {
     id: 'ing-004',
     name: 'Brown Rice',
     type: 'grains',
-    imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&q=80',
+    imageUrl:
+      'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&q=80',
     nutrients: {
       protein: 7.9,
       carbs: 77.2,
@@ -77,7 +81,8 @@ export const mockIngredients: Ingredient[] = [
     id: 'ing-005',
     name: 'Black Beans',
     type: 'legumes',
-    imageUrl: 'https://images.unsplash.com/photo-1589621316382-008455b857cd?w=800&q=80',
+    imageUrl:
+      'https://images.unsplash.com/photo-1589621316382-008455b857cd?w=800&q=80',
     nutrients: {
       protein: 21.6,
       carbs: 62.4,
@@ -95,7 +100,8 @@ export const mockIngredients: Ingredient[] = [
     id: 'ing-006',
     name: 'Olive Oil',
     type: 'oils',
-    imageUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&q=80',
+    imageUrl:
+      'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&q=80',
     nutrients: {
       protein: 0,
       carbs: 0,
@@ -113,7 +119,8 @@ export const mockIngredients: Ingredient[] = [
     id: 'ing-007',
     name: 'Garlic Powder',
     type: 'spices',
-    imageUrl: 'https://images.unsplash.com/photo-1580323413827-bb94e2d3e2ad?w=800&q=80',
+    imageUrl:
+      'https://images.unsplash.com/photo-1580323413827-bb94e2d3e2ad?w=800&q=80',
     nutrients: {
       protein: 16.5,
       carbs: 72.7,
@@ -131,7 +138,8 @@ export const mockIngredients: Ingredient[] = [
     id: 'ing-008',
     name: 'Almonds',
     type: 'nuts',
-    imageUrl: 'https://images.unsplash.com/photo-1508747703725-719777637510?w=800&q=80',
+    imageUrl:
+      'https://images.unsplash.com/photo-1508747703725-719777637510?w=800&q=80',
     nutrients: {
       protein: 21.2,
       carbs: 21.6,
@@ -149,7 +157,8 @@ export const mockIngredients: Ingredient[] = [
     id: 'ing-009',
     name: 'Salmon Fillet',
     type: 'seafood',
-    imageUrl: 'https://images.unsplash.com/photo-1580991071449-83794d6b609e?w=800&q=80',
+    imageUrl:
+      'https://images.unsplash.com/photo-1580991071449-83794d6b609e?w=800&q=80',
     nutrients: {
       protein: 20,
       carbs: 0,
@@ -167,7 +176,8 @@ export const mockIngredients: Ingredient[] = [
     id: 'ing-010',
     name: 'Tomatoes',
     type: 'produce',
-    imageUrl: 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=800&q=80',
+    imageUrl:
+      'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=800&q=80',
     nutrients: {
       protein: 0.9,
       carbs: 3.9,
@@ -185,7 +195,8 @@ export const mockIngredients: Ingredient[] = [
     id: 'ing-011',
     name: 'Ground Beef',
     type: 'meat',
-    imageUrl: 'https://images.unsplash.com/photo-1603048297172-c92544798d5a?w=800&q=80',
+    imageUrl:
+      'https://images.unsplash.com/photo-1603048297172-c92544798d5a?w=800&q=80',
     nutrients: {
       protein: 26,
       carbs: 0,
@@ -203,7 +214,8 @@ export const mockIngredients: Ingredient[] = [
     id: 'ing-012',
     name: 'Cheddar Cheese',
     type: 'dairy',
-    imageUrl: 'https://images.unsplash.com/photo-1618164436241-4473940d1f5c?w=800&q=80',
+    imageUrl:
+      'https://images.unsplash.com/photo-1618164436241-4473940d1f5c?w=800&q=80',
     nutrients: {
       protein: 24.9,
       carbs: 1.3,
