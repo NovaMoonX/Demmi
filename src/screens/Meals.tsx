@@ -154,7 +154,7 @@ export function Meals() {
                       <h3 className="text-xl font-semibold text-foreground">
                         {meal.title}
                       </h3>
-                      <span className="text-2xl flex-shrink-0">
+                      <span className="text-2xl shrink-0">
                         {categoryEmojis[meal.category]}
                       </span>
                     </div>

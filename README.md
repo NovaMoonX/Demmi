@@ -28,10 +28,11 @@ A cooking app powered with local LLM using Ollama.
 - **Search Functionality**: Search ingredients by name in real-time
 - **Filter by Type**: Dropdown filter to show only specific ingredient types
 - **Out of Stock Toggle**: Switch to view only ingredients that are out of stock
-- **Sort Options**: Sort ingredients by name or amount in both ascending and descending order
+- **Sort Options**: Sort ingredients by name or servings in both ascending and descending order
 - **Inventory Details**:
   - Ingredient name and type
-  - Current stock amount with units (lb, oz, kg, g, cup, tbsp, tsp, piece, can, bag)
+  - Servings available based on serving size
+  - Serving size per ingredient (aligned to unit)
   - Price per unit
 - **Comprehensive Nutrition Profile** (per 100g):
   - **Macronutrients**: Protein, Carbs, Fat
@@ -138,7 +139,9 @@ interface Ingredient {
   imageUrl: string;
   nutrients: NutrientProfile;
   currentAmount: number;
+  servingSize: number; // portion size in the same unit as `unit`
   unit: MeasurementUnit;
+  otherUnit: string | null;
   pricePerUnit: number; // in dollars
 }
 ```

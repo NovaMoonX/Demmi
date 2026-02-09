@@ -1,5 +1,9 @@
 import { capitalize } from '@/utils';
-import { INGREDIENT_TYPE_COLORS, INGREDIENT_TYPE_EMOJIS, mockIngredients } from '@lib/ingredients';
+import {
+  INGREDIENT_TYPE_COLORS,
+  INGREDIENT_TYPE_EMOJIS,
+  mockIngredients,
+} from '@lib/ingredients';
 import {
   Badge,
   Card,
@@ -24,7 +28,8 @@ export function Ingredients() {
 
     const filtered = mockIngredients.filter((ingredient) => {
       const matchesSearch = ingredient.name.toLowerCase().includes(query);
-      const matchesType = typeFilter === 'all' || ingredient.type === typeFilter;
+      const matchesType =
+        typeFilter === 'all' || ingredient.type === typeFilter;
       const matchesStock = !outOfStockOnly || ingredient.currentAmount <= 0;
       const matchesAll = matchesSearch && matchesType && matchesStock;
 
@@ -32,6 +37,9 @@ export function Ingredients() {
     });
 
     const sorted = [...filtered].sort((a, b) => {
+      const servingsA = a.servingSize > 0 ? a.currentAmount / a.servingSize : 0;
+      const servingsB = b.servingSize > 0 ? b.currentAmount / b.servingSize : 0;
+
       if (sortOption === 'name-asc') {
         const result = a.name.localeCompare(b.name);
         return result;
@@ -42,12 +50,12 @@ export function Ingredients() {
         return result;
       }
 
-      if (sortOption === 'amount-asc') {
-        const result = a.currentAmount - b.currentAmount;
+      if (sortOption === 'servings-asc') {
+        const result = servingsA - servingsB;
         return result;
       }
 
-      const result = b.currentAmount - a.currentAmount;
+      const result = servingsB - servingsA;
       return result;
     });
 
@@ -68,8 +76,8 @@ export function Ingredients() {
     const options = [
       { value: 'name-asc', text: 'Name (A-Z)' },
       { value: 'name-desc', text: 'Name (Z-A)' },
-      { value: 'amount-asc', text: 'Amount (Low to High)' },
-      { value: 'amount-desc', text: 'Amount (High to Low)' },
+      { value: 'servings-asc', text: 'Servings (Low to High)' },
+      { value: 'servings-desc', text: 'Servings (High to Low)' },
     ];
     return options;
   }, []);
@@ -127,54 +135,77 @@ export function Ingredients() {
             </p>
           </div>
         ) : (
-          filteredIngredients.map((ingredient) => (
-            <Card
-              key={ingredient.id}
-              className='flex h-full cursor-pointer flex-col overflow-hidden transition-shadow hover:shadow-lg'
-            >
-              {/* Cover Image */}
-              <div className='bg-muted h-48 w-full overflow-hidden'>
-                <img
-                  src={ingredient.imageUrl}
-                  alt={ingredient.name}
-                  className='h-full w-full object-cover'
-                  onError={(e) => {
-                    e.currentTarget.src = FALLBACK_IMAGE_URL;
-                  }}
-                />
+          filteredIngredients.map((ingredient) => {
+            const servingsCount =
+              ingredient.servingSize > 0
+                ? ingredient.currentAmount / ingredient.servingSize
+                : 0;
+            const servingsRounded = Math.round(servingsCount * 10) / 10;
+            const servingsDisplay = Number.isFinite(servingsRounded)
+              ? servingsRounded
+              : 0;
+            const servingsLabel = `${servingsDisplay} servings`;
+            const servingSizeLabel = `${ingredient.servingSize} ${ingredient.unit}`;
+            const footer = (
+              <div className='text-muted-foreground flex items-center justify-between text-xs'>
+                <div className='flex flex-col gap-1'>
+                  <span className='tracking-wide uppercase'>Servings</span>
+                  <span className='text-foreground text-sm font-semibold'>
+                    {servingsLabel}
+                  </span>
+                </div>
+                <div className='flex flex-col items-end gap-1'>
+                  <span className='tracking-wide uppercase'>Serving size</span>
+                  <span className='text-foreground text-sm font-semibold'>
+                    {servingSizeLabel}
+                  </span>
+                </div>
               </div>
+            );
 
-              <div className='flex flex-col p-6'>
-                {/* Header */}
-                <div className='mb-4'>
-                  <div className='mb-2 flex items-start justify-between gap-2'>
-                    <h3 className='text-foreground text-xl font-semibold'>
-                      {ingredient.name}
-                    </h3>
-                    <span className='shrink-0 text-2xl'>
-                      {INGREDIENT_TYPE_EMOJIS[ingredient.type]}
-                    </span>
+            return (
+              <Card
+                key={ingredient.id}
+                className='flex h-full cursor-pointer flex-col overflow-hidden transition-shadow hover:shadow-lg'
+                footer={footer}
+              >
+                {/* Cover Image */}
+                <div className='bg-muted h-40 w-full overflow-hidden'>
+                  <img
+                    src={ingredient.imageUrl}
+                    alt={ingredient.name}
+                    className='h-full w-full object-cover'
+                    onError={(e) => {
+                      e.currentTarget.src = FALLBACK_IMAGE_URL;
+                    }}
+                  />
+                </div>
+
+                <div className='flex flex-col gap-3 p-4'>
+                  {/* Header */}
+                  <div>
+                    <div className='mb-2 flex items-start justify-between gap-2'>
+                      <h3 className='text-foreground text-lg font-semibold'>
+                        {ingredient.name}
+                      </h3>
+                      <span className='shrink-0 text-xl'>
+                        {INGREDIENT_TYPE_EMOJIS[ingredient.type]}
+                      </span>
+                    </div>
+                    <Badge
+                      variant='base'
+                      className={join(
+                        'capitalize',
+                        INGREDIENT_TYPE_COLORS[ingredient.type],
+                      )}
+                    >
+                      {ingredient.type}
+                    </Badge>
                   </div>
-                  <Badge
-                    variant='base'
-                    className={join('capitalize', INGREDIENT_TYPE_COLORS[ingredient.type])}
-                  >
-                    {ingredient.type}
-                  </Badge>
                 </div>
-
-                {/* In Stock - Main Focus */}
-                <div className='flex items-center justify-between'>
-                  <span className='text-muted-foreground text-sm'>
-                    In Stock
-                  </span>
-                  <span className='text-foreground text-2xl font-bold'>
-                    {ingredient.currentAmount} {ingredient.unit}
-                  </span>
-                </div>
-              </div>
-            </Card>
-          ))
+              </Card>
+            );
+          })
         )}
       </div>
     </div>

@@ -52,6 +52,7 @@ export interface Ingredient {
   imageUrl: string;
   nutrients: NutrientProfile;
   currentAmount: number;
+  servingSize: number; // portion size in the same unit as `unit`
   unit: MeasurementUnit;
   otherUnit: string | null; // For custom units if 'other' is selected
   pricePerUnit: number; // in dollars
