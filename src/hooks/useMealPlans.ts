@@ -7,7 +7,7 @@ export function useMealPlans() {
   const createMealPlan = (mealPlan: Omit<MealPlan, 'id'>) => {
     const newMealPlan: MealPlan = {
       ...mealPlan,
-      id: `mealplan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `mealplan-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
     };
 
     const updatedMealPlans = [...mealPlans, newMealPlan];

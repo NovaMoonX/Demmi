@@ -21,6 +21,13 @@ const mealTypeColors: Record<MealType, string> = {
   snack: 'bg-purple-500/20 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
 };
 
+const mealTypeBgColors: Record<MealType, string> = {
+  breakfast: 'bg-amber-500/20',
+  lunch: 'bg-emerald-500/20',
+  dinner: 'bg-blue-500/20',
+  snack: 'bg-purple-500/20',
+};
+
 const mealTypeEmojis: Record<MealType, string> = {
   breakfast: '🌅',
   lunch: '🍱',
@@ -113,7 +120,7 @@ export function CalendarScreen() {
                 key={plan.id}
                 className={join(
                   'w-1.5 h-1.5 rounded-full',
-                  mealTypeColors[plan.mealType].split(' ')[0]
+                  mealTypeBgColors[plan.mealType]
                 )}
               />
             ))}
