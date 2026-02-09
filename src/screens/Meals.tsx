@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import { Card, Badge } from '@moondreamsdev/dreamer-ui/components';
-import { Input } from '@moondreamsdev/dreamer-ui/components';
+import { Card, Badge, Select, Input } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { mockMeals, MealCategory } from '@lib/meals';
 
 const categoryColors: Record<MealCategory, string> = {
-  breakfast: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-  lunch: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
-  dinner: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
-  snack: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
-  dessert: 'bg-pink-500/10 text-pink-700 dark:text-pink-400',
-  drink: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400',
+  breakfast: 'bg-amber-500/20 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
+  lunch: 'bg-emerald-500/20 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
+  dinner: 'bg-blue-500/20 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
+  snack: 'bg-purple-500/20 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
+  dessert: 'bg-pink-500/20 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400',
+  drink: 'bg-cyan-500/20 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400',
 };
 
 const categoryEmojis: Record<MealCategory, string> = {
@@ -24,15 +23,52 @@ const categoryEmojis: Record<MealCategory, string> = {
 
 export function Meals() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [timeFilter, setTimeFilter] = useState<string>('all');
+
+  const categoryOptions = [
+    { value: 'all', text: 'All Categories' },
+    { value: 'breakfast', text: '🌅 Breakfast' },
+    { value: 'lunch', text: '🍱 Lunch' },
+    { value: 'dinner', text: '🌙 Dinner' },
+    { value: 'snack', text: '🍿 Snack' },
+    { value: 'dessert', text: '🍰 Dessert' },
+    { value: 'drink', text: '🥤 Drink' },
+  ];
+
+  const timeOptions = [
+    { value: 'all', text: 'All Cook Times' },
+    { value: 'under-15', text: 'Under 15 minutes' },
+    { value: '15-30', text: '15-30 minutes' },
+    { value: '30-60', text: '30-60 minutes' },
+    { value: 'over-60', text: 'Over 60 minutes' },
+  ];
 
   const filteredMeals = mockMeals.filter((meal) => {
+    const totalTime = meal.prepTime + meal.cookTime;
     const query = searchQuery.toLowerCase();
     
-    return (
+    // Search by name or description only
+    const matchesSearch = 
       meal.title.toLowerCase().includes(query) ||
-      meal.description.toLowerCase().includes(query) ||
-      meal.category.toLowerCase().includes(query)
-    );
+      meal.description.toLowerCase().includes(query);
+    
+    // Filter by category
+    const matchesCategory = categoryFilter === 'all' || meal.category === categoryFilter;
+    
+    // Filter by total cook time
+    let matchesTime = true;
+    if (timeFilter === 'under-15') {
+      matchesTime = totalTime < 15;
+    } else if (timeFilter === '15-30') {
+      matchesTime = totalTime >= 15 && totalTime <= 30;
+    } else if (timeFilter === '30-60') {
+      matchesTime = totalTime > 30 && totalTime <= 60;
+    } else if (timeFilter === 'over-60') {
+      matchesTime = totalTime > 60;
+    }
+    
+    return matchesSearch && matchesCategory && matchesTime;
   });
 
   return (
@@ -40,17 +76,37 @@ export function Meals() {
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-foreground mb-2">Meals</h1>
         <p className="text-muted-foreground mb-6">
-          Browse user-created meal recipes
+          Browse your meal recipes
         </p>
         
-        {/* Search Input */}
-        <Input
-          type="text"
-          placeholder="Search recipes by name, description, or category..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-xl"
-        />
+        {/* Search and Filters */}
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <Input
+            type="text"
+            placeholder="Search recipes by name or description..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1"
+          />
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Select
+            options={categoryOptions}
+            value={categoryFilter}
+            onChange={(value) => setCategoryFilter(value)}
+            placeholder="Filter by category"
+            className="sm:w-64"
+          />
+          
+          <Select
+            options={timeOptions}
+            value={timeFilter}
+            onChange={(value) => setTimeFilter(value)}
+            placeholder="Filter by cook time"
+            className="sm:w-64"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
