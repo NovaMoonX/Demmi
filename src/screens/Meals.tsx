@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Select, Input, Toggle, Button } from '@moondreamsdev/dreamer-ui/components';
 import { MealCard } from '@components/MealCard';
 import { useMeals } from '@hooks/useMeals';
-import { Meal } from '@lib/meals';
+import { Meal, MEAL_CATEGORY_FILTER_OPTIONS } from '@lib/meals';
 
 export function Meals() {
   const { meals } = useMeals();
@@ -12,16 +12,6 @@ export function Meals() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [timeFilter, setTimeFilter] = useState<string>('all');
   const [noPrepTime, setNoPrepTime] = useState(false);
-
-  const categoryOptions = [
-    { value: 'all', text: 'All Categories' },
-    { value: 'breakfast', text: '🌅 Breakfast' },
-    { value: 'lunch', text: '🍱 Lunch' },
-    { value: 'dinner', text: '🌙 Dinner' },
-    { value: 'snack', text: '🍿 Snack' },
-    { value: 'dessert', text: '🍰 Dessert' },
-    { value: 'drink', text: '🥤 Drink' },
-  ];
 
   const timeOptions = [
     { value: 'all', text: 'All Total Times' },
@@ -107,7 +97,7 @@ export function Meals() {
         
         <div className="flex flex-col sm:flex-row gap-4 items-start">
           <Select
-            options={categoryOptions}
+            options={MEAL_CATEGORY_FILTER_OPTIONS}
             value={categoryFilter}
             onChange={(value) => setCategoryFilter(value)}
             placeholder="Filter by category"

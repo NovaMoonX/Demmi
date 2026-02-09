@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Input, Textarea, Select, Button, DynamicList } from '@moondreamsdev/dreamer-ui/components';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
-import { Meal, MealCategory } from '@lib/meals';
+import { Meal, MealCategory, MEAL_CATEGORY_OPTIONS } from '@lib/meals';
 import { useMeals } from '@hooks/useMeals';
 import type { DynamicListItem } from '@moondreamsdev/dreamer-ui/components';
 
@@ -28,15 +28,6 @@ export function MealDetail() {
       content: inst,
     })) || []
   );
-
-  const categoryOptions = [
-    { value: 'breakfast', text: '🌅 Breakfast' },
-    { value: 'lunch', text: '🍱 Lunch' },
-    { value: 'dinner', text: '🌙 Dinner' },
-    { value: 'snack', text: '🍿 Snack' },
-    { value: 'dessert', text: '🍰 Dessert' },
-    { value: 'drink', text: '🥤 Drink' },
-  ];
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -151,7 +142,7 @@ export function MealDetail() {
             Category *
           </label>
           <Select
-            options={categoryOptions}
+            options={MEAL_CATEGORY_OPTIONS}
             value={category}
             onChange={(value) => setCategory(value)}
             placeholder="Select category"
