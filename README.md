@@ -28,6 +28,7 @@ A cooking app powered with local LLM using Ollama.
 - **Search Functionality**: Search ingredients by name in real-time
 - **Filter by Type**: Dropdown filter to show only specific ingredient types
 - **Out of Stock Toggle**: Switch to view only ingredients that are out of stock
+- **Sort Options**: Sort ingredients by name or amount in both ascending and descending order
 - **Inventory Details**:
   - Ingredient name and type
   - Current stock amount with units (lb, oz, kg, g, cup, tbsp, tsp, piece, can, bag)

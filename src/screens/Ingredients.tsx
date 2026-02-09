@@ -17,11 +17,12 @@ export function Ingredients() {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [outOfStockOnly, setOutOfStockOnly] = useState(false);
+  const [sortOption, setSortOption] = useState('name-asc');
 
   const filteredIngredients = useMemo(() => {
     const query = searchQuery.toLowerCase();
 
-    const result = mockIngredients.filter((ingredient) => {
+    const filtered = mockIngredients.filter((ingredient) => {
       const matchesSearch = ingredient.name.toLowerCase().includes(query);
       const matchesType = typeFilter === 'all' || ingredient.type === typeFilter;
       const matchesStock = !outOfStockOnly || ingredient.currentAmount <= 0;
@@ -30,8 +31,28 @@ export function Ingredients() {
       return matchesAll;
     });
 
-    return result;
-  }, [outOfStockOnly, searchQuery, typeFilter]);
+    const sorted = [...filtered].sort((a, b) => {
+      if (sortOption === 'name-asc') {
+        const result = a.name.localeCompare(b.name);
+        return result;
+      }
+
+      if (sortOption === 'name-desc') {
+        const result = b.name.localeCompare(a.name);
+        return result;
+      }
+
+      if (sortOption === 'amount-asc') {
+        const result = a.currentAmount - b.currentAmount;
+        return result;
+      }
+
+      const result = b.currentAmount - a.currentAmount;
+      return result;
+    });
+
+    return sorted;
+  }, [outOfStockOnly, searchQuery, sortOption, typeFilter]);
 
   const typeOption = useMemo(() => {
     const options = Object.entries(INGREDIENT_TYPE_EMOJIS).map(
@@ -41,6 +62,16 @@ export function Ingredients() {
       }),
     );
     return [{ value: 'all', text: 'All Types' }, ...options];
+  }, []);
+
+  const sortOptions = useMemo(() => {
+    const options = [
+      { value: 'name-asc', text: 'Name (A-Z)' },
+      { value: 'name-desc', text: 'Name (Z-A)' },
+      { value: 'amount-asc', text: 'Amount (Low to High)' },
+      { value: 'amount-desc', text: 'Amount (High to Low)' },
+    ];
+    return options;
   }, []);
 
   return (
@@ -68,6 +99,13 @@ export function Ingredients() {
             value={typeFilter}
             onChange={(value) => setTypeFilter(value)}
             placeholder='Filter by type'
+            className='sm:w-64'
+          />
+          <Select
+            options={sortOptions}
+            value={sortOption}
+            onChange={(value) => setSortOption(value)}
+            placeholder='Sort by'
             className='sm:w-64'
           />
           <div className='flex items-center gap-3 px-3 py-2'>
