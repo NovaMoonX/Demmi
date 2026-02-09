@@ -69,6 +69,18 @@ export function Meals() {
     navigate(`/meals/${meal.id}`);
   };
 
+  const handleClearFilters = () => {
+    const nextSearchQuery = '';
+    const nextCategoryFilter = 'all';
+    const nextTimeFilter = 'all';
+    const nextNoPrepTime = false;
+
+    setSearchQuery(nextSearchQuery);
+    setCategoryFilter(nextCategoryFilter);
+    setTimeFilter(nextTimeFilter);
+    setNoPrepTime(nextNoPrepTime);
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">
@@ -125,8 +137,13 @@ export function Meals() {
         {filteredMeals.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <p className="text-muted-foreground text-lg">
-              No recipes found matching "{searchQuery}"
+              No matching recipes found
             </p>
+            <div className="mt-4 flex justify-center">
+              <Button variant="tertiary" onClick={handleClearFilters}>
+                Clear filters
+              </Button>
+            </div>
           </div>
         ) : (
           filteredMeals.map((meal) => (
