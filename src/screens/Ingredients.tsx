@@ -3,6 +3,8 @@ import { Card, Badge, Select, Input } from '@moondreamsdev/dreamer-ui/components
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { mockIngredients, IngredientType } from '@lib/ingredients';
 
+const FALLBACK_IMAGE_URL = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400"%3E%3Crect width="800" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2394a3b8"%3EImage not available%3C/text%3E%3C/svg%3E';
+
 const typeColors: Record<IngredientType, string> = {
   meat: 'bg-red-500/20 text-red-700 dark:bg-red-500/10 dark:text-red-400',
   produce: 'bg-green-500/20 text-green-700 dark:bg-green-500/10 dark:text-green-400',
@@ -94,115 +96,111 @@ export function Ingredients() {
             </p>
           </div>
         ) : (
-          filteredIngredients.map((ingredient) => {
-            const result = (
-              <Card key={ingredient.id} className="flex flex-col h-full overflow-hidden">
-                {/* Cover Image */}
-                <div className="w-full h-48 overflow-hidden bg-muted">
-                  <img
-                    src={ingredient.imageUrl}
-                    alt={ingredient.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400"%3E%3Crect width="800" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2394a3b8"%3EImage not available%3C/text%3E%3C/svg%3E';
-                    }}
-                  />
+          filteredIngredients.map((ingredient) => (
+            <Card key={ingredient.id} className="flex flex-col h-full overflow-hidden">
+              {/* Cover Image */}
+              <div className="w-full h-48 overflow-hidden bg-muted">
+                <img
+                  src={ingredient.imageUrl}
+                  alt={ingredient.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = FALLBACK_IMAGE_URL;
+                  }}
+                />
+              </div>
+
+              <div className="p-6 flex flex-col h-full">
+                {/* Header */}
+                <div className="mb-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h3 className="text-xl font-semibold text-foreground">
+                      {ingredient.name}
+                    </h3>
+                    <span className="text-2xl flex-shrink-0">
+                      {typeEmojis[ingredient.type]}
+                    </span>
+                  </div>
+                  <Badge variant="base" className={join('capitalize', typeColors[ingredient.type])}>
+                    {ingredient.type}
+                  </Badge>
                 </div>
 
-                <div className="p-6 flex flex-col h-full">
-                  {/* Header */}
-                  <div className="mb-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="text-xl font-semibold text-foreground">
-                        {ingredient.name}
-                      </h3>
-                      <span className="text-2xl flex-shrink-0">
-                        {typeEmojis[ingredient.type]}
-                      </span>
-                    </div>
-                    <Badge variant="base" className={join('capitalize', typeColors[ingredient.type])}>
-                      {ingredient.type}
-                    </Badge>
+                {/* Inventory */}
+                <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">In Stock</span>
+                    <span className="text-lg font-semibold text-foreground">
+                      {ingredient.currentAmount} {ingredient.unit}
+                    </span>
                   </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-sm text-muted-foreground">Price per {ingredient.unit}</span>
+                    <span className="text-lg font-semibold text-primary">
+                      ${ingredient.pricePerUnit.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
 
-                  {/* Inventory */}
-                  <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                {/* Macronutrients */}
+                <div className="mb-4">
+                  <h4 className="text-sm font-semibold text-foreground mb-2">
+                    Macros (per 100g)
+                  </h4>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div className="text-center p-2 bg-muted/50 rounded">
+                      <div className="font-semibold text-foreground">
+                        {ingredient.nutrients.protein}g
+                      </div>
+                      <div className="text-xs text-muted-foreground">Protein</div>
+                    </div>
+                    <div className="text-center p-2 bg-muted/50 rounded">
+                      <div className="font-semibold text-foreground">
+                        {ingredient.nutrients.carbs}g
+                      </div>
+                      <div className="text-xs text-muted-foreground">Carbs</div>
+                    </div>
+                    <div className="text-center p-2 bg-muted/50 rounded">
+                      <div className="font-semibold text-foreground">
+                        {ingredient.nutrients.fat}g
+                      </div>
+                      <div className="text-xs text-muted-foreground">Fat</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Nutrients */}
+                <div className="pt-4 border-t border-border">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">In Stock</span>
-                      <span className="text-lg font-semibold text-foreground">
-                        {ingredient.currentAmount} {ingredient.unit}
+                      <span className="text-muted-foreground">Calories</span>
+                      <span className="font-semibold text-foreground">
+                        {ingredient.nutrients.calories} kcal
                       </span>
                     </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-sm text-muted-foreground">Price per {ingredient.unit}</span>
-                      <span className="text-lg font-semibold text-primary">
-                        ${ingredient.pricePerUnit.toFixed(2)}
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Fiber</span>
+                      <span className="font-semibold text-foreground">
+                        {ingredient.nutrients.fiber}g
                       </span>
                     </div>
-                  </div>
-
-                  {/* Macronutrients */}
-                  <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-foreground mb-2">
-                      Macros (per 100g)
-                    </h4>
-                    <div className="grid grid-cols-3 gap-2 text-sm">
-                      <div className="text-center p-2 bg-muted/50 rounded">
-                        <div className="font-semibold text-foreground">
-                          {ingredient.nutrients.protein}g
-                        </div>
-                        <div className="text-xs text-muted-foreground">Protein</div>
-                      </div>
-                      <div className="text-center p-2 bg-muted/50 rounded">
-                        <div className="font-semibold text-foreground">
-                          {ingredient.nutrients.carbs}g
-                        </div>
-                        <div className="text-xs text-muted-foreground">Carbs</div>
-                      </div>
-                      <div className="text-center p-2 bg-muted/50 rounded">
-                        <div className="font-semibold text-foreground">
-                          {ingredient.nutrients.fat}g
-                        </div>
-                        <div className="text-xs text-muted-foreground">Fat</div>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Sugar</span>
+                      <span className="font-semibold text-foreground">
+                        {ingredient.nutrients.sugar}g
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Additional Nutrients */}
-                  <div className="pt-4 border-t border-border">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Calories</span>
-                        <span className="font-semibold text-foreground">
-                          {ingredient.nutrients.calories} kcal
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Fiber</span>
-                        <span className="font-semibold text-foreground">
-                          {ingredient.nutrients.fiber}g
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Sugar</span>
-                        <span className="font-semibold text-foreground">
-                          {ingredient.nutrients.sugar}g
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Sodium</span>
-                        <span className="font-semibold text-foreground">
-                          {ingredient.nutrients.sodium}mg
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Sodium</span>
+                      <span className="font-semibold text-foreground">
+                        {ingredient.nutrients.sodium}mg
+                      </span>
                     </div>
                   </div>
                 </div>
-              </Card>
-            );
-            
-            return result;
-          })
+              </div>
+            </Card>
+          ))
         )}
       </div>
     </div>
