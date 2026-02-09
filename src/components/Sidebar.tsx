@@ -25,24 +25,34 @@ export function Sidebar() {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const handleTabClick = (path: string) => {
     navigate(path);
+    handleClose();
+  };
+
+  const handleClose = () => {
     setIsMobileOpen(false);
+    setIsAnimating(true);
+    // Wait for the closing animation (300ms) to complete before showing the button
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 300);
   };
 
   const currentPath = location.pathname;
 
   return (
     <>
-      {/* Mobile menu button - only show when menu is closed */}
-      {!isMobileOpen && (
+      {/* Mobile menu button - only show when menu is closed and not animating */}
+      {!isMobileOpen && !isAnimating && (
         <button
           onClick={() => setIsMobileOpen(true)}
-          className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-card border border-border md:hidden"
+          className="fixed top-4 left-4 z-50 p-1.5 rounded-lg bg-card border border-border md:hidden"
           aria-label="Toggle menu"
         >
-          <DotsVertical className="size-6 text-foreground" />
+          <DotsVertical className="size-5 text-foreground" />
         </button>
       )}
 
@@ -50,7 +60,7 @@ export function Sidebar() {
       {isMobileOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setIsMobileOpen(false)}
+          onClick={handleClose}
         />
       )}
 
