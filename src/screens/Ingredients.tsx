@@ -83,7 +83,7 @@ export function Ingredients() {
   }, []);
 
   return (
-    <div className='mx-auto max-w-7xl p-6'>
+    <div className='mx-auto max-w-7xl p-6 mt-10 md:mt-0'>
       <div className='mb-8'>
         <h1 className='text-foreground mb-2 text-4xl font-bold'>Ingredients</h1>
         <p className='text-muted-foreground mb-6'>

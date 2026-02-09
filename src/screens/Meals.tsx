@@ -82,7 +82,7 @@ export function Meals() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto mt-10 md:mt-0">
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-4xl font-bold text-foreground">Meals</h1>

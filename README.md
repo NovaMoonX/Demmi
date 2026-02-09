@@ -4,6 +4,23 @@ A cooking app powered with local LLM using Ollama.
 
 ## Features
 
+### 💬 Chat
+- **AI Chat Interface**: Modern ChatGPT-style interface for cooking assistance
+- **Message Bubbles**: User messages (orange) and assistant responses (gray) with distinct styling
+- **Chat History**: Collapsible sidebar showing all conversations
+- **Header Sidebar Toggle**: History toggle icon in the chat header for quick access
+- **Pinned Chats**: Pin important conversations to keep them at the top
+- **New Chat**: Start fresh conversations with a single click
+- **Mock AI Responses**: Context-aware responses based on keywords (recipe, ingredient, meal prep)
+- **Auto-scroll**: Messages automatically scroll into view
+- **Typing Indicator**: Animated loading state while waiting for responses
+- **Empty State**: Beautiful prompt for new conversations
+- **Keyboard Support**: Enter to send, Shift+Enter for new lines
+- **Embedded Send Button**: Discreet send action inside the message input
+- **Message Count**: Shows number of messages in each conversation
+- **Delete Chats**: Remove conversations from history
+- **Responsive Design**: Works seamlessly on mobile and desktop
+
 ### 🍳 Cooking-Themed Design
 - **Orange Accent Color**: Warm, cooking-inspired orange accent color throughout the app
 - **Modern & Clean**: Simple black and white base with orange highlights
@@ -22,7 +39,7 @@ A cooking app powered with local LLM using Ollama.
 ### 🍎 Ingredients
 - **Ingredient Cards**: Beautiful card-based layout displaying ingredient inventory
 - **Cover Images**: Each ingredient features an attractive cover image
-- **Ingredient Types**: Organized by meat, produce, dairy, grains, legumes, oils, spices, nuts, seafood, and other
+- **Ingredient Types**: Organized by `meat`, `produce`, `dairy`, `grains`, `legumes`, `oils`, `spices`, `nuts`, `seafood`, and `other`
 - **Type Badges**: Color-coded badges with unique colors for each ingredient type (fully visible in both light and dark modes)
 - **Type Emojis**: Visual indicators for quick ingredient type identification (🥩 🥬 🥛 🌾 🫘 🫒 🧂 🥜 🐟 📦)
 - **Search Functionality**: Search ingredients by name in real-time
@@ -50,8 +67,8 @@ A cooking app powered with local LLM using Ollama.
   - Category Emojis: Visual indicators for quick meal type identification
   - Recipe Details: Title, description, prep time, cook time, serving size, total cooking time, and step-by-step instructions count
 - **Search Functionality**: Search recipes by name or description in real-time
-- **Filter by Category**: Dropdown filter to show only specific meal types
-- **Filter by Total Time**: Dropdown filter to show meals by total cooking time (prep + cook time: under 15 min, 15-30 min, 30-60 min, over 60 min)
+- **Filter by Category**: Dropdown filter to show only specific meal types (`breakfast`, `lunch`, `dinner`, `snack`, `dessert`, `drink`)
+- **Filter by Total Time**: Dropdown filter to show meals by total cooking time (prep + cook time: `under-15`, `15-30`, `30-60`, `over-60`)
 - **No Prep Time Toggle**: Filter switch to show only meals that require no preparation time
 - **Detailed Meal View**: Full-screen dedicated view for creating and editing meals
   - **Create Meals**: Navigate to `/meals/new` to add new meals
@@ -97,6 +114,24 @@ Built with [Dreamer UI](https://www.npmjs.com/package/@moondreamsdev/dreamer-ui)
 - Badge components for categorization
 
 ## Data Schema
+
+### Chat Interfaces
+```typescript
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number; // milliseconds timestamp
+}
+
+interface ChatConversation {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  isPinned: boolean;
+  lastUpdated: number; // milliseconds timestamp
+}
+```
 
 ### Ingredient Interface
 ```typescript
@@ -170,20 +205,27 @@ interface Meal {
 ```
 src/
 ├── components/       # Reusable UI components
-│   ├── MealCard.tsx  # Meal card display component (clickable)
-│   └── Sidebar.tsx   # Navigation sidebar
+│   ├── ChatHistory.tsx   # Chat sidebar navigation
+│   ├── ChatMessage.tsx   # Message bubble component
+│   ├── MealCard.tsx      # Meal card display component (clickable)
+│   └── Sidebar.tsx       # Main app sidebar
 ├── hooks/            # Custom React hooks
-│   └── useMeals.ts   # Meal state management hook
+│   └── useMeals.ts    # Meal state management hook
 ├── lib/              # Utilities and data
-│   ├── app/          # App constants
-│   ├── ingredients/  # Ingredient types and mock data
-│   └── meals/        # Meal types and mock data
+│   ├── app/           # App constants
+│   ├── chat/          # Chat types and mock data
+│   ├── ingredients/   # Ingredient types and mock data
+│   └── meals/         # Meal types and mock data
 ├── routes/           # Router configuration
 ├── screens/          # Page components
+│   ├── Chat.tsx       # AI chat interface
 │   ├── Ingredients.tsx # Ingredient inventory screen
 │   ├── MealDetail.tsx  # Detailed meal view for create/edit
 │   ├── Meals.tsx       # Meal browsing screen with search/filters
 │   └── ...
 └── ui/               # Layout components
+    ├── Layout.tsx     # App shell layout
+    ├── Loading.tsx    # Loading state UI
+    └── ThemeToggle.tsx # Theme switcher
 ```
 
