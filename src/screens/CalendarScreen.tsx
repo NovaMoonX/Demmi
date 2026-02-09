@@ -4,36 +4,14 @@ import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useMealPlans } from '@hooks/useMealPlans';
 import { useMeals } from '@hooks/useMeals';
 import { MealType } from '@lib/mealPlans';
+import {
+  MEAL_TYPE_BG_COLORS,
+  MEAL_TYPE_COLORS,
+  MEAL_TYPE_EMOJIS,
+  MEAL_TYPE_OPTIONS,
+} from '@lib/meals';
 
 type CalendarView = 'month' | 'week' | 'day';
-
-const mealTypeOptions = [
-  { value: 'breakfast', text: '🌅 Breakfast' },
-  { value: 'lunch', text: '🍱 Lunch' },
-  { value: 'dinner', text: '🌙 Dinner' },
-  { value: 'snack', text: '🍿 Snack' },
-];
-
-const mealTypeColors: Record<MealType, string> = {
-  breakfast: 'bg-amber-500/20 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
-  lunch: 'bg-emerald-500/20 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  dinner: 'bg-blue-500/20 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-  snack: 'bg-purple-500/20 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
-};
-
-const mealTypeBgColors: Record<MealType, string> = {
-  breakfast: 'bg-amber-500/20',
-  lunch: 'bg-emerald-500/20',
-  dinner: 'bg-blue-500/20',
-  snack: 'bg-purple-500/20',
-};
-
-const mealTypeEmojis: Record<MealType, string> = {
-  breakfast: '🌅',
-  lunch: '🍱',
-  dinner: '🌙',
-  snack: '🍿',
-};
 
 const MAX_WEEK_VIEW_MEALS = 4;
 
@@ -129,8 +107,8 @@ export function CalendarScreen() {
                     className="p-2 rounded-md border border-border bg-muted/30 text-left"
                   >
                     <div className="flex items-center gap-1 mb-1">
-                      <span className="text-sm">{mealTypeEmojis[plan.mealType]}</span>
-                      <Badge variant="base" className={join('text-xs capitalize', mealTypeColors[plan.mealType])}>
+                      <span className="text-sm">{MEAL_TYPE_EMOJIS[plan.mealType]}</span>
+                      <Badge variant="base" className={join('text-xs capitalize', MEAL_TYPE_COLORS[plan.mealType])}>
                         {plan.mealType}
                       </Badge>
                       {plan.time && (
@@ -176,10 +154,10 @@ export function CalendarScreen() {
                     key={plan.id}
                     className={join(
                       'text-xs px-1 py-0.5 rounded truncate',
-                      mealTypeColors[plan.mealType]
+                      MEAL_TYPE_COLORS[plan.mealType]
                     )}
                   >
-                    {mealTypeEmojis[plan.mealType]} {meal?.title || 'Meal'}
+                    {MEAL_TYPE_EMOJIS[plan.mealType]} {meal?.title || 'Meal'}
                   </div>
                 );
               })}
@@ -211,7 +189,7 @@ export function CalendarScreen() {
                 key={plan.id}
                 className={join(
                   'w-1.5 h-1.5 rounded-full',
-                  mealTypeBgColors[plan.mealType]
+                  MEAL_TYPE_BG_COLORS[plan.mealType]
                 )}
               />
             ))}
@@ -276,9 +254,8 @@ export function CalendarScreen() {
           initialDate={selectedDate}
           onDateSelect={handleDateSelect}
           renderCell={renderCell}
-          showViewSelector={false}
           showNavigation={true}
-          navigationLayout="around"
+          navigationLayout="adjacent"
           useMonthYearSelector={true}
           showTodayButton={true}
         />
@@ -307,8 +284,8 @@ export function CalendarScreen() {
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xl">{mealTypeEmojis[plan.mealType]}</span>
-                      <Badge variant="base" className={join('capitalize', mealTypeColors[plan.mealType])}>
+                      <span className="text-xl">{MEAL_TYPE_EMOJIS[plan.mealType]}</span>
+                      <Badge variant="base" className={join('capitalize', MEAL_TYPE_COLORS[plan.mealType])}>
                         {plan.mealType}
                       </Badge>
                       {plan.time && (
@@ -368,7 +345,7 @@ export function CalendarScreen() {
                   return (
                     <div key={plan.id} className="flex items-center justify-between text-sm">
                       <span>
-                        {mealTypeEmojis[plan.mealType]} {meal.title}
+                        {MEAL_TYPE_EMOJIS[plan.mealType]} {meal.title}
                         {plan.time && ` (${plan.time})`}
                       </span>
                       <Button
@@ -391,7 +368,7 @@ export function CalendarScreen() {
               Meal Type
             </label>
             <Select
-              options={mealTypeOptions}
+              options={MEAL_TYPE_OPTIONS}
               value={selectedMealType}
               onChange={(value) => setSelectedMealType(value)}
               placeholder="Select meal type"

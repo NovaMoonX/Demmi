@@ -215,7 +215,7 @@ src/
 │   ├── app/           # App constants
 │   ├── chat/          # Chat types and mock data
 │   ├── ingredients/   # Ingredient types and mock data
-│   └── meals/         # Meal types and mock data
+│   └── meals/         # Meal types, constants, and mock data
 ├── routes/           # Router configuration
 ├── screens/          # Page components
 │   ├── Chat.tsx       # AI chat interface
