@@ -1,5 +1,4 @@
-import { Card } from '@moondreamsdev/dreamer-ui/components';
-import { Badge } from '@moondreamsdev/dreamer-ui/components';
+import { Card, Badge } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { mockMeals, MealCategory } from '@lib/meals';
 
@@ -43,6 +42,9 @@ export function Meals() {
                   src={meal.imageUrl}
                   alt={meal.title}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400"%3E%3Crect width="800" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2394a3b8"%3EImage not available%3C/text%3E%3C/svg%3E';
+                  }}
                 />
               </div>
 
