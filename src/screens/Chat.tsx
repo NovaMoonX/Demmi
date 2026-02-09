@@ -164,6 +164,8 @@ export function Chat() {
     }
   };
 
+  const isSendDisabled = !inputValue.trim() || isSending;
+
   return (
     <div className="h-screen flex overflow-hidden">
       {/* Chat History Sidebar */}
@@ -254,23 +256,27 @@ export function Chat() {
 
         {/* Input Area */}
         <div className="border-t border-border p-4 bg-card">
-          <div className="max-w-4xl mx-auto flex gap-2">
-            <Textarea
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
-              className="flex-1 min-h-11 max-h-50 resize-none"
-              disabled={isSending}
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isSending}
-              variant="primary"
-              className="self-end"
-            >
-              ➤
-            </Button>
+          <div className="max-w-4xl mx-auto">
+            <div className="relative">
+              <Textarea
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
+                className="min-h-11 max-h-50 resize-none pr-12"
+                disabled={isSending}
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={isSendDisabled}
+                variant="primary"
+                className="absolute bottom-2.5 right-1.5  text-muted-foreground hover:text-foreground rounded-full!"
+                aria-label="Send message"
+                size='sm'
+              >
+                ↑
+              </Button>
+            </div>
           </div>
         </div>
       </div>

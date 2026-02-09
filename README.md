@@ -16,6 +16,7 @@ A cooking app powered with local LLM using Ollama.
 - **Typing Indicator**: Animated loading state while waiting for responses
 - **Empty State**: Beautiful prompt for new conversations
 - **Keyboard Support**: Enter to send, Shift+Enter for new lines
+- **Embedded Send Button**: Discreet send action inside the message input
 - **Message Count**: Shows number of messages in each conversation
 - **Delete Chats**: Remove conversations from history
 - **Responsive Design**: Works seamlessly on mobile and desktop
