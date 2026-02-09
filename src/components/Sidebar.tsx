@@ -41,18 +41,16 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <button
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-card border border-border md:hidden"
-        aria-label="Toggle menu"
-      >
-        {isMobileOpen ? (
+      {/* Mobile menu button - only show when menu is closed */}
+      {!isMobileOpen && (
+        <button
+          onClick={() => setIsMobileOpen(true)}
+          className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-card border border-border md:hidden"
+          aria-label="Toggle menu"
+        >
           <DotsVertical className="size-6 text-foreground" />
-        ) : (
-          <DotsVertical className="size-6 text-foreground" />
-        )}
-      </button>
+        </button>
+      )}
 
       {/* Overlay for mobile */}
       {isMobileOpen && (
