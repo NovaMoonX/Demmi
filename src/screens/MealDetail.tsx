@@ -21,7 +21,7 @@ export function MealDetail() {
   const [prepTime, setPrepTime] = useState(existingMeal?.prepTime.toString() || '0');
   const [cookTime, setCookTime] = useState(existingMeal?.cookTime.toString() || '0');
   const [servingSize, setServingSize] = useState(existingMeal?.servingSize.toString() || '1');
-  const [imagePreview, setImagePreview] = useState<string>(existingMeal?.imageUrl || '');
+  const [imageUrl, setImageUrl] = useState<string>(existingMeal?.imageUrl || '');
   const [instructions, setInstructions] = useState<DynamicListItem<object>[]>(
     existingMeal?.instructions.map((inst, index) => ({
       id: `inst-${index}`,
@@ -43,8 +43,10 @@ export function MealDetail() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const result = reader.result as string;
-        setImagePreview(result);
+        const result = reader.result;
+        if (result && typeof result === 'string') {
+          setImageUrl(result);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -64,7 +66,7 @@ export function MealDetail() {
       prepTime: parseInt(prepTime, 10) || 0,
       cookTime: parseInt(cookTime, 10) || 0,
       servingSize: parseInt(servingSize, 10) || 1,
-      imageUrl: imagePreview,
+      imageUrl: imageUrl,
       instructions: instructionsList,
     };
 
@@ -205,11 +207,11 @@ export function MealDetail() {
             onChange={handleImageChange}
             className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 file:cursor-pointer"
           />
-          {imagePreview && (
+          {imageUrl && (
             <div className="mt-4">
               <p className="text-sm text-muted-foreground mb-2">Image Preview:</p>
               <img
-                src={imagePreview}
+                src={imageUrl}
                 alt="Meal preview"
                 className="w-full max-w-md h-48 object-cover rounded-lg border border-border"
               />
