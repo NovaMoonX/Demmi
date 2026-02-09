@@ -61,9 +61,9 @@ export function Meals() {
     if (timeFilter === 'under-15') {
       matchesTime = totalTime < 15;
     } else if (timeFilter === '15-30') {
-      matchesTime = totalTime >= 15 && totalTime <= 30;
+      matchesTime = totalTime >= 15 && totalTime < 30;
     } else if (timeFilter === '30-60') {
-      matchesTime = totalTime > 30 && totalTime <= 60;
+      matchesTime = totalTime >= 30 && totalTime <= 60;
     } else if (timeFilter === 'over-60') {
       matchesTime = totalTime > 60;
     }
