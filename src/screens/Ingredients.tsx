@@ -97,7 +97,7 @@ export function Ingredients() {
           </div>
         ) : (
           filteredIngredients.map((ingredient) => (
-            <Card key={ingredient.id} className="flex flex-col h-full overflow-hidden">
+            <Card key={ingredient.id} className="flex flex-col h-full overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
               {/* Cover Image */}
               <div className="w-full h-48 overflow-hidden bg-muted">
                 <img
@@ -110,7 +110,7 @@ export function Ingredients() {
                 />
               </div>
 
-              <div className="p-6 flex flex-col h-full">
+              <div className="p-6 flex flex-col">
                 {/* Header */}
                 <div className="mb-4">
                   <div className="flex items-start justify-between gap-2 mb-2">
@@ -126,77 +126,12 @@ export function Ingredients() {
                   </Badge>
                 </div>
 
-                {/* Inventory */}
-                <div className="mb-4 p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">In Stock</span>
-                    <span className="text-lg font-semibold text-foreground">
-                      {ingredient.currentAmount} {ingredient.unit}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-sm text-muted-foreground">Price per {ingredient.unit}</span>
-                    <span className="text-lg font-semibold text-primary">
-                      ${ingredient.pricePerUnit.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Macronutrients */}
-                <div className="mb-4">
-                  <h4 className="text-sm font-semibold text-foreground mb-2">
-                    Macros (per 100g)
-                  </h4>
-                  <div className="grid grid-cols-3 gap-2 text-sm">
-                    <div className="text-center p-2 bg-muted/50 rounded">
-                      <div className="font-semibold text-foreground">
-                        {ingredient.nutrients.protein}g
-                      </div>
-                      <div className="text-xs text-muted-foreground">Protein</div>
-                    </div>
-                    <div className="text-center p-2 bg-muted/50 rounded">
-                      <div className="font-semibold text-foreground">
-                        {ingredient.nutrients.carbs}g
-                      </div>
-                      <div className="text-xs text-muted-foreground">Carbs</div>
-                    </div>
-                    <div className="text-center p-2 bg-muted/50 rounded">
-                      <div className="font-semibold text-foreground">
-                        {ingredient.nutrients.fat}g
-                      </div>
-                      <div className="text-xs text-muted-foreground">Fat</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Additional Nutrients */}
-                <div className="pt-4 border-t border-border">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Calories</span>
-                      <span className="font-semibold text-foreground">
-                        {ingredient.nutrients.calories} kcal
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Fiber</span>
-                      <span className="font-semibold text-foreground">
-                        {ingredient.nutrients.fiber}g
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Sugar</span>
-                      <span className="font-semibold text-foreground">
-                        {ingredient.nutrients.sugar}g
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Sodium</span>
-                      <span className="font-semibold text-foreground">
-                        {ingredient.nutrients.sodium}mg
-                      </span>
-                    </div>
-                  </div>
+                {/* In Stock - Main Focus */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">In Stock</span>
+                  <span className="text-2xl font-bold text-foreground">
+                    {ingredient.currentAmount} {ingredient.unit}
+                  </span>
                 </div>
               </div>
             </Card>
