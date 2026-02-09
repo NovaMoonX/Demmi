@@ -3,7 +3,7 @@ import { Button } from '@moondreamsdev/dreamer-ui/components';
 import { Textarea } from '@moondreamsdev/dreamer-ui/components';
 import { ScrollArea } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
-import { ChevronLeft, ChevronRight } from '@moondreamsdev/dreamer-ui/symbols';
+import { ChatHistoryToggleIcon } from '@components/ChatHistoryToggleIcon';
 import { ChatHistory } from '@components/ChatHistory';
 import { ChatMessage } from '@components/ChatMessage';
 import {
@@ -185,34 +185,36 @@ export function Chat() {
         )}
       </div>
 
-      {/* Toggle History Button */}
-      <button
-        onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-        className={join(
-          'absolute z-10 p-2 bg-card border border-border hover:bg-muted transition-all duration-300',
-          isHistoryOpen ? 'left-64 top-4 rounded-r-lg' : 'left-0 top-16 rounded-r-lg md:top-4'
-        )}
-        aria-label={isHistoryOpen ? 'Hide history' : 'Show history'}
-      >
-        {isHistoryOpen ? (
-          <ChevronLeft className="size-4 text-foreground" />
-        ) : (
-          <ChevronRight className="size-4 text-foreground" />
-        )}
-      </button>
-
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-background">
         {/* Chat Header */}
         <div className="border-b border-border p-4 bg-card">
-          <h2 className="text-lg font-semibold text-foreground">
-            {currentChat?.title || 'New Chat'}
-          </h2>
-          {currentChat && (
-            <p className="text-sm text-muted-foreground">
-              {currentChat.messages.length} message{currentChat.messages.length !== 1 ? 's' : ''}
-            </p>
-          )}
+          <div className="flex items-start justify-between gap-4">
+            <div
+              className={join(
+                'transition-[margin] duration-300 delay-50',
+                isHistoryOpen ? 'ml-0' : 'ml-10 md:ml-0'
+              )}
+            >
+              <button
+                onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                className="inline-flex items-center justify-center rounded-md border border-border bg-background p-2 text-foreground transition-colors hover:bg-muted"
+                aria-label={isHistoryOpen ? 'Hide history' : 'Show history'}
+              >
+                <ChatHistoryToggleIcon />
+              </button>
+            </div>
+            <div className="flex flex-1 flex-col items-end text-right">
+              <h2 className="text-lg font-semibold text-foreground">
+                {currentChat?.title || 'New Chat'}
+              </h2>
+              {currentChat && (
+                <p className="text-sm text-muted-foreground">
+                  {currentChat.messages.length} message{currentChat.messages.length !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Messages Area */}
@@ -258,7 +260,7 @@ export function Chat() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
-              className="flex-1 min-h-[44px] max-h-[200px] resize-none"
+              className="flex-1 min-h-11 max-h-50 resize-none"
               disabled={isSending}
             />
             <Button

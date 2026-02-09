@@ -8,6 +8,7 @@ A cooking app powered with local LLM using Ollama.
 - **AI Chat Interface**: Modern ChatGPT-style interface for cooking assistance
 - **Message Bubbles**: User messages (orange) and assistant responses (gray) with distinct styling
 - **Chat History**: Collapsible sidebar showing all conversations
+- **Header Sidebar Toggle**: History toggle icon in the chat header for quick access
 - **Pinned Chats**: Pin important conversations to keep them at the top
 - **New Chat**: Start fresh conversations with a single click
 - **Mock AI Responses**: Context-aware responses based on keywords (recipe, ingredient, meal prep)

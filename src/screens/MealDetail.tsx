@@ -101,11 +101,11 @@ export function MealDetail() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-4xl mx-auto mt-10 md:mt-0">
       <div className="mb-8">
         <Link
           to="/meals"
-          className="text-sm text-muted-foreground mt-10 sm:mt-0 hover:text-foreground inline-block mb-4"
+          className="text-sm text-muted-foreground hover:text-foreground inline-block mb-4"
         >
           ← Back to Meals
         </Link>

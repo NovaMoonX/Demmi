@@ -42,7 +42,7 @@ export function ChatHistory({
         >
           <div className="flex items-start gap-2">
             {chat.isPinned && (
-              <span className="text-accent text-xs flex-shrink-0 mt-0.5">📌</span>
+              <span className="text-accent text-xs shrink-0 mt-0.5">📌</span>
             )}
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-foreground truncate">
@@ -85,7 +85,7 @@ export function ChatHistory({
   };
 
   return (
-    <div className="h-full flex flex-col bg-card border-r border-border">
+    <div className="h-full flex flex-col bg-card border-r border-border pt-12 md:pt-0">
       <div className="p-4 border-b border-border">
         <Button
           onClick={onNewChat}
