@@ -21,20 +21,20 @@ A cooking app powered with local LLM using Ollama.
 
 ### 🍽️ Meals
 - **Meal Cards**: Beautiful card-based layout displaying meal recipes
-- **Cover Images**: Each meal features an attractive cover image
-- **Meal Categories**: Organized by breakfast, lunch, dinner, snack, dessert, and drink
-- **Category Badges**: Color-coded badges with unique colors for each category (fully visible in both light and dark modes)
-- **Category Emojis**: Visual indicators for quick meal type identification
+  - Reusable MealCard component for consistent display
+  - Cover Images: Each meal features an attractive cover image
+  - Category Badges: Color-coded badges with unique colors for each category (fully visible in both light and dark modes)
+  - Category Emojis: Visual indicators for quick meal type identification
+  - Recipe Details: Title, description, prep time, cook time, serving size, total cooking time, and step-by-step instructions count
 - **Search Functionality**: Search recipes by name or description in real-time
 - **Filter by Category**: Dropdown filter to show only specific meal types
 - **Filter by Total Time**: Dropdown filter to show meals by total cooking time (prep + cook time: under 15 min, 15-30 min, 30-60 min, over 60 min)
 - **No Prep Time Toggle**: Filter switch to show only meals that require no preparation time
-- **Recipe Details**: 
-  - Title and description
-  - Prep time and cook time
-  - Serving size
-  - Total cooking time
-  - Step-by-step instructions count
+- **CRUD Operations**: Full meal management capabilities
+  - **Create Meals**: Add new meals with comprehensive form including all meal properties
+  - **Edit Meals**: Update existing meals with pre-populated form data
+  - **Delete Meals**: Remove meals with confirmation dialog to prevent accidental deletion
+  - Form includes: title, description, category, prep time, cook time, servings, image URL, and line-by-line instructions
 - **Responsive Grid**: Adapts from 1 column (mobile) to 3 columns (desktop)
 - **Mock Data**: 8 sample meals across all categories for demonstration
 - **User-Centric Content**: Displays your meal recipes with personalized messaging
@@ -92,12 +92,17 @@ interface Meal {
 ```
 src/
 ├── components/     # Reusable UI components
+│   ├── MealCard.tsx     # Meal card display component
+│   ├── MealForm.tsx     # Meal create/edit form component
+│   └── Sidebar.tsx      # Navigation sidebar
+├── hooks/          # Custom React hooks
+│   └── useMeals.ts      # Meal state management hook
 ├── lib/           # Utilities and data
 │   ├── app/       # App constants
 │   └── meals/     # Meal types and mock data
 ├── routes/        # Router configuration
 ├── screens/       # Page components
-│   ├── Meals.tsx  # Meal browsing screen
+│   ├── Meals.tsx  # Meal browsing and management screen
 │   └── ...
 └── ui/            # Layout components
 ```
