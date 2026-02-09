@@ -4,6 +4,16 @@ A cooking app powered with local LLM using Ollama.
 
 ## Features
 
+### 🔐 Authentication & Security
+- **Email Authentication**: Secure sign up and login using Firebase Authentication
+- **Email Verification**: Required email verification for new accounts
+- **Protected Routes**: Automatic redirection to auth screen for unauthenticated users
+- **Session Management**: Persistent authentication state across page reloads
+- **Password Requirements**: Minimum 6 characters for secure accounts
+- **Auth Form UI**: Beautiful authentication interface using Dreamer UI's AuthForm component
+- **Verification Flow**: Dedicated email verification screen with resend functionality
+- **Seamless UX**: Automatic navigation after successful authentication
+
 ### 💬 Chat
 - **AI Chat Interface**: Modern ChatGPT-style interface for cooking assistance
 - **Message Bubbles**: User messages (orange) and assistant responses (gray) with distinct styling
@@ -93,6 +103,7 @@ A cooking app powered with local LLM using Ollama.
 - [React Router](https://reactrouter.com/)
 - [TailwindCSS 4](https://tailwindcss.com/)
 - [Dreamer UI](https://www.npmjs.com/package/@moondreamsdev/dreamer-ui) - Component library
+- [Firebase](https://firebase.google.com/) - Authentication and backend services
 - [Vite](https://vite.dev/) - Build tool
 
 ## Design & Visual Aesthetic
@@ -200,28 +211,73 @@ interface Meal {
 }
 ```
 
+## Setup & Configuration
+
+### Firebase Setup
+
+1. **Create a Firebase Project**
+   - Go to [Firebase Console](https://console.firebase.google.com/)
+   - Click "Add project" and follow the setup wizard
+   - Enable Email/Password authentication in Authentication settings
+
+2. **Configure Environment Variables**
+   - Copy `.env.example` to `.env`
+   - Add your Firebase configuration values:
+   ```bash
+   VITE_FIREBASE_API_KEY=your-api-key
+   VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=your-project-id
+   VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+   VITE_FIREBASE_APP_ID=your-app-id
+   ```
+
+3. **Enable Email Verification**
+   - In Firebase Console, go to Authentication > Templates
+   - Customize the email verification template (optional)
+
+### Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
 ## Project Structure
 
 ```
 src/
 ├── components/       # Reusable UI components
-│   ├── ChatHistory.tsx   # Chat sidebar navigation
-│   ├── ChatMessage.tsx   # Message bubble component
-│   ├── MealCard.tsx      # Meal card display component (clickable)
-│   └── Sidebar.tsx       # Main app sidebar
+│   ├── ChatHistory.tsx      # Chat sidebar navigation
+│   ├── ChatMessage.tsx      # Message bubble component
+│   ├── MealCard.tsx         # Meal card display component (clickable)
+│   ├── ProtectedRoute.tsx   # Route protection wrapper
+│   └── Sidebar.tsx          # Main app sidebar
+├── contexts/         # React context providers
+│   └── AuthContext.tsx      # Authentication context provider
 ├── hooks/            # Custom React hooks
-│   └── useMeals.ts    # Meal state management hook
+│   ├── useAuth.tsx          # Authentication hook
+│   └── useMeals.ts          # Meal state management hook
 ├── lib/              # Utilities and data
 │   ├── app/           # App constants
 │   ├── chat/          # Chat types and mock data
+│   ├── firebase/      # Firebase configuration and services
 │   ├── ingredients/   # Ingredient types and mock data
 │   └── meals/         # Meal types and mock data
 ├── routes/           # Router configuration
 ├── screens/          # Page components
-│   ├── Chat.tsx       # AI chat interface
-│   ├── Ingredients.tsx # Ingredient inventory screen
-│   ├── MealDetail.tsx  # Detailed meal view for create/edit
-│   ├── Meals.tsx       # Meal browsing screen with search/filters
+│   ├── Auth.tsx             # Authentication screen
+│   ├── Chat.tsx             # AI chat interface
+│   ├── Ingredients.tsx      # Ingredient inventory screen
+│   ├── MealDetail.tsx       # Detailed meal view for create/edit
+│   ├── Meals.tsx            # Meal browsing screen with search/filters
+│   ├── VerifyEmail.tsx      # Email verification screen
 │   └── ...
 └── ui/               # Layout components
     ├── Layout.tsx     # App shell layout
