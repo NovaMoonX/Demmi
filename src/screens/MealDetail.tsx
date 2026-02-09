@@ -158,9 +158,9 @@ export function MealDetail() {
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label htmlFor="prepTime" className="block text-sm font-medium text-foreground mb-1">
+        <div className="grid grid-cols-3 items-end gap-4">
+          <div className="flex flex-col">
+            <label htmlFor="prepTime" className="block text-sm font-medium text-foreground mb-1 min-h-10 sm:min-h-0">
               Prep Time (min) *
             </label>
             <Input
@@ -173,8 +173,8 @@ export function MealDetail() {
             />
           </div>
 
-          <div>
-            <label htmlFor="cookTime" className="block text-sm font-medium text-foreground mb-1">
+          <div className="flex flex-col">
+            <label htmlFor="cookTime" className="block text-sm font-medium text-foreground mb-1 min-h-10 sm:min-h-0">
               Cook Time (min) *
             </label>
             <Input
@@ -187,8 +187,8 @@ export function MealDetail() {
             />
           </div>
 
-          <div>
-            <label htmlFor="servingSize" className="block text-sm font-medium text-foreground mb-1">
+          <div className="flex flex-col">
+            <label htmlFor="servingSize" className="block text-sm font-medium text-foreground mb-1 min-h-10 sm:min-h-0">
               Servings *
             </label>
             <Input
