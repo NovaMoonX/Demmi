@@ -35,6 +35,8 @@ const mealTypeEmojis: Record<MealType, string> = {
   snack: '🍿',
 };
 
+const MAX_WEEK_VIEW_MEALS = 4;
+
 export function CalendarScreen() {
   const { createMealPlan, deleteMealPlan, getMealPlansForDate } = useMealPlans();
   const { meals } = useMeals();
@@ -166,7 +168,7 @@ export function CalendarScreen() {
           </div>
           {hasMeals && (
             <div className="flex-1 flex flex-col gap-0.5">
-              {plansForDate.slice(0, 4).map((plan) => {
+              {plansForDate.slice(0, MAX_WEEK_VIEW_MEALS).map((plan) => {
                 const meal = meals.find((m) => m.id === plan.mealId);
                 
                 return (
@@ -181,9 +183,9 @@ export function CalendarScreen() {
                   </div>
                 );
               })}
-              {plansForDate.length > 4 && (
+              {plansForDate.length > MAX_WEEK_VIEW_MEALS && (
                 <div className="text-xs text-muted-foreground">
-                  +{plansForDate.length - 4} more
+                  +{plansForDate.length - MAX_WEEK_VIEW_MEALS} more
                 </div>
               )}
             </div>
