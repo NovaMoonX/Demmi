@@ -6,13 +6,28 @@ import Meals from '@screens/Meals';
 import MealDetail from '@screens/MealDetail';
 import CalendarScreen from '@screens/CalendarScreen';
 import Account from '@screens/Account';
+import Auth from '@screens/Auth';
+import VerifyEmail from '@screens/VerifyEmail';
 import Layout from '@ui/Layout';
 import Loading from '@ui/Loading';
+import ProtectedRoute from '@components/ProtectedRoute';
 
 export const router = createBrowserRouter([
   {
+    path: '/auth',
+    element: <Auth />,
+  },
+  {
+    path: '/verify-email',
+    element: <VerifyEmail />,
+  },
+  {
     path: '/',
-    element: <Layout />,
+    element: (
+      <ProtectedRoute>
+        <Layout />
+      </ProtectedRoute>
+    ),
     children: [
       {
         index: true,
