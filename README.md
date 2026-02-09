@@ -19,6 +19,28 @@ A cooking app powered with local LLM using Ollama.
 - **Theme Toggle**: Switch component for seamless light/dark mode switching
 - **Mobile Responsive**: Collapsible sidebar with hamburger menu on mobile devices
 
+### 🍎 Ingredients
+- **Ingredient Cards**: Beautiful card-based layout displaying ingredient inventory
+- **Cover Images**: Each ingredient features an attractive cover image
+- **Ingredient Types**: Organized by meat, produce, dairy, grains, legumes, oils, spices, nuts, seafood, and other
+- **Type Badges**: Color-coded badges with unique colors for each ingredient type (fully visible in both light and dark modes)
+- **Type Emojis**: Visual indicators for quick ingredient type identification (🥩 🥬 🥛 🌾 🫘 🫒 🧂 🥜 🐟 📦)
+- **Search Functionality**: Search ingredients by name in real-time
+- **Filter by Type**: Dropdown filter to show only specific ingredient types
+- **Out of Stock Toggle**: Switch to view only ingredients that are out of stock
+- **Sort Options**: Sort ingredients by name or servings in both ascending and descending order
+- **Inventory Details**:
+  - Ingredient name and type
+  - Servings available based on serving size
+  - Serving size per ingredient (aligned to unit)
+  - Price per unit
+- **Comprehensive Nutrition Profile** (per 100g):
+  - **Macronutrients**: Protein, Carbs, Fat
+  - **Additional Nutrients**: Calories, Fiber, Sugar, Sodium
+- **Responsive Grid**: Adapts from 1 column (mobile) to 3 columns (desktop)
+- **Mock Data**: 12 sample ingredients across all types, including out-of-stock examples
+- **User-Centric Content**: Displays your ingredient inventory with personalized messaging
+
 ### 🍽️ Meals
 - **Meal Cards**: Beautiful card-based layout displaying meal recipes
   - Reusable MealCard component for consistent display
@@ -75,6 +97,58 @@ Built with [Dreamer UI](https://www.npmjs.com/package/@moondreamsdev/dreamer-ui)
 
 ## Data Schema
 
+### Ingredient Interface
+```typescript
+type IngredientType = 
+  | 'meat' 
+  | 'produce' 
+  | 'dairy' 
+  | 'grains' 
+  | 'legumes' 
+  | 'oils' 
+  | 'spices' 
+  | 'nuts' 
+  | 'seafood' 
+  | 'other';
+
+type MeasurementUnit = 
+  | 'lb' 
+  | 'oz' 
+  | 'kg' 
+  | 'g' 
+  | 'cup' 
+  | 'tbsp' 
+  | 'tsp' 
+  | 'piece' 
+  | 'can' 
+  | 'bag';
+
+interface NutrientProfile {
+  // Macros (per 100g/100ml)
+  protein: number; // grams
+  carbs: number; // grams
+  fat: number; // grams
+  // Additional nutrients
+  fiber: number; // grams
+  sugar: number; // grams
+  sodium: number; // milligrams
+  calories: number; // kcal
+}
+
+interface Ingredient {
+  id: string;
+  name: string;
+  type: IngredientType;
+  imageUrl: string;
+  nutrients: NutrientProfile;
+  currentAmount: number;
+  servingSize: number; // portion size in the same unit as `unit`
+  unit: MeasurementUnit;
+  otherUnit: string | null;
+  pricePerUnit: number; // in dollars
+}
+```
+
 ### Meal Interface
 ```typescript
 interface Meal {
@@ -94,19 +168,21 @@ interface Meal {
 
 ```
 src/
-├── components/     # Reusable UI components
-│   ├── MealCard.tsx     # Meal card display component (clickable)
-│   └── Sidebar.tsx      # Navigation sidebar
-├── hooks/          # Custom React hooks
-│   └── useMeals.ts      # Meal state management hook
-├── lib/           # Utilities and data
-│   ├── app/       # App constants
-│   └── meals/     # Meal types and mock data
-├── routes/        # Router configuration
-├── screens/       # Page components
-│   ├── Meals.tsx       # Meal browsing screen with search/filters
+├── components/       # Reusable UI components
+│   ├── MealCard.tsx  # Meal card display component (clickable)
+│   └── Sidebar.tsx   # Navigation sidebar
+├── hooks/            # Custom React hooks
+│   └── useMeals.ts   # Meal state management hook
+├── lib/              # Utilities and data
+│   ├── app/          # App constants
+│   ├── ingredients/  # Ingredient types and mock data
+│   └── meals/        # Meal types and mock data
+├── routes/           # Router configuration
+├── screens/          # Page components
+│   ├── Ingredients.tsx # Ingredient inventory screen
 │   ├── MealDetail.tsx  # Detailed meal view for create/edit
+│   ├── Meals.tsx       # Meal browsing screen with search/filters
 │   └── ...
-└── ui/            # Layout components
+└── ui/               # Layout components
 ```
 
