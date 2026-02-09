@@ -13,6 +13,8 @@ import {
   generateMockResponse,
 } from '@lib/chat';
 
+const CHAT_HISTORY_WIDTH = 256; // Width in pixels (matches w-64 = 16rem = 256px)
+
 export function Chat() {
   const [conversations, setConversations] = useState<ChatConversation[]>(mockChatConversations);
   const [currentChatId, setCurrentChatId] = useState<string | null>(mockChatConversations[0]?.id || null);
@@ -136,12 +138,15 @@ export function Chat() {
   };
 
   const handleDeleteChat = (chatId: string) => {
-    setConversations((prev) => prev.filter((c) => c.id !== chatId));
-    
-    if (chatId === currentChatId) {
-      const remainingChats = conversations.filter((c) => c.id !== chatId);
-      setCurrentChatId(remainingChats[0]?.id || null);
-    }
+    setConversations((prev) => {
+      const remainingChats = prev.filter((c) => c.id !== chatId);
+      
+      if (chatId === currentChatId) {
+        setCurrentChatId(remainingChats[0]?.id || null);
+      }
+      
+      return remainingChats;
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -177,7 +182,7 @@ export function Chat() {
         onClick={() => setIsHistoryOpen(!isHistoryOpen)}
         className="absolute left-0 top-4 z-10 p-2 bg-card border border-border rounded-r-lg hover:bg-muted transition-colors"
         style={{
-          left: isHistoryOpen ? '256px' : '0px',
+          left: isHistoryOpen ? `${CHAT_HISTORY_WIDTH}px` : '0px',
           transition: 'left 0.3s',
         }}
         aria-label={isHistoryOpen ? 'Hide history' : 'Show history'}
@@ -215,8 +220,8 @@ export function Chat() {
                   <div className="max-w-[80%] md:max-w-[70%] rounded-2xl px-4 py-3 bg-muted text-foreground">
                     <div className="flex gap-1">
                       <span className="animate-bounce">●</span>
-                      <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>●</span>
-                      <span className="animate-bounce" style={{ animationDelay: '0.4s' }}>●</span>
+                      <span className="animate-bounce [animation-delay:0.2s]">●</span>
+                      <span className="animate-bounce [animation-delay:0.4s]">●</span>
                     </div>
                   </div>
                 </div>
