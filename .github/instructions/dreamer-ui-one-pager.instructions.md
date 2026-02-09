@@ -9,7 +9,7 @@ All components are imported from `@moondreamsdev/dreamer-ui/components`.
 ## Available Components
 
 ### Display Components
-
+f
 - **Accordion**: Collapsible content sections with expand/collapse functionality.
 - **Avatar**: Display user profile pictures with 12 pre-defined cartoon-like avatars inspired by Moon Dreams Dev.
 - **Badge**: Small status indicators and labels for highlighting information.
