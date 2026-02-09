@@ -27,6 +27,7 @@ A cooking app powered with local LLM using Ollama.
 - **Type Emojis**: Visual indicators for quick ingredient type identification (🥩 🥬 🥛 🌾 🫘 🫒 🧂 🥜 🐟 📦)
 - **Search Functionality**: Search ingredients by name in real-time
 - **Filter by Type**: Dropdown filter to show only specific ingredient types
+- **Out of Stock Toggle**: Switch to view only ingredients that are out of stock
 - **Inventory Details**:
   - Ingredient name and type
   - Current stock amount with units (lb, oz, kg, g, cup, tbsp, tsp, piece, can, bag)
@@ -35,7 +36,7 @@ A cooking app powered with local LLM using Ollama.
   - **Macronutrients**: Protein, Carbs, Fat
   - **Additional Nutrients**: Calories, Fiber, Sugar, Sodium
 - **Responsive Grid**: Adapts from 1 column (mobile) to 3 columns (desktop)
-- **Mock Data**: 12 sample ingredients across all types for demonstration
+- **Mock Data**: 12 sample ingredients across all types, including out-of-stock examples
 - **User-Centric Content**: Displays your ingredient inventory with personalized messaging
 
 ### 🍽️ Meals

@@ -5,6 +5,7 @@ import {
   Card,
   Input,
   Select,
+  Toggle,
 } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useMemo, useState } from 'react';
@@ -15,15 +16,22 @@ const FALLBACK_IMAGE_URL =
 export function Ingredients() {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [outOfStockOnly, setOutOfStockOnly] = useState(false);
 
-  const filteredIngredients = mockIngredients.filter((ingredient) => {
+  const filteredIngredients = useMemo(() => {
     const query = searchQuery.toLowerCase();
 
-    const matchesSearch = ingredient.name.toLowerCase().includes(query);
-    const matchesType = typeFilter === 'all' || ingredient.type === typeFilter;
+    const result = mockIngredients.filter((ingredient) => {
+      const matchesSearch = ingredient.name.toLowerCase().includes(query);
+      const matchesType = typeFilter === 'all' || ingredient.type === typeFilter;
+      const matchesStock = !outOfStockOnly || ingredient.currentAmount <= 0;
+      const matchesAll = matchesSearch && matchesType && matchesStock;
 
-    return matchesSearch && matchesType;
-  });
+      return matchesAll;
+    });
+
+    return result;
+  }, [outOfStockOnly, searchQuery, typeFilter]);
 
   const typeOption = useMemo(() => {
     const options = Object.entries(INGREDIENT_TYPE_EMOJIS).map(
@@ -62,6 +70,14 @@ export function Ingredients() {
             placeholder='Filter by type'
             className='sm:w-64'
           />
+          <div className='flex items-center gap-3 px-3 py-2'>
+            <Toggle
+              checked={outOfStockOnly}
+              onCheckedChange={setOutOfStockOnly}
+              aria-label='Filter by out of stock items'
+            />
+            <span className='text-foreground text-sm'>Out of Stock Only</span>
+          </div>
         </div>
       </div>
 
@@ -97,7 +113,7 @@ export function Ingredients() {
                     <h3 className='text-foreground text-xl font-semibold'>
                       {ingredient.name}
                     </h3>
-                    <span className='flex-shrink-0 text-2xl'>
+                    <span className='shrink-0 text-2xl'>
                       {INGREDIENT_TYPE_EMOJIS[ingredient.type]}
                     </span>
                   </div>
