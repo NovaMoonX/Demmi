@@ -1,27 +1,13 @@
 import { useState } from 'react';
-import { Card, Badge, Select, Input, Toggle } from '@moondreamsdev/dreamer-ui/components';
-import { join } from '@moondreamsdev/dreamer-ui/utils';
-import { mockMeals, MealCategory } from '@lib/meals';
-
-const categoryColors: Record<MealCategory, string> = {
-  breakfast: 'bg-amber-500/20 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
-  lunch: 'bg-emerald-500/20 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  dinner: 'bg-blue-500/20 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-  snack: 'bg-purple-500/20 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
-  dessert: 'bg-pink-500/20 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400',
-  drink: 'bg-cyan-500/20 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400',
-};
-
-const categoryEmojis: Record<MealCategory, string> = {
-  breakfast: '🌅',
-  lunch: '🍱',
-  dinner: '🌙',
-  snack: '🍿',
-  dessert: '🍰',
-  drink: '🥤',
-};
+import { useNavigate } from 'react-router-dom';
+import { Select, Input, Toggle, Button } from '@moondreamsdev/dreamer-ui/components';
+import { MealCard } from '@components/MealCard';
+import { useMeals } from '@hooks/useMeals';
+import { Meal } from '@lib/meals';
 
 export function Meals() {
+  const { meals } = useMeals();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [timeFilter, setTimeFilter] = useState<string>('all');
@@ -45,7 +31,7 @@ export function Meals() {
     { value: 'over-60', text: 'Over 60 minutes' },
   ];
 
-  const filteredMeals = mockMeals.filter((meal) => {
+  const filteredMeals = meals.filter((meal) => {
     const totalTime = meal.prepTime + meal.cookTime;
     const query = searchQuery.toLowerCase();
     
@@ -75,10 +61,35 @@ export function Meals() {
     return matchesSearch && matchesCategory && matchesTime && matchesNoPrepTime;
   });
 
+  const handleCreateMeal = () => {
+    navigate('/meals/new');
+  };
+
+  const handleMealClick = (meal: Meal) => {
+    navigate(`/meals/${meal.id}`);
+  };
+
+  const handleClearFilters = () => {
+    const nextSearchQuery = '';
+    const nextCategoryFilter = 'all';
+    const nextTimeFilter = 'all';
+    const nextNoPrepTime = false;
+
+    setSearchQuery(nextSearchQuery);
+    setCategoryFilter(nextCategoryFilter);
+    setTimeFilter(nextTimeFilter);
+    setNoPrepTime(nextNoPrepTime);
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Meals</h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-4xl font-bold text-foreground">Meals</h1>
+          <Button onClick={handleCreateMeal} variant="primary">
+            Create Meal
+          </Button>
+        </div>
         <p className="text-muted-foreground mb-6">
           Browse your meal recipes
         </p>
@@ -126,89 +137,22 @@ export function Meals() {
         {filteredMeals.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <p className="text-muted-foreground text-lg">
-              No recipes found matching "{searchQuery}"
+              No matching recipes found
             </p>
+            <div className="mt-4 flex justify-center">
+              <Button variant="tertiary" onClick={handleClearFilters}>
+                Clear filters
+              </Button>
+            </div>
           </div>
         ) : (
-          filteredMeals.map((meal) => {
-            const totalTime = meal.prepTime + meal.cookTime;
-            
-            return (
-              <Card key={meal.id} className="flex flex-col h-full overflow-hidden">
-                {/* Cover Image */}
-                <div className="w-full h-48 overflow-hidden bg-muted">
-                  <img
-                    src={meal.imageUrl}
-                    alt={meal.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400"%3E%3Crect width="800" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2394a3b8"%3EImage not available%3C/text%3E%3C/svg%3E';
-                    }}
-                  />
-                </div>
-
-                <div className="p-6 flex flex-col h-full">
-                  {/* Header */}
-                  <div className="mb-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="text-xl font-semibold text-foreground">
-                        {meal.title}
-                      </h3>
-                      <span className="text-2xl shrink-0">
-                        {categoryEmojis[meal.category]}
-                      </span>
-                    </div>
-                    <Badge variant="base" className={join('capitalize', categoryColors[meal.category])}>
-                      {meal.category}
-                    </Badge>
-                  </div>
-
-                  {/* Description */}
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {meal.description}
-                  </p>
-
-                  {/* Metadata */}
-                  <div className="grid grid-cols-3 gap-3 mb-4 text-sm">
-                    <div className="text-center">
-                      <div className="font-semibold text-foreground">
-                        {meal.prepTime}m
-                      </div>
-                      <div className="text-xs text-muted-foreground">Prep</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold text-foreground">
-                        {meal.cookTime}m
-                      </div>
-                      <div className="text-xs text-muted-foreground">Cook</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold text-foreground">
-                        {meal.servingSize}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Servings</div>
-                    </div>
-                  </div>
-
-                  {/* Total time */}
-                  <div className="pt-4 border-t border-border">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Total Time</span>
-                      <span className="font-semibold text-foreground">
-                        {totalTime} minutes
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm mt-2">
-                      <span className="text-muted-foreground">Instructions</span>
-                      <span className="font-semibold text-foreground">
-                        {meal.instructions.length} steps
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            );
-          })
+          filteredMeals.map((meal) => (
+            <MealCard
+              key={meal.id}
+              meal={meal}
+              onClick={handleMealClick}
+            />
+          ))
         )}
       </div>
     </div>
