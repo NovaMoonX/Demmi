@@ -19,7 +19,16 @@ export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
     currentAmount: 0,
     servingSize: 0.5,
     unit: 'lb',
-    pricePerUnit: 5.99,
+    products: [
+      {
+        id: 'prod-001',
+        retailer: 'Whole Foods',
+        label: 'Organic Chicken Breast',
+        cost: 11.98,
+        servings: 4,
+        url: null,
+      },
+    ],
   },
   {
     id: 'ing-002',
@@ -39,7 +48,16 @@ export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
     currentAmount: 3,
     servingSize: 1,
     unit: 'piece',
-    pricePerUnit: 1.29,
+    products: [
+      {
+        id: 'prod-002',
+        retailer: 'Local Farmers Market',
+        label: 'Fresh Broccoli',
+        cost: 3.87,
+        servings: 3,
+        url: null,
+      },
+    ],
   },
   {
     id: 'ing-003',
@@ -59,7 +77,16 @@ export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
     currentAmount: 16,
     servingSize: 1,
     unit: 'cup',
-    pricePerUnit: 4.99,
+    products: [
+      {
+        id: 'prod-003',
+        retailer: 'Safeway',
+        label: 'Organic Valley Whole Milk (Half Gallon)',
+        cost: 4.99,
+        servings: 8,
+        url: null,
+      },
+    ],
   },
   {
     id: 'ing-004',
@@ -79,7 +106,16 @@ export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
     currentAmount: 2,
     servingSize: 1,
     unit: 'lb',
-    pricePerUnit: 3.49,
+    products: [
+      {
+        id: 'prod-004',
+        retailer: 'Amazon',
+        label: 'Lundberg Organic Brown Rice (2lb bag)',
+        cost: 6.98,
+        servings: 32,
+        url: 'https://amazon.com/example',
+      },
+    ],
   },
   {
     id: 'ing-005',
@@ -99,7 +135,16 @@ export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
     currentAmount: 400,
     servingSize: 40,
     unit: 'g',
-    pricePerUnit: 1.19,
+    products: [
+      {
+        id: 'prod-005',
+        retailer: 'Trader Joes',
+        label: 'Organic Black Beans Can',
+        cost: 1.19,
+        servings: 3,
+        url: null,
+      },
+    ],
   },
   {
     id: 'ing-006',
@@ -119,7 +164,16 @@ export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
     currentAmount: 0,
     servingSize: 0.5,
     unit: 'oz',
-    pricePerUnit: 12.99,
+    products: [
+      {
+        id: 'prod-006',
+        retailer: 'Costco',
+        label: 'Kirkland Extra Virgin Olive Oil (3L)',
+        cost: 25.98,
+        servings: 202,
+        url: null,
+      },
+    ],
   },
   {
     id: 'ing-007',
@@ -139,7 +193,16 @@ export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
     currentAmount: 4,
     servingSize: 0.25,
     unit: 'oz',
-    pricePerUnit: 3.99,
+    products: [
+      {
+        id: 'prod-007',
+        retailer: 'Target',
+        label: 'McCormick Garlic Powder',
+        cost: 3.99,
+        servings: 80,
+        url: null,
+      },
+    ],
   },
   {
     id: 'ing-008',
@@ -159,7 +222,16 @@ export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
     currentAmount: 1,
     servingSize: 1,
     unit: 'lb',
-    pricePerUnit: 8.99,
+    products: [
+      {
+        id: 'prod-008',
+        retailer: 'Costco',
+        label: 'Blue Diamond Almonds (3lb bag)',
+        cost: 26.97,
+        servings: 48,
+        url: null,
+      },
+    ],
   },
   {
     id: 'ing-009',
@@ -179,7 +251,16 @@ export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
     currentAmount: 1.5,
     servingSize: 0.5,
     unit: 'lb',
-    pricePerUnit: 14.99,
+    products: [
+      {
+        id: 'prod-009',
+        retailer: 'Whole Foods',
+        label: 'Wild Caught Atlantic Salmon',
+        cost: 29.98,
+        servings: 4,
+        url: null,
+      },
+    ],
   },
   {
     id: 'ing-010',
@@ -199,7 +280,16 @@ export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
     currentAmount: 0,
     servingSize: 1,
     unit: 'piece',
-    pricePerUnit: 0.79,
+    products: [
+      {
+        id: 'prod-010',
+        retailer: 'Local Farmers Market',
+        label: 'Organic Roma Tomatoes (4 pack)',
+        cost: 3.16,
+        servings: 4,
+        url: null,
+      },
+    ],
   },
   {
     id: 'ing-011',
@@ -219,7 +309,16 @@ export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
     currentAmount: 3,
     servingSize: 0.5,
     unit: 'lb',
-    pricePerUnit: 6.49,
+    products: [
+      {
+        id: 'prod-011',
+        retailer: 'Safeway',
+        label: '80/20 Ground Beef (1lb)',
+        cost: 6.49,
+        servings: 4,
+        url: null,
+      },
+    ],
   },
   {
     id: 'ing-012',
@@ -239,6 +338,15 @@ export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
     currentAmount: 16,
     servingSize: 1,
     unit: 'oz',
-    pricePerUnit: 5.99,
+    products: [
+      {
+        id: 'prod-012',
+        retailer: 'Trader Joes',
+        label: 'Sharp Cheddar Cheese Block (8oz)',
+        cost: 5.99,
+        servings: 8,
+        url: null,
+      },
+    ],
   },
 ];

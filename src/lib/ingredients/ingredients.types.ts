@@ -35,6 +35,15 @@ export interface NutrientProfile {
   calories: number; // kcal
 }
 
+export interface Product {
+  id: string;
+  retailer: string;
+  label: string;
+  cost: number; // in dollars
+  servings: number; // number of servings in this product
+  url: string | null; // optional URL to the product
+}
+
 export interface Ingredient {
   id: string;
   name: string;
@@ -45,5 +54,5 @@ export interface Ingredient {
   servingSize: number; // portion size in the same unit as `unit`
   unit: MeasurementUnit;
   otherUnit: string | null; // For custom units if 'other' is selected
-  pricePerUnit: number; // in dollars
+  products: Product[]; // associated products/retailers for this ingredient
 }

@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Input, Select, Button } from '@moondreamsdev/dreamer-ui/components';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
-import { Ingredient, IngredientType, MeasurementUnit, INGREDIENT_TYPE_EMOJIS, MEASUREMENT_UNIT_LABELS } from '@lib/ingredients';
+import { Ingredient, IngredientType, MeasurementUnit, Product, INGREDIENT_TYPE_EMOJIS, MEASUREMENT_UNIT_LABELS } from '@lib/ingredients';
 import { useIngredients } from '@hooks/useIngredients';
 import { capitalize } from '@/utils';
+import { join } from '@moondreamsdev/dreamer-ui/utils';
 
 export function IngredientDetail() {
   const { id } = useParams<{ id: string }>();
@@ -21,7 +22,6 @@ export function IngredientDetail() {
   const [servingSize, setServingSize] = useState(existingIngredient?.servingSize.toString() || '0');
   const [unit, setUnit] = useState<MeasurementUnit>(existingIngredient?.unit || 'g');
   const [otherUnit, setOtherUnit] = useState<string>(existingIngredient?.otherUnit || '');
-  const [pricePerUnit, setPricePerUnit] = useState(existingIngredient?.pricePerUnit.toString() || '0');
   const [imageUrl, setImageUrl] = useState<string>(existingIngredient?.imageUrl || '');
   
   // Nutrient profile state
@@ -32,6 +32,16 @@ export function IngredientDetail() {
   const [sugar, setSugar] = useState(existingIngredient?.nutrients.sugar.toString() || '0');
   const [sodium, setSodium] = useState(existingIngredient?.nutrients.sodium.toString() || '0');
   const [calories, setCalories] = useState(existingIngredient?.nutrients.calories.toString() || '0');
+
+  // Products state
+  const [products, setProducts] = useState<Product[]>(existingIngredient?.products || []);
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [productRetailer, setProductRetailer] = useState('');
+  const [productLabel, setProductLabel] = useState('');
+  const [productCost, setProductCost] = useState('');
+  const [productServings, setProductServings] = useState('');
+  const [productUrl, setProductUrl] = useState('');
 
   const typeOptions = Object.entries(INGREDIENT_TYPE_EMOJIS).map(([typeKey, emoji]) => ({
     value: typeKey,
@@ -57,6 +67,86 @@ export function IngredientDetail() {
     }
   };
 
+  const resetProductForm = () => {
+    setEditingProductId(null);
+    setProductRetailer('');
+    setProductLabel('');
+    setProductCost('');
+    setProductServings('');
+    setProductUrl('');
+    setShowProductForm(false);
+  };
+
+  const handleAddProduct = () => {
+    if (!productRetailer || !productLabel || !productCost || !productServings) return;
+
+    const newProduct: Product = {
+      id: `prod-${Date.now()}`,
+      retailer: productRetailer,
+      label: productLabel,
+      cost: parseFloat(productCost),
+      servings: parseFloat(productServings),
+      url: productUrl || null,
+    };
+
+    const updatedProducts = [...products, newProduct];
+    setProducts(updatedProducts);
+    resetProductForm();
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProductId(product.id);
+    setProductRetailer(product.retailer);
+    setProductLabel(product.label);
+    setProductCost(product.cost.toString());
+    setProductServings(product.servings.toString());
+    setProductUrl(product.url || '');
+    setShowProductForm(true);
+  };
+
+  const handleUpdateProduct = () => {
+    if (!editingProductId || !productRetailer || !productLabel || !productCost || !productServings) return;
+
+    const updatedProducts = products.map((p) => {
+      if (p.id === editingProductId) {
+        const result: Product = {
+          id: p.id,
+          retailer: productRetailer,
+          label: productLabel,
+          cost: parseFloat(productCost),
+          servings: parseFloat(productServings),
+          url: productUrl || null,
+        };
+        return result;
+      }
+      return p;
+    });
+
+    setProducts(updatedProducts);
+    resetProductForm();
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+
+    const confirmed = await confirm({
+      title: 'Delete Product',
+      message: `Are you sure you want to delete "${product.label}"?`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+
+    if (confirmed) {
+      const updatedProducts = products.filter((p) => p.id !== productId);
+      setProducts(updatedProducts);
+      if (editingProductId === productId) {
+        resetProductForm();
+      }
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -67,7 +157,7 @@ export function IngredientDetail() {
       servingSize: parseFloat(servingSize) || 100,
       unit: unit as MeasurementUnit,
       otherUnit: unit === 'other' ? otherUnit : null,
-      pricePerUnit: parseFloat(pricePerUnit) || 0,
+      products: products,
       imageUrl: imageUrl,
       nutrients: {
         protein: parseFloat(protein) || 0,
@@ -214,21 +304,6 @@ export function IngredientDetail() {
               />
             </div>
           )}
-
-          <div className="flex flex-col">
-            <label htmlFor="pricePerUnit" className="block text-sm font-medium text-foreground mb-1">
-              Price per Unit ($) *
-            </label>
-            <Input
-              id="pricePerUnit"
-              type="number"
-              step="0.01"
-              min="0"
-              value={pricePerUnit}
-              onChange={(e) => setPricePerUnit(e.target.value)}
-              required
-            />
-          </div>
         </div>
 
         <div>
@@ -364,6 +439,205 @@ export function IngredientDetail() {
                 required
               />
             </div>
+          </div>
+        </div>
+
+                <div className="border-t border-border pt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-foreground">
+              Product Pricing
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            {products.length > 0 && (
+              <div className="space-y-2">
+                {products.map((product) => {
+                  const pricePerServing = product.cost / product.servings;
+                  
+                  return (
+                    <div
+                      key={product.id}
+                      className={join(
+                        'p-4 rounded-lg border',
+                        editingProductId === product.id
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border bg-card'
+                      )}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-foreground">{product.label}</h3>
+                          <p className="text-sm text-muted-foreground">{product.retailer}</p>
+                          <div className="mt-2 flex gap-4 text-sm">
+                            <span className="text-foreground">
+                              ${product.cost.toFixed(2)} ({product.servings} servings)
+                            </span>
+                            <span className="text-muted-foreground">
+                              ${pricePerServing.toFixed(2)}/serving
+                            </span>
+                          </div>
+                          {product.url && (
+                            <a
+                              href={product.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline mt-1 inline-block"
+                            >
+                              View Product →
+                            </a>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => handleEditProduct(product)}
+                            className="text-sm"
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="text-sm"
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {!showProductForm && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowProductForm(true)}
+                className="w-full"
+              >
+                + Add Product
+              </Button>
+            )}
+
+            {showProductForm && (
+              <div className="p-4 rounded-lg border border-border bg-muted/50">
+              <h3 className="text-sm font-medium text-foreground mb-3">
+                {editingProductId ? 'Edit Product' : 'Add New Product'}
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col">
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Retailer
+                  </label>
+                  <Input
+                    type="text"
+                    value={productRetailer}
+                    onChange={(e) => setProductRetailer(e.target.value)}
+                    placeholder="e.g., Whole Foods"
+                  />
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Product Label
+                  </label>
+                  <Input
+                    type="text"
+                    value={productLabel}
+                    onChange={(e) => setProductLabel(e.target.value)}
+                    placeholder="e.g., Organic Chicken Breast"
+                  />
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Cost ($)
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={productCost}
+                    onChange={(e) => setProductCost(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Servings
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={productServings}
+                    onChange={(e) => setProductServings(e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+
+                <div className="flex flex-col col-span-2">
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Product URL (optional)
+                  </label>
+                  <Input
+                    type="url"
+                    value={productUrl}
+                    onChange={(e) => setProductUrl(e.target.value)}
+                    placeholder="https://example.com/product"
+                  />
+                </div>
+
+                <div className="col-span-2 flex gap-2">
+                  {editingProductId ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        onClick={handleUpdateProduct}
+                        className="flex-1"
+                      >
+                        Update Product
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={resetProductForm}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={resetProductForm}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        onClick={handleAddProduct}
+                        className="flex-1"
+                      >
+                        Add Product
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            )}
           </div>
         </div>
 
