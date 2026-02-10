@@ -6,6 +6,7 @@ import {
 } from '@lib/ingredients';
 import {
   Badge,
+  Button,
   Card,
   Input,
   Select,
@@ -13,11 +14,13 @@ import {
 } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const FALLBACK_IMAGE_URL =
   'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400"%3E%3Crect width="800" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2394a3b8"%3EImage not available%3C/text%3E%3C/svg%3E';
 
 export function Ingredients() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [outOfStockOnly, setOutOfStockOnly] = useState(false);
@@ -85,10 +88,20 @@ export function Ingredients() {
   return (
     <div className='mx-auto max-w-7xl p-6 mt-10 md:mt-0'>
       <div className='mb-8'>
-        <h1 className='text-foreground mb-2 text-4xl font-bold'>Ingredients</h1>
-        <p className='text-muted-foreground mb-6'>
-          Browse and manage your ingredients inventory
-        </p>
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h1 className='text-foreground mb-2 text-4xl font-bold'>Ingredients</h1>
+            <p className='text-muted-foreground mb-6'>
+              Browse and manage your ingredients inventory
+            </p>
+          </div>
+          <Button 
+            variant="primary" 
+            onClick={() => navigate('/ingredients/new')}
+          >
+            Create Ingredient
+          </Button>
+        </div>
 
         {/* Search and Filters */}
         <div className='mb-4 flex flex-col gap-4 md:flex-row'>
@@ -164,11 +177,15 @@ export function Ingredients() {
             );
 
             return (
-              <Card
+              <div 
                 key={ingredient.id}
-                className='flex h-full cursor-pointer flex-col overflow-hidden transition-shadow hover:shadow-lg'
-                footer={footer}
+                onClick={() => navigate(`/ingredients/${ingredient.id}`)}
+                className="cursor-pointer"
               >
+                <Card
+                  className='flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg'
+                  footer={footer}
+                >
                 {/* Cover Image */}
                 <div className='bg-muted h-40 w-full overflow-hidden'>
                   <img
@@ -204,6 +221,7 @@ export function Ingredients() {
                   </div>
                 </div>
               </Card>
+            </div>
             );
           })
         )}
