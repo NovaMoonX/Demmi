@@ -4,6 +4,7 @@ import { auth as firebaseAuth } from '@lib/firebase/firebase.config';
 import {
   signIn as authSignIn,
   signUp as authSignUp,
+  signInWithGoogle as authSignInWithGoogle,
   logOut as authLogOut,
   resendVerificationEmail as authResendVerificationEmail,
   convertFirebaseUser,
@@ -51,6 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return result.error ? { error: result.error } : {};
   };
 
+  const signInWithGoogle = async (): Promise<{ error?: { message: string } }> => {
+    const result = await authSignInWithGoogle();
+
+    if (result.user) {
+      setUser(result.user);
+    }
+
+    return result.error ? { error: result.error } : {};
+  };
+
   const logOut = async (): Promise<void> => {
     await authLogOut();
     setUser(null);
@@ -71,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signIn,
     signUp,
+    signInWithGoogle,
     logOut,
     resendVerificationEmail,
   };

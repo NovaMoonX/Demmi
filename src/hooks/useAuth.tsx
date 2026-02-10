@@ -6,6 +6,7 @@ export interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: { message: string } }>;
   signUp: (email: string, password: string) => Promise<{ error?: { message: string } }>;
+  signInWithGoogle: () => Promise<{ error?: { message: string } }>;
   logOut: () => Promise<void>;
   resendVerificationEmail: () => Promise<{ error?: { message: string } }>;
 }

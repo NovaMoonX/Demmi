@@ -5,7 +5,7 @@ import { useAuth } from '@hooks/useAuth';
 
 export function Auth() {
   const navigate = useNavigate();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithGoogle } = useAuth();
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleEmailSubmit = async ({
@@ -23,10 +23,34 @@ export function Auth() {
         : await signUp(data.email, data.password);
 
     if (result.error) {
-      return { error: { message: result.error.message } };
+      const errorResult = { error: { message: result.error.message } };
+      setErrorMessage(errorResult.error.message);
+      return errorResult;
     }
-    
-    return {};
+
+    const successResult = {};
+    return successResult;
+  };
+
+  const handleMethodClick = async (method: string) => {
+    setErrorMessage('');
+
+    if (method !== 'google') {
+      const errorResult = { error: { message: 'Unsupported sign-in method' } };
+      setErrorMessage(errorResult.error.message);
+      return errorResult;
+    }
+
+    const result = await signInWithGoogle();
+
+    if (result.error) {
+      const errorResult = { error: { message: result.error.message } };
+      setErrorMessage(errorResult.error.message);
+      return errorResult;
+    }
+
+    const successResult = {};
+    return successResult;
   };
 
   const handleSuccess = () => {
@@ -53,9 +77,10 @@ export function Auth() {
           </p>
         </div>
         <AuthForm
-          methods={['email']}
+          methods={['email', 'google']}
           action="both"
           onEmailSubmit={handleEmailSubmit}
+          onMethodClick={handleMethodClick}
           onSuccess={handleSuccess}
           errorMessage={errorMessage}
           validatePassword={validatePassword}

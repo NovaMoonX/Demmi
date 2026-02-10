@@ -1,6 +1,8 @@
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   sendEmailVerification,
   User,
@@ -57,6 +59,34 @@ export async function signIn(
     return { user };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to sign in';
+    return {
+      error: {
+        message,
+      },
+    };
+  }
+}
+
+export async function signInWithGoogle(): Promise<{
+  user?: AuthUser;
+  error?: { message: string };
+}> {
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+
+    const user: AuthUser = {
+      uid: result.user.uid,
+      email: result.user.email,
+      emailVerified: result.user.emailVerified,
+    };
+
+    return { user };
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Failed to sign in with Google';
     return {
       error: {
         message,

@@ -6,7 +6,9 @@ A cooking app powered with local LLM using Ollama.
 
 ### 🔐 Authentication & Security
 - **Email Authentication**: Secure sign up and login using Firebase Authentication
+- **Google Authentication**: One-click sign in with Google via Firebase Authentication
 - **Email Verification**: Required email verification for new accounts
+- **Auto Verification Check**: Refresh-safe verification status checks with automatic redirect
 - **Protected Routes**: Automatic redirection to auth screen for unauthenticated users
 - **Session Management**: Persistent authentication state across page reloads
 - **Password Requirements**: Minimum 6 characters for secure accounts
@@ -218,7 +220,7 @@ interface Meal {
 1. **Create a Firebase Project**
    - Go to [Firebase Console](https://console.firebase.google.com/)
    - Click "Add project" and follow the setup wizard
-   - Enable Email/Password authentication in Authentication settings
+  - Enable Email/Password and Google authentication in Authentication settings
 
 2. **Configure Environment Variables**
    - Copy `.env.example` to `.env`
