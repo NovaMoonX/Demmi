@@ -25,7 +25,7 @@ const chatsSlice = createSlice({
     createConversation: (state, action: PayloadAction<Omit<ChatConversation, 'id'>>) => {
       const newConversation: ChatConversation = {
         ...action.payload,
-        id: `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `chat-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       };
 
       state.conversations.unshift(newConversation);

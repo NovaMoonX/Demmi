@@ -8,6 +8,7 @@ import { ChatHistory } from '@components/ChatHistory';
 import { ChatMessage } from '@components/ChatMessage';
 import { useIsMobileDevice } from '@hooks/useIsMobileDevice';
 import { useAppSelector, useAppDispatch } from '@store/hooks';
+import { store } from '@store/index';
 import {
   setCurrentChat,
   createConversation,
@@ -73,7 +74,7 @@ export function Chat() {
 
       dispatch(createConversation(newConversation));
 
-      // Simulate AI response - use a callback to get the updated current chat ID
+      // Simulate AI response
       setTimeout(() => {
         const assistantMessage: ChatMessageType = {
           id: `msg-${Date.now()}`,
@@ -82,11 +83,10 @@ export function Chat() {
           timestamp: Date.now(),
         };
 
-        // The createConversation action sets currentChatId to the new chat's ID
-        // We need to get the first conversation's ID since it's unshifted
-        const latestChatId = conversations[0]?.id;
-        if (latestChatId) {
-          dispatch(addMessage({ chatId: latestChatId, message: assistantMessage }));
+        // Get the current chat ID from the Redux store after createConversation has set it
+        const currentChatId = store.getState().chats.currentChatId;
+        if (currentChatId) {
+          dispatch(addMessage({ chatId: currentChatId, message: assistantMessage }));
         }
         setIsSending(false);
       }, 1000);
