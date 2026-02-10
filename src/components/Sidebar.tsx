@@ -72,6 +72,19 @@ export function Sidebar() {
           'md:translate-x-0'
         )}
       >
+        <div className="px-4 pt-5 pb-2">
+          <div className="flex items-center gap-3">
+            <img
+              src={'/logo.svg'}
+              alt="Demmi logo"
+              className="h-9 w-9"
+            />
+            <div>
+              <p className="text-lg font-semibold text-foreground">Demmi</p>
+            </div>
+          </div>
+        </div>
+
         {/* Tabs section */}
         <nav className="flex-1 p-4 space-y-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-3">
