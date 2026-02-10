@@ -16,10 +16,10 @@ export function IngredientDetail() {
   const existingIngredient = isEditing ? ingredients.find((i) => i.id === id) : undefined;
 
   const [name, setName] = useState(existingIngredient?.name || '');
-  const [type, setType] = useState<string>(existingIngredient?.type || 'other');
+  const [type, setType] = useState<IngredientType>(existingIngredient?.type || 'other');
   const [currentAmount, setCurrentAmount] = useState(existingIngredient?.currentAmount.toString() || '0');
-  const [servingSize, setServingSize] = useState(existingIngredient?.servingSize.toString() || '100');
-  const [unit, setUnit] = useState<string>(existingIngredient?.unit || 'g');
+  const [servingSize, setServingSize] = useState(existingIngredient?.servingSize.toString() || '0');
+  const [unit, setUnit] = useState<MeasurementUnit>(existingIngredient?.unit || 'g');
   const [otherUnit, setOtherUnit] = useState<string>(existingIngredient?.otherUnit || '');
   const [pricePerUnit, setPricePerUnit] = useState(existingIngredient?.pricePerUnit.toString() || '0');
   const [imageUrl, setImageUrl] = useState<string>(existingIngredient?.imageUrl || '');
@@ -149,7 +149,7 @@ export function IngredientDetail() {
           <Select
             options={typeOptions}
             value={type}
-            onChange={(value) => setType(value)}
+            onChange={(value) => setType(value as IngredientType)}
             placeholder="Select type"
           />
         </div>
@@ -194,7 +194,7 @@ export function IngredientDetail() {
             <Select
               options={unitOptions}
               value={unit}
-              onChange={(value) => setUnit(value)}
+              onChange={(value) => setUnit(value as MeasurementUnit)}
               placeholder="Select unit"
             />
           </div>
@@ -256,7 +256,7 @@ export function IngredientDetail() {
 
         <div className="border-t border-border pt-6">
           <h2 className="text-xl font-semibold text-foreground mb-4">
-            Nutrient Profile (per 100g/100ml)
+            Nutrient Profile (per serving)
           </h2>
           
           <div className="grid grid-cols-2 gap-4">

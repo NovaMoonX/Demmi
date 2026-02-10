@@ -24,7 +24,7 @@ export type MeasurementUnit =
   | 'other';
 
 export interface NutrientProfile {
-  // Macros (per 100g/100ml)
+  // Macros (per serving)
   protein: number; // grams
   carbs: number; // grams
   fat: number; // grams
