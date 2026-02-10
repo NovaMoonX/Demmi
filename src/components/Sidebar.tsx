@@ -23,7 +23,7 @@ const tabs: Tab[] = [
 export function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -117,7 +117,7 @@ export function Sidebar() {
           <div className="flex items-center justify-between px-3">
             <span className="text-sm text-foreground/80">Dark Mode</span>
             <Toggle
-              checked={theme === 'dark'}
+              checked={resolvedTheme === 'dark'}
               onCheckedChange={toggleTheme}
               aria-label="Toggle dark mode"
             />
