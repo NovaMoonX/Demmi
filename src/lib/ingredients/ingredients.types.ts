@@ -19,18 +19,8 @@ export type MeasurementUnit =
   | 'tbsp' 
   | 'tsp' 
   | 'piece' 
-  | 'can' 
-  | 'bag'
-  | 'bottle'
-  | 'box'
-  | 'jar'
-  | 'pack'
-  | 'slice' 
-  | 'jug'
-  | 'bunch'
-  | 'container'
-  | 'carton'
-  | 'gallon'
+  | 'ml'
+  | 'l'
   | 'other';
 
 export interface NutrientProfile {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Input, Select, Button } from '@moondreamsdev/dreamer-ui/components';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
-import { Ingredient, IngredientType, MeasurementUnit, INGREDIENT_TYPE_EMOJIS } from '@lib/ingredients';
+import { Ingredient, IngredientType, MeasurementUnit, INGREDIENT_TYPE_EMOJIS, MEASUREMENT_UNIT_LABELS } from '@lib/ingredients';
 import { useIngredients } from '@hooks/useIngredients';
 import { capitalize } from '@/utils';
 
@@ -38,29 +38,10 @@ export function IngredientDetail() {
     text: `${emoji} ${capitalize(typeKey)}`,
   }));
 
-  const unitOptions: { value: string; text: string }[] = [
-    { value: 'lb', text: 'Pound (lb)' },
-    { value: 'oz', text: 'Ounce (oz)' },
-    { value: 'kg', text: 'Kilogram (kg)' },
-    { value: 'g', text: 'Gram (g)' },
-    { value: 'cup', text: 'Cup' },
-    { value: 'tbsp', text: 'Tablespoon (tbsp)' },
-    { value: 'tsp', text: 'Teaspoon (tsp)' },
-    { value: 'piece', text: 'Piece' },
-    { value: 'can', text: 'Can' },
-    { value: 'bag', text: 'Bag' },
-    { value: 'bottle', text: 'Bottle' },
-    { value: 'box', text: 'Box' },
-    { value: 'jar', text: 'Jar' },
-    { value: 'pack', text: 'Pack' },
-    { value: 'slice', text: 'Slice' },
-    { value: 'jug', text: 'Jug' },
-    { value: 'bunch', text: 'Bunch' },
-    { value: 'container', text: 'Container' },
-    { value: 'carton', text: 'Carton' },
-    { value: 'gallon', text: 'Gallon' },
-    { value: 'other', text: 'Other (custom)' },
-  ];
+  const unitOptions = Object.entries(MEASUREMENT_UNIT_LABELS).map(([unitKey, label]) => ({
+    value: unitKey,
+    text: label,
+  }));
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

@@ -1,4 +1,4 @@
-import { IngredientType } from './ingredients.types';
+import { IngredientType, MeasurementUnit } from './ingredients.types';
 
 export const INGREDIENT_TYPE_COLORS: Record<IngredientType, string> = {
   meat: 'bg-red-500/20 text-red-700 dark:bg-red-500/10 dark:text-red-400',
@@ -29,4 +29,18 @@ export const INGREDIENT_TYPE_EMOJIS: Record<IngredientType, string> = {
   nuts: '🥜',
   seafood: '🐟',
   other: '📦',
+};
+
+export const MEASUREMENT_UNIT_LABELS: Record<MeasurementUnit, string> = {
+  lb: 'Pound (lb)',
+  oz: 'Ounce (oz)',
+  kg: 'Kilogram (kg)',
+  g: 'Gram (g)',
+  ml: 'Milliliter (ml)',
+  l: 'Liter (l)',
+  cup: 'Cup',
+  tbsp: 'Tablespoon (tbsp)',
+  tsp: 'Teaspoon (tsp)',
+  piece: 'Piece',
+  other: 'Other (custom)',
 };
