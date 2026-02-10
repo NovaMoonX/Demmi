@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 
 import Chat from '@screens/Chat';
 import Ingredients from '@screens/Ingredients';
+import IngredientDetail from '@screens/IngredientDetail';
 import Meals from '@screens/Meals';
 import MealDetail from '@screens/MealDetail';
 import CalendarScreen from '@screens/CalendarScreen';
@@ -36,6 +37,10 @@ export const router = createBrowserRouter([
       {
         path: 'ingredients',
         element: <Ingredients />,
+      },
+      {
+        path: 'ingredients/:id',
+        element: <IngredientDetail />,
       },
       {
         path: 'meals',

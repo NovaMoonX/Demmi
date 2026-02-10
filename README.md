@@ -52,22 +52,33 @@ A cooking app powered with local LLM using Ollama.
 
 ### 🍎 Ingredients
 - **Ingredient Cards**: Beautiful card-based layout displaying ingredient inventory
-- **Cover Images**: Each ingredient features an attractive cover image
+  - Reusable ingredient cards for consistent display
+  - Clickable cards that navigate to detailed view
+  - Cover Images: Each ingredient features an attractive cover image
+  - Type Badges: Color-coded badges with unique colors for each ingredient type (fully visible in both light and dark modes)
+  - Type Emojis: Visual indicators for quick ingredient type identification (🥩 🥬 🥛 🌾 🫘 🫒 🧂 🥜 🐟 📦)
 - **Ingredient Types**: Organized by `meat`, `produce`, `dairy`, `grains`, `legumes`, `oils`, `spices`, `nuts`, `seafood`, and `other`
-- **Type Badges**: Color-coded badges with unique colors for each ingredient type (fully visible in both light and dark modes)
-- **Type Emojis**: Visual indicators for quick ingredient type identification (🥩 🥬 🥛 🌾 🫘 🫒 🧂 🥜 🐟 📦)
 - **Search Functionality**: Search ingredients by name in real-time
 - **Filter by Type**: Dropdown filter to show only specific ingredient types
 - **Out of Stock Toggle**: Switch to view only ingredients that are out of stock
 - **Sort Options**: Sort ingredients by name or servings in both ascending and descending order
+- **Detailed Ingredient View**: Full-screen dedicated view for creating and editing ingredients
+  - **Create Ingredients**: Navigate to `/ingredients/new` to add new ingredients
+  - **Edit Ingredients**: Click on any ingredient card to edit it with pre-populated form data
+  - **Back to Ingredients**: Quick link to return to the ingredients list from the detail view
+  - **Delete Ingredients**: Delete button on detailed view with confirmation dialog
+  - **File Upload**: Upload ingredient images with live preview
+  - Form includes: name, type, current amount, serving size, unit (with custom unit support), price per unit, image upload, and comprehensive nutrient profile
 - **Inventory Details**:
   - Ingredient name and type
   - Servings available based on serving size
   - Serving size per ingredient (aligned to unit)
+  - Current amount in inventory
   - Price per unit
-- **Comprehensive Nutrition Profile** (per 100g):
-  - **Macronutrients**: Protein, Carbs, Fat
-  - **Additional Nutrients**: Calories, Fiber, Sugar, Sodium
+- **Comprehensive Nutrition Profile** (per 100g/100ml):
+  - **Macronutrients**: Protein (g), Carbohydrates (g), Fat (g)
+  - **Additional Nutrients**: Calories (kcal), Fiber (g), Sugar (g), Sodium (mg)
+- **Measurement Units**: Support for 21 different units including weight (lb, oz, kg, g), volume (cup, tbsp, tsp, gallon), and packaging (can, bag, bottle, jar, etc.), plus custom units
 - **Responsive Grid**: Adapts from 1 column (mobile) to 3 columns (desktop)
 - **Mock Data**: 12 sample ingredients across all types, including out-of-stock examples
 - **User-Centric Content**: Displays your ingredient inventory with personalized messaging

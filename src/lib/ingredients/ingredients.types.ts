@@ -19,22 +19,12 @@ export type MeasurementUnit =
   | 'tbsp' 
   | 'tsp' 
   | 'piece' 
-  | 'can' 
-  | 'bag'
-  | 'bottle'
-  | 'box'
-  | 'jar'
-  | 'pack'
-  | 'slice' 
-  | 'jug'
-  | 'bunch'
-  | 'container'
-  | 'carton'
-  | 'gallon'
+  | 'ml'
+  | 'l'
   | 'other';
 
 export interface NutrientProfile {
-  // Macros (per 100g/100ml)
+  // Macros (per serving)
   protein: number; // grams
   carbs: number; // grams
   fat: number; // grams
@@ -43,6 +33,15 @@ export interface NutrientProfile {
   sugar: number; // grams
   sodium: number; // milligrams
   calories: number; // kcal
+}
+
+export interface Product {
+  id: string;
+  retailer: string;
+  label: string;
+  cost: number; // in dollars
+  servings: number; // number of servings in this product
+  url: string | null; // optional URL to the product
 }
 
 export interface Ingredient {
@@ -55,5 +54,6 @@ export interface Ingredient {
   servingSize: number; // portion size in the same unit as `unit`
   unit: MeasurementUnit;
   otherUnit: string | null; // For custom units if 'other' is selected
-  pricePerUnit: number; // in dollars
+  products: Product[]; // associated products/retailers for this ingredient
+  defaultProductId: string | null; // ID of the default product
 }
