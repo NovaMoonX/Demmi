@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Input, Select, Button } from '@moondreamsdev/dreamer-ui/components';
+import { Input, Select, Button, Badge } from '@moondreamsdev/dreamer-ui/components';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
 import { Ingredient, IngredientType, MeasurementUnit, Product, INGREDIENT_TYPE_EMOJIS, MEASUREMENT_UNIT_LABELS } from '@lib/ingredients';
 import { useIngredients } from '@hooks/useIngredients';
@@ -35,6 +35,7 @@ export function IngredientDetail() {
 
   // Products state
   const [products, setProducts] = useState<Product[]>(existingIngredient?.products || []);
+  const [defaultProductId, setDefaultProductId] = useState<string | null>(existingIngredient?.defaultProductId || null);
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productRetailer, setProductRetailer] = useState('');
@@ -144,7 +145,15 @@ export function IngredientDetail() {
       if (editingProductId === productId) {
         resetProductForm();
       }
+      if (defaultProductId === productId) {
+        setDefaultProductId(null);
+      }
     }
+  };
+
+  const handleSetDefaultProduct = (productId: string) => {
+    const newDefaultId = defaultProductId === productId ? null : productId;
+    setDefaultProductId(newDefaultId);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -158,6 +167,7 @@ export function IngredientDetail() {
       unit: unit as MeasurementUnit,
       otherUnit: unit === 'other' ? otherUnit : null,
       products: products,
+      defaultProductId: defaultProductId,
       imageUrl: imageUrl,
       nutrients: {
         protein: parseFloat(protein) || 0,
@@ -467,7 +477,12 @@ export function IngredientDetail() {
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-medium text-foreground">{product.label}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium text-foreground">{product.label}</h3>
+                            {defaultProductId === product.id && (
+                              <Badge variant="primary">Default</Badge>
+                            )}
+                          </div>
                           <p className="text-sm text-muted-foreground">{product.retailer}</p>
                           <div className="mt-2 flex gap-4 text-sm">
                             <span className="text-foreground">
@@ -489,6 +504,14 @@ export function IngredientDetail() {
                           )}
                         </div>
                         <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant={defaultProductId === product.id ? "primary" : "secondary"}
+                            onClick={() => handleSetDefaultProduct(product.id)}
+                            className="text-sm"
+                          >
+                            {defaultProductId === product.id ? "Unset Default" : "Set Default"}
+                          </Button>
                           <Button
                             type="button"
                             variant="secondary"

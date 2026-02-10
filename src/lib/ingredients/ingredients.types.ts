@@ -55,4 +55,5 @@ export interface Ingredient {
   unit: MeasurementUnit;
   otherUnit: string | null; // For custom units if 'other' is selected
   products: Product[]; // associated products/retailers for this ingredient
+  defaultProductId: string | null; // ID of the default product
 }

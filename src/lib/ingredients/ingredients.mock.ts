@@ -1,6 +1,6 @@
 import { Ingredient } from './ingredients.types';
 
-export const mockIngredients: Omit<Ingredient, 'otherUnit'>[] = [
+export const mockIngredients: Omit<Ingredient, 'otherUnit' | 'defaultProductId'>[] = [
   {
     id: 'ing-001',
     name: 'Chicken Breast',
