@@ -9,7 +9,7 @@ export function useIngredients() {
   const createIngredient = (ingredient: Omit<Ingredient, 'id'>) => {
     const newIngredient: Ingredient = {
       ...ingredient,
-      id: `ingredient-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `ingredient-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
     };
     
     const updatedIngredients = [...ingredients, newIngredient];

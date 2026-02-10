@@ -176,10 +176,24 @@ export function Ingredients() {
               </div>
             );
 
+            const handleClick = () => {
+              navigate(`/ingredients/${ingredient.id}`);
+            };
+
+            const handleKeyDown = (e: React.KeyboardEvent) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                navigate(`/ingredients/${ingredient.id}`);
+              }
+            };
+
             return (
-              <div 
+              <div
                 key={ingredient.id}
-                onClick={() => navigate(`/ingredients/${ingredient.id}`)}
+                onClick={handleClick}
+                onKeyDown={handleKeyDown}
+                role="button"
+                tabIndex={0}
                 className="cursor-pointer"
               >
                 <Card
