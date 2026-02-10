@@ -96,6 +96,7 @@ A cooking app powered with local LLM using Ollama.
 
 ### 📱 Mobile-First Design
 - Fully responsive sidebar that adapts to screen size
+- Mobile detection hook for responsive UI behavior
 - Touch-friendly interface with smooth animations
 - Optimized for both desktop and mobile experiences
 

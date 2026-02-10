@@ -6,6 +6,7 @@ import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { ChatHistoryToggleIcon } from '@components/ChatHistoryToggleIcon';
 import { ChatHistory } from '@components/ChatHistory';
 import { ChatMessage } from '@components/ChatMessage';
+import { useIsMobileDevice } from '@hooks/useIsMobileDevice';
 import {
   ChatConversation,
   ChatMessage as ChatMessageType,
@@ -16,16 +17,12 @@ import {
 // Delay to allow UI to render before scrolling to bottom
 const SCROLL_DELAY_MS = 100;
 
-// Detect if the device is mobile (initial check)
-const isMobileDevice = () => {
-  return window.innerWidth < 768; // md breakpoint
-};
-
 export function Chat() {
   const [conversations, setConversations] = useState<ChatConversation[]>(mockChatConversations);
   const [currentChatId, setCurrentChatId] = useState<string | null>(mockChatConversations[0]?.id || null);
   const [inputValue, setInputValue] = useState('');
-  const [isHistoryOpen, setIsHistoryOpen] = useState(!isMobileDevice());
+  const isMobileDevice = useIsMobileDevice();
+  const [isHistoryOpen, setIsHistoryOpen] = useState(() => !isMobileDevice);
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
