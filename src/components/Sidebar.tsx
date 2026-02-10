@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Avatar } from '@moondreamsdev/dreamer-ui/components';
+import { Avatar, Button } from '@moondreamsdev/dreamer-ui/components';
 import { Toggle } from '@moondreamsdev/dreamer-ui/components';
 import { useTheme } from '@moondreamsdev/dreamer-ui/hooks';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { DotsVertical } from '@moondreamsdev/dreamer-ui/symbols';
+import { useAuth } from '@hooks/useAuth';
 
 type Tab = {
   id: string;
@@ -23,12 +24,18 @@ const tabs: Tab[] = [
 export function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
+  const { resolvedTheme, toggleTheme } = useTheme();
+  const { user, logOut } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
   const handleTabClick = (path: string) => {
     navigate(path);
+    handleClose();
+  };
+
+  const handleSignOut = async () => {
+    await logOut();
     handleClose();
   };
 
@@ -72,6 +79,19 @@ export function Sidebar() {
           'md:translate-x-0'
         )}
       >
+        <div className="px-4 pt-5 pb-2">
+          <div className="flex items-center gap-3">
+            <img
+              src={'/logo.svg'}
+              alt="Demmi logo"
+              className="h-9 w-9"
+            />
+            <div>
+              <p className="text-lg font-semibold text-foreground">Demmi</p>
+            </div>
+          </div>
+        </div>
+
         {/* Tabs section */}
         <nav className="flex-1 p-4 space-y-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-3">
@@ -104,29 +124,36 @@ export function Sidebar() {
           <div className="flex items-center justify-between px-3">
             <span className="text-sm text-foreground/80">Dark Mode</span>
             <Toggle
-              checked={theme === 'dark'}
+              checked={resolvedTheme === 'dark'}
               onCheckedChange={toggleTheme}
               aria-label="Toggle dark mode"
             />
           </div>
 
           {/* Account section */}
-          <button
-            onClick={() => handleTabClick('/account')}
-            className={join(
-              'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
-              currentPath === '/account'
-                ? 'bg-accent text-accent-foreground'
-                : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-            )}
-          >
-            <Avatar
-              preset="astronaut"
+          <div className="px-3 space-y-3">
+            <div className="flex items-center gap-3">
+              <Avatar
+                preset="astronaut"
+                size="sm"
+                alt="User account"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate text-foreground" title={user?.email || ''}>
+                  {user?.email}
+                </p>
+              </div>
+            </div>
+
+            <Button
+              variant="secondary"
               size="sm"
-              alt="User account"
-            />
-            <span className="font-medium">Account</span>
-          </button>
+              className="w-full"
+              onClick={handleSignOut}
+            >
+              Sign Out
+            </Button>
+          </div>
         </div>
       </aside>
     </>

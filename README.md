@@ -18,6 +18,7 @@ A cooking app powered with local LLM using Ollama.
 
 ### 💬 Chat
 - **AI Chat Interface**: Modern ChatGPT-style interface for cooking assistance
+- **Organized AI Workflow**: Use a local LLM to converse, create meals, and edit ingredients with minimal friction
 - **Message Bubbles**: User messages (orange) and assistant responses (gray) with distinct styling
 - **Chat History**: Collapsible sidebar showing all conversations
 - **Header Sidebar Toggle**: History toggle icon in the chat header for quick access
@@ -37,6 +38,7 @@ A cooking app powered with local LLM using Ollama.
 - **Orange Accent Color**: Warm, cooking-inspired orange accent color throughout the app
 - **Modern & Clean**: Simple black and white base with orange highlights
 - **Light & Dark Modes**: Full support for both themes with automatic color adjustments
+- **Demmi Brand Logo**: Demeter-inspired wheat emblem displayed in the app navigation
 
 ### 🎨 Navigation
 - **Sidebar Navigation**: ChatGPT-style sidebar with intuitive navigation
@@ -96,6 +98,7 @@ A cooking app powered with local LLM using Ollama.
 
 ### 📱 Mobile-First Design
 - Fully responsive sidebar that adapts to screen size
+- Mobile detection hook for responsive UI behavior
 - Touch-friendly interface with smooth animations
 - Optimized for both desktop and mobile experiences
 
