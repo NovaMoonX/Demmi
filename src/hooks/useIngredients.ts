@@ -3,7 +3,7 @@ import { Ingredient, mockIngredients } from '@lib/ingredients';
 
 export function useIngredients() {
   const [ingredients, setIngredients] = useState<Ingredient[]>(
-    mockIngredients.map((ing) => ({ ...ing, otherUnit: null }))
+    mockIngredients.map((ing) => ({ ...ing, otherUnit: null, defaultProductId: null })),
   );
 
   const createIngredient = (ingredient: Omit<Ingredient, 'id'>) => {
