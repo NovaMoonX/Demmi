@@ -136,7 +136,7 @@ export function Chat() {
   const isSendDisabled = !inputValue.trim() || isSending;
 
   return (
-    <div className="h-screen flex overflow-hidden">
+    <div className="h-full flex overflow-hidden">
       {/* Chat History Sidebar */}
       <div
         className={join(

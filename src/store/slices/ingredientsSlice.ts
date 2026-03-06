@@ -1,16 +1,12 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Ingredient, mockIngredients } from '@lib/ingredients';
+import { Ingredient } from '@lib/ingredients';
 
 interface IngredientsState {
   items: Ingredient[];
 }
 
 const initialState: IngredientsState = {
-  items: mockIngredients.map((ing) => ({
-    ...ing,
-    otherUnit: null,
-    defaultProductId: null,
-  })),
+  items: [],
 };
 
 const ingredientsSlice = createSlice({
@@ -38,10 +34,16 @@ const ingredientsSlice = createSlice({
     deleteIngredient: (state, action: PayloadAction<string>) => {
       state.items = state.items.filter((ing) => ing.id !== action.payload);
     },
+    setIngredients: (state, action: PayloadAction<Ingredient[]>) => {
+      state.items = action.payload;
+    },
+    resetIngredients: (state) => {
+      state.items = [];
+    },
   },
 });
 
-export const { createIngredient, updateIngredient, deleteIngredient } =
+export const { createIngredient, updateIngredient, deleteIngredient, setIngredients, resetIngredients } =
   ingredientsSlice.actions;
 
 export default ingredientsSlice.reducer;
