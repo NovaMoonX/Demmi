@@ -279,12 +279,12 @@ function DayCard({ day, plannedMeals, meals, ingredients, compact, onAdd, onEdit
                 <div className="space-y-1">
                   {catMeals.map((pm) => {
                     const meal = meals.find((m) => m.id === pm.mealId);
-                    const mealEmoji = meal ? CATEGORY_EMOJIS[meal.category] : CATEGORY_EMOJIS[cat];
+                    const mealEmoji = (meal && CATEGORY_EMOJIS[meal.category]) ? CATEGORY_EMOJIS[meal.category] : CATEGORY_EMOJIS[cat];
                     const stats = !compact ? mealStats.get(pm.id) : undefined;
                     return (
                       <div
                         key={pm.id}
-                        className="rounded py-1 gap-2 cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="rounded py-1 cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         onClick={() => onEdit(pm)}
                         role="button"
                         tabIndex={0}
@@ -297,7 +297,7 @@ function DayCard({ day, plannedMeals, meals, ingredients, compact, onAdd, onEdit
                           </span>
                           <Badge
                             variant="base"
-                            className={join('shrink-0 text-xs ml-2', CATEGORY_COLORS[cat])}
+                            className={join('shrink-0 text-xs', CATEGORY_COLORS[cat])}
                           >
                             {mealEmoji}
                           </Badge>
@@ -493,7 +493,7 @@ interface MonthViewProps {
 }
 
 function MonthView({ plannedMeals, onDateSelect }: MonthViewProps) {
-  const renderCell = (date: Date, isSelected: boolean, _isDisabled: boolean, _isToday: boolean) => {
+  const renderCell = (date: Date, isSelected: boolean, _isDisabled: boolean, isToday: boolean) => {
     const dayTs = getStartOfDay(date.getTime());
     const dayMeals = plannedMeals.filter((pm) => getStartOfDay(pm.date) === dayTs);
 
@@ -503,7 +503,11 @@ function MonthView({ plannedMeals, onDateSelect }: MonthViewProps) {
 
     return (
       <div className="flex flex-col items-center w-full">
-        <span className={join('text-sm leading-none', isSelected && 'font-bold')}>
+        <span className={join(
+          'text-sm leading-none',
+          isSelected && 'font-bold',
+          isToday && !isSelected && 'text-primary font-semibold',
+        )}>
           {date.getDate()}
         </span>
         <div className="flex gap-0.5 mt-1 h-1.5 items-center">
