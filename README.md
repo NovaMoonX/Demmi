@@ -4,12 +4,23 @@ A cooking app powered with local LLM using Ollama.
 
 ## Features
 
+### 🎭 Demo Mode
+- **Try Before You Sign Up**: A subtle "Try Demo Mode" link below the auth form lets curious users explore the app without an account
+- **Full App Access**: Demo mode bypasses authentication and gives access to all tabs (Chat, Meals, Ingredients, Calendar)
+- **Pre-loaded Mock Data**: Chats, meals, and ingredients are populated with realistic demo content on launch
+- **Dynamic Calendar Data**: Calendar demo data is always generated relative to the current day — yesterday, today, tomorrow, and the day after are auto-populated with planned meals so it always looks accurate
+- **Persistent Demo Banner**: An amber banner is always visible at the top of the screen while in demo mode, clearly indicating preview status ("🎭 Demo Mode — changes won't be saved")
+- **Exit Demo**: Both the top banner and the sidebar provide an "Exit Demo" button that clears demo data and returns to the auth page
+- **Session-Scoped Persistence**: Demo mode is persisted in `sessionStorage`, so refreshing keeps demo mode active for the current browser session
+- **No Auth Flicker on Refresh**: Protected routes wait for demo session hydration before redirect checks, preventing auth-page flashes when demo mode is active
+- **Redux-Powered**: Demo state is managed via a dedicated `demoSlice` with async thunks (`initializeDemoSession`, `startDemoSession`, `endDemoSession`, `loadDemoData`, `clearDemoData`) for clean data loading and teardown
+
 ### 🔐 Authentication & Security
 - **Email Authentication**: Secure sign up and login using Firebase Authentication
 - **Google Authentication**: One-click sign in with Google via Firebase Authentication
 - **Email Verification**: Required email verification for new accounts
 - **Auto Verification Check**: Refresh-safe verification status checks with automatic redirect
-- **Protected Routes**: Automatic redirection to auth screen for unauthenticated users
+- **Protected Routes**: Automatic redirection to auth screen for unauthenticated users (demo mode bypasses this)
 - **Session Management**: Persistent authentication state across page reloads
 - **Password Requirements**: Minimum 6 characters for secure accounts
 - **Auth Form UI**: Beautiful authentication interface using Dreamer UI's AuthForm component
@@ -112,6 +123,7 @@ A cooking app powered with local LLM using Ollama.
 - Mobile detection hook for responsive UI behavior
 - Touch-friendly interface with smooth animations
 - Optimized for both desktop and mobile experiences
+- Viewport-locked app shell: page-level scroll is disabled and scrolling is constrained to the main content area to keep key UI (like chat input and demo banner) stable on screen
 
 ### 📅 Meal Planner (Calendar)
 - **Day View**: Browse and manage meals planned for a single day with full date details

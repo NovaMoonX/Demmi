@@ -2,7 +2,6 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import {
   ChatConversation,
   ChatMessage,
-  mockChatConversations,
 } from '@lib/chat';
 
 interface ChatsState {
@@ -11,8 +10,8 @@ interface ChatsState {
 }
 
 const initialState: ChatsState = {
-  conversations: mockChatConversations,
-  currentChatId: mockChatConversations[0]?.id || null,
+  conversations: [],
+  currentChatId: null,
 };
 
 const chatsSlice = createSlice({
@@ -77,6 +76,14 @@ const chatsSlice = createSlice({
         conversation.isPinned = !conversation.isPinned;
       }
     },
+    setConversations: (state, action: PayloadAction<ChatConversation[]>) => {
+      state.conversations = action.payload;
+      state.currentChatId = action.payload[0]?.id || null;
+    },
+    resetChats: (state) => {
+      state.conversations = [];
+      state.currentChatId = null;
+    },
   },
 });
 
@@ -87,6 +94,8 @@ export const {
   updateConversation,
   deleteConversation,
   togglePinConversation,
+  setConversations,
+  resetChats,
 } = chatsSlice.actions;
 
 export default chatsSlice.reducer;

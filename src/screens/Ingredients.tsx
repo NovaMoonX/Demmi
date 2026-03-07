@@ -64,7 +64,7 @@ export function Ingredients() {
     });
 
     return sorted;
-  }, [outOfStockOnly, searchQuery, sortOption, typeFilter]);
+  }, [outOfStockOnly, searchQuery, sortOption, typeFilter, ingredients]);
 
   const typeOption = useMemo(() => {
     const options = Object.entries(INGREDIENT_TYPE_EMOJIS).map(
@@ -198,7 +198,7 @@ export function Ingredients() {
                 className="cursor-pointer"
               >
                 <Card
-                  className='flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg'
+                  className='flex h-full flex-col overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02]'
                   footer={footer}
                 >
                 {/* Cover Image */}

@@ -6,6 +6,8 @@ import { useTheme } from '@moondreamsdev/dreamer-ui/hooks';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { DotsVertical } from '@moondreamsdev/dreamer-ui/symbols';
 import { useAuth } from '@hooks/useAuth';
+import { useAppSelector, useAppDispatch } from '@store/hooks';
+import { endDemoSession } from '@store/slices/demoSlice';
 
 type Tab = {
   id: string;
@@ -17,7 +19,12 @@ type Tab = {
 const tabs: Tab[] = [
   { id: 'chat', label: 'Chat', emoji: '💬', path: '/' },
   { id: 'meals', label: 'Meals', emoji: '🍽️', path: '/meals' },
-  { id: 'ingredients', label: 'Ingredients', emoji: '🍎', path: '/ingredients' },
+  {
+    id: 'ingredients',
+    label: 'Ingredients',
+    emoji: '🍎',
+    path: '/ingredients',
+  },
   { id: 'calendar', label: 'Calendar', emoji: '📅', path: '/calendar' },
 ];
 
@@ -26,6 +33,8 @@ export function Sidebar() {
   const location = useLocation();
   const { resolvedTheme, toggleTheme } = useTheme();
   const { user, logOut } = useAuth();
+  const dispatch = useAppDispatch();
+  const isDemoActive = useAppSelector((state) => state.demo.isActive);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -37,6 +46,12 @@ export function Sidebar() {
   const handleSignOut = async () => {
     await logOut();
     handleClose();
+  };
+
+  const handleExitDemo = async () => {
+    await dispatch(endDemoSession());
+    handleClose();
+    navigate('/auth');
   };
 
   const handleClose = () => {
@@ -56,17 +71,20 @@ export function Sidebar() {
       {!isMobileOpen && !isAnimating && (
         <button
           onClick={() => setIsMobileOpen(true)}
-          className="fixed top-4 left-4 z-50 p-1.5 rounded-lg bg-card border border-border md:hidden"
-          aria-label="Toggle menu"
+          className={join(
+            'bg-card border-border fixed left-4 z-50 rounded-lg border p-1.5 md:hidden',
+            isDemoActive ? 'top-14' : 'top-4',
+          )}
+          aria-label='Toggle menu'
         >
-          <DotsVertical className="size-5 text-foreground" />
+          <DotsVertical className='text-foreground size-5' />
         </button>
       )}
 
       {/* Overlay for mobile */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className='fixed inset-0 z-40 bg-black/50 md:hidden'
           onClick={handleClose}
         />
       )}
@@ -74,27 +92,24 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={join(
-          'fixed left-0 top-0 h-full w-64 bg-card border-r border-border z-40 transition-transform duration-300 flex flex-col',
+          'bg-card border-border fixed left-0 z-40 flex w-64 flex-col border-r transition-transform duration-300',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full',
-          'md:translate-x-0'
+          'md:translate-x-0',
+          isDemoActive ? 'top-10 h-[calc(100%-40px)]' : 'top-0 h-full',
         )}
       >
-        <div className="px-4 pt-5 pb-2">
-          <div className="flex items-center gap-3">
-            <img
-              src={'/logo.svg'}
-              alt="Demmi logo"
-              className="h-9 w-9"
-            />
+        <div className='px-4 pt-5 pb-2'>
+          <div className='flex items-center gap-3'>
+            <img src={'/logo.svg'} alt='Demmi logo' className='h-9 w-9' />
             <div>
-              <p className="text-lg font-semibold text-foreground">Demmi</p>
+              <p className='text-foreground text-lg font-semibold'>Demmi</p>
             </div>
           </div>
         </div>
 
         {/* Tabs section */}
-        <nav className="flex-1 p-4 space-y-2">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-3">
+        <nav className='flex-1 space-y-2 p-4'>
+          <h2 className='text-muted-foreground mb-4 px-3 text-xs font-semibold tracking-wider uppercase'>
             Navigation
           </h2>
           {tabs.map((tab) => {
@@ -105,13 +120,13 @@ export function Sidebar() {
                 key={tab.id}
                 onClick={() => handleTabClick(tab.path)}
                 className={join(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
+                  'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
                   isActive
                     ? 'bg-accent text-accent-foreground font-medium'
-                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+                    : 'text-foreground/80 hover:bg-muted hover:text-foreground',
                 )}
               >
-                <span className="text-xl">{tab.emoji}</span>
+                <span className='text-xl'>{tab.emoji}</span>
                 <span>{tab.label}</span>
               </button>
             );
@@ -119,40 +134,50 @@ export function Sidebar() {
         </nav>
 
         {/* Bottom section: Theme toggle and Account */}
-        <div className="p-4 border-t border-border space-y-4">
+        <div className='border-border space-y-4 border-t p-4'>
           {/* Theme toggle */}
-          <div className="flex items-center justify-between px-3">
-            <span className="text-sm text-foreground/80">Dark Mode</span>
+          <div className='flex items-center justify-between px-3'>
+            <span className='text-foreground/80 text-sm'>Dark Mode</span>
             <Toggle
               checked={resolvedTheme === 'dark'}
               onCheckedChange={toggleTheme}
-              aria-label="Toggle dark mode"
+              aria-label='Toggle dark mode'
             />
           </div>
 
           {/* Account section */}
-          <div className="px-3 space-y-3">
-            <div className="flex items-center gap-3">
-              <Avatar
-                preset="astronaut"
-                size="sm"
-                alt="User account"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate text-foreground" title={user?.email || ''}>
-                  {user?.email}
+          <div className='space-y-3 px-3'>
+            <div className='flex items-center gap-3'>
+              <Avatar preset='astronaut' size='sm' alt='User account' />
+              <div className='min-w-0 flex-1'>
+                <p
+                  className='text-foreground truncate text-sm font-medium'
+                  title={isDemoActive ? 'Demo Mode' : user?.email || ''}
+                >
+                  {isDemoActive ? 'Demo Mode' : user?.email}
                 </p>
               </div>
             </div>
 
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full"
-              onClick={handleSignOut}
-            >
-              Sign Out
-            </Button>
+            {isDemoActive ? (
+              <Button
+                variant='secondary'
+                size='sm'
+                className='w-full'
+                onClick={handleExitDemo}
+              >
+                Exit Demo
+              </Button>
+            ) : (
+              <Button
+                variant='secondary'
+                size='sm'
+                className='w-full'
+                onClick={handleSignOut}
+              >
+                Sign Out
+              </Button>
+            )}
           </div>
         </div>
       </aside>

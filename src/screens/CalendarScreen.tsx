@@ -187,7 +187,7 @@ function TotalItem({
 
 function TotalsCard({ totals }: { totals: NutrientTotals }) {
   return (
-    <Card className="mb-6 p-5">
+    <Card className="mb-6 p-5 transition-transform hover:scale-[1.02]">
       <h2 className="text-base font-semibold text-foreground mb-4">Totals for Period</h2>
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
         <TotalItem label="Calories" value={`${Math.round(totals.calories)} kcal`} emoji="🔥" />
@@ -221,7 +221,7 @@ function DayCard({ day, plannedMeals, meals, ingredients, compact, onAdd, onEdit
   );
 
   return (
-    <Card className="p-4">
+    <Card className="p-4 transition-transform hover:scale-[1.02]">
       <div className="flex items-center justify-between mb-3">
         <div>
           {compact ? (
@@ -395,7 +395,7 @@ function DayDetailModal({ day, plannedMeals, meals, ingredients, onClose, onEdit
                         variant="base"
                         className={join('capitalize text-xs', CATEGORY_COLORS[pm.category])}
                       >
-                        <span className="hidden sm:inline">{CATEGORY_EMOJIS[pm.category] + ' '}</span>
+                        <span className="hidden sm:inline pr-1">{CATEGORY_EMOJIS[pm.category] + ' '}</span>
                         {pm.category}
                       </Badge>
                     </td>
@@ -683,8 +683,8 @@ export function CalendarScreen() {
         <div
           className={join(
             isWeekOrCustom
-              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-              : 'space-y-4'
+              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+              : 'space-y-6'
           )}
         >
           {visibleDays.map((day) => (

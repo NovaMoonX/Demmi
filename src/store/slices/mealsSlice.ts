@@ -1,12 +1,12 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Meal, mockMeals } from '@lib/meals';
+import { Meal } from '@lib/meals';
 
 interface MealsState {
   items: Meal[];
 }
 
 const initialState: MealsState = {
-  items: mockMeals,
+  items: [],
 };
 
 const mealsSlice = createSlice({
@@ -35,9 +35,15 @@ const mealsSlice = createSlice({
     deleteMeal: (state, action: PayloadAction<string>) => {
       state.items = state.items.filter((meal) => meal.id !== action.payload);
     },
+    setMeals: (state, action: PayloadAction<Meal[]>) => {
+      state.items = action.payload;
+    },
+    resetMeals: (state) => {
+      state.items = [];
+    },
   },
 });
 
-export const { createMeal, updateMeal, deleteMeal } = mealsSlice.actions;
+export const { createMeal, updateMeal, deleteMeal, setMeals, resetMeals } = mealsSlice.actions;
 
 export default mealsSlice.reducer;
