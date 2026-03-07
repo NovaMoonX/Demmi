@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from '@components/Sidebar';
 import { useAppSelector, useAppDispatch } from '@store/hooks';
-import { disableDemo, clearDemoData } from '@store/slices/demoSlice';
+import { endDemoSession } from '@store/slices/demoSlice';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 
 function Layout() {
@@ -11,8 +11,7 @@ function Layout() {
   const isDemoActive = useAppSelector((state) => state.demo.isActive);
 
   const handleExitDemo = async () => {
-    await dispatch(clearDemoData());
-    dispatch(disableDemo());
+    await dispatch(endDemoSession());
     navigate('/auth');
   };
 

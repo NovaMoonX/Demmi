@@ -11,8 +11,9 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const isDemoActive = useAppSelector((state) => state.demo.isActive);
+  const isDemoHydrated = useAppSelector((state) => state.demo.isHydrated);
 
-  if (loading) {
+  if (loading || !isDemoHydrated) {
     return <Loading />;
   }
 

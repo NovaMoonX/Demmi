@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthForm } from '@moondreamsdev/dreamer-ui/components';
 import { useAuth } from '@hooks/useAuth';
 import { useAppDispatch } from '@store/hooks';
-import { enableDemo, loadDemoData } from '@store/slices/demoSlice';
+import { startDemoSession } from '@store/slices/demoSlice';
 
 export function Auth() {
   const navigate = useNavigate();
@@ -62,8 +62,7 @@ export function Auth() {
   };
 
   const handleTryDemo = async () => {
-    dispatch(enableDemo());
-    await dispatch(loadDemoData());
+    await dispatch(startDemoSession());
     navigate('/');
   };
 

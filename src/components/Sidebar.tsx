@@ -7,7 +7,7 @@ import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { DotsVertical } from '@moondreamsdev/dreamer-ui/symbols';
 import { useAuth } from '@hooks/useAuth';
 import { useAppSelector, useAppDispatch } from '@store/hooks';
-import { disableDemo, clearDemoData } from '@store/slices/demoSlice';
+import { endDemoSession } from '@store/slices/demoSlice';
 
 type Tab = {
   id: string;
@@ -49,8 +49,7 @@ export function Sidebar() {
   };
 
   const handleExitDemo = async () => {
-    await dispatch(clearDemoData());
-    dispatch(disableDemo());
+    await dispatch(endDemoSession());
     handleClose();
     navigate('/auth');
   };
