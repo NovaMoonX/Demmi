@@ -17,7 +17,7 @@ function Layout() {
   };
 
   return (
-    <div className={join('page transition-colors duration-200 flex flex-col', isDemoActive && 'pt-10')}>
+    <div className={join('h-dvh w-full overflow-hidden transition-colors duration-200 flex flex-col', isDemoActive && 'pt-10')}>
       {isDemoActive && (
         <div className="fixed top-0 left-0 right-0 z-50 h-10 bg-amber-500 dark:bg-amber-600 flex items-center justify-between px-4">
           <span className="text-sm font-medium text-white">
@@ -31,9 +31,9 @@ function Layout() {
           </button>
         </div>
       )}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 md:ml-64 overflow-auto">
+        <main className="flex-1 min-h-0 md:ml-64 overflow-y-auto overflow-x-hidden">
           <Outlet />
         </main>
       </div>

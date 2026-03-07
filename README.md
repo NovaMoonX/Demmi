@@ -121,6 +121,7 @@ A cooking app powered with local LLM using Ollama.
 - Mobile detection hook for responsive UI behavior
 - Touch-friendly interface with smooth animations
 - Optimized for both desktop and mobile experiences
+- Viewport-locked app shell: page-level scroll is disabled and scrolling is constrained to the main content area to keep key UI (like chat input and demo banner) stable on screen
 
 ### 📅 Meal Planner (Calendar)
 - **Day View**: Browse and manage meals planned for a single day with full date details
