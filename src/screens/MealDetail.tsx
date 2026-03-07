@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Input, Textarea, Select, Button, DynamicList } from '@moondreamsdev/dreamer-ui/components';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
 import { Meal, MealCategory, MealIngredient } from '@lib/meals';
@@ -11,6 +11,7 @@ import { MealIngredientSelector } from '@components/MealIngredientSelector';
 export function MealDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const meals = useAppSelector((state) => state.meals.items);
   const allIngredients = useAppSelector((state) => state.ingredients.items);
@@ -18,6 +19,10 @@ export function MealDetail() {
 
   const isEditing = id !== 'new';
   const existingMeal = isEditing ? meals.find((m) => m.id === id) : undefined;
+
+  const fromMealPath = isEditing && existingMeal
+    ? `/meals/${existingMeal.id}`
+    : '/meals/new';
 
   const [title, setTitle] = useState(existingMeal?.title || '');
   const [description, setDescription] = useState(existingMeal?.description || '');
@@ -35,6 +40,23 @@ export function MealDetail() {
   const [mealIngredients, setMealIngredients] = useState<MealIngredient[]>(
     existingMeal?.ingredients ?? []
   );
+
+  // Auto-add a newly created ingredient when returning from the ingredient creation flow
+  const processedNewIngredientRef = useRef<string | null>(null);
+  useEffect(() => {
+    const state = location.state as { newIngredientId?: string } | null;
+    const newId = state?.newIngredientId;
+    if (newId && newId !== processedNewIngredientRef.current) {
+      const ing = allIngredients.find((i) => i.id === newId);
+      if (ing) {
+        processedNewIngredientRef.current = newId;
+        setMealIngredients((prev) => {
+          if (prev.some((mi) => mi.ingredientId === newId)) return prev;
+          return [...prev, { ingredientId: newId, servings: 1 }];
+        });
+      }
+    }
+  }, [location.state, allIngredients]);
 
   const categoryOptions = [
     { value: 'breakfast', text: '🌅 Breakfast' },
@@ -241,6 +263,7 @@ export function MealDetail() {
             ingredients={allIngredients}
             selectedIngredients={mealIngredients}
             onChange={setMealIngredients}
+            fromMealPath={fromMealPath}
           />
         </div>
 

@@ -13,10 +13,11 @@ const ingredientsSlice = createSlice({
   name: 'ingredients',
   initialState,
   reducers: {
-    createIngredient: (state, action: PayloadAction<Omit<Ingredient, 'id'>>) => {
+    createIngredient: (state, action: PayloadAction<Omit<Ingredient, 'id'> & { id?: string }>) => {
+      const { id: presetId, ...rest } = action.payload;
       const newIngredient: Ingredient = {
-        ...action.payload,
-        id: `ingredient-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+        ...rest,
+        id: presetId ?? `ingredient-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       };
 
       state.items.push(newIngredient);

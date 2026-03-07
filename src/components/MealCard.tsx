@@ -104,6 +104,12 @@ export function MealCard({ meal, onClick }: MealCardProps) {
               {meal.instructions.length} steps
             </span>
           </div>
+          <div className="flex items-center justify-between text-sm mt-2">
+            <span className="text-muted-foreground">Ingredients</span>
+            <span className="font-semibold text-foreground">
+              {meal.ingredients.length} items
+            </span>
+          </div>
         </div>
       </div>
       </div>

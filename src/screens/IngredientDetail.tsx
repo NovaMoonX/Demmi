@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   Input,
   Select,
@@ -27,6 +27,7 @@ import { join } from '@moondreamsdev/dreamer-ui/utils';
 export function IngredientDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const ingredients = useAppSelector((state) => state.ingredients.items);
   const { confirm } = useActionModal();
@@ -35,6 +36,9 @@ export function IngredientDetail() {
   const existingIngredient = isEditing
     ? ingredients.find((i) => i.id === id)
     : undefined;
+
+  // Navigation state set by MealDetail when the user comes here to create an ingredient for a meal
+  const fromMealPath = (location.state as { fromMealPath?: string } | null)?.fromMealPath ?? null;
 
   const [name, setName] = useState(existingIngredient?.name || '');
   const [type, setType] = useState<IngredientType>(
@@ -244,11 +248,16 @@ export function IngredientDetail() {
 
     if (isEditing && existingIngredient) {
       dispatch(updateIngredient({ id: existingIngredient.id, updates: ingredientData }));
+      navigate(fromMealPath ?? '/ingredients');
     } else {
-      dispatch(createIngredient(ingredientData));
+      const newIngredientId = `ingredient-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+      dispatch(createIngredient({ ...ingredientData, id: newIngredientId }));
+      if (fromMealPath) {
+        navigate(fromMealPath, { state: { newIngredientId } });
+      } else {
+        navigate('/ingredients');
+      }
     }
-
-    navigate('/ingredients');
   };
 
   const handleDelete = async () => {
@@ -269,17 +278,17 @@ export function IngredientDetail() {
   };
 
   const handleCancel = () => {
-    navigate('/ingredients');
+    navigate(fromMealPath ?? '/ingredients');
   };
 
   return (
     <div className='mx-auto mt-10 max-w-4xl p-6 md:mt-0'>
       <div className='mb-8'>
         <Link
-          to='/ingredients'
+          to={fromMealPath ?? '/ingredients'}
           className='text-muted-foreground hover:text-foreground mb-4 inline-block text-sm'
         >
-          ← Back to Ingredients
+          {fromMealPath ? '← Back to Meal' : '← Back to Ingredients'}
         </Link>
         <h1 className='text-foreground mb-2 text-4xl font-bold'>
           {isEditing ? 'Edit Ingredient' : 'Create New Ingredient'}
@@ -287,7 +296,9 @@ export function IngredientDetail() {
         <p className='text-muted-foreground'>
           {isEditing
             ? 'Update the details of your ingredient'
-            : 'Add a new ingredient to your inventory'}
+            : fromMealPath
+              ? 'Add a new ingredient to use in your meal'
+              : 'Add a new ingredient to your inventory'}
         </p>
       </div>
 
