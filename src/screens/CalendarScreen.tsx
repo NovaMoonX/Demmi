@@ -395,7 +395,7 @@ function DayDetailModal({ day, plannedMeals, meals, ingredients, onClose, onEdit
                         variant="base"
                         className={join('capitalize text-xs', CATEGORY_COLORS[pm.category])}
                       >
-                        <span className="hidden sm:inline">{CATEGORY_EMOJIS[pm.category] + ' '}</span>
+                        <span className="hidden sm:inline pr-1">{CATEGORY_EMOJIS[pm.category] + ' '}</span>
                         {pm.category}
                       </Badge>
                     </td>
