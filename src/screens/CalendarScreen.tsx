@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   Button,
+  Calendar,
   Card,
   Badge,
   Modal,
@@ -9,6 +10,7 @@ import {
   Textarea,
   Tabs,
   TabsContent,
+  Toggle,
 } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
@@ -60,8 +62,7 @@ function getStartOfDay(ts: number): number {
 function getWeekStart(ts: number): number {
   const d = new Date(getStartOfDay(ts));
   const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
+  d.setDate(d.getDate() - day);
   return d.getTime();
 }
 
@@ -165,37 +166,72 @@ function calculateTotals(
   return totals;
 }
 
+function calculateMealTotals(meal: Meal, ingredients: Ingredient[]): NutrientTotals {
+  const totals: NutrientTotals = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, price: 0 };
+  for (const mi of meal.ingredients) {
+    const ingredient = ingredients.find((i) => i.id === mi.ingredientId);
+    if (!ingredient) continue;
+    totals.calories += mi.servings * ingredient.nutrients.calories;
+    totals.protein += mi.servings * ingredient.nutrients.protein;
+    totals.carbs += mi.servings * ingredient.nutrients.carbs;
+    totals.fat += mi.servings * ingredient.nutrients.fat;
+    totals.fiber += mi.servings * ingredient.nutrients.fiber;
+    totals.price += mi.servings * getPricePerServing(ingredient);
+  }
+  return totals;
+}
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function TotalItem({
   label,
   value,
   emoji,
+  sub,
 }: {
   label: string;
   value: string;
   emoji: string;
+  sub?: string;
 }) {
   return (
     <div className="flex flex-col items-center text-center">
       <div className="text-2xl mb-1">{emoji}</div>
       <div className="text-lg font-bold text-foreground">{value}</div>
+      {sub && <div className="text-xs text-muted-foreground/70 mt-0.5">{sub}</div>}
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
 }
 
-function TotalsCard({ totals }: { totals: NutrientTotals }) {
+function TotalsCard({ totals, dayCount }: { totals: NutrientTotals; dayCount: number }) {
+  const showAvg = dayCount > 1;
+  const avg = showAvg
+    ? {
+        calories: totals.calories / dayCount,
+        protein: totals.protein / dayCount,
+        carbs: totals.carbs / dayCount,
+        fat: totals.fat / dayCount,
+        fiber: totals.fiber / dayCount,
+        price: totals.price / dayCount,
+      }
+    : null;
+
+  const avgSub = (formatted: string): string | undefined =>
+    avg ? formatted : undefined;
+
   return (
     <Card className="mb-6 p-5 transition-transform hover:scale-[1.02]">
-      <h2 className="text-base font-semibold text-foreground mb-4">Totals for Period</h2>
+      <h2 className="text-base font-semibold text-foreground mb-4">
+        {showAvg ? `Totals · ${dayCount}-Day Period` : 'Totals for Period'}
+      </h2>
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
-        <TotalItem label="Calories" value={`${Math.round(totals.calories)} kcal`} emoji="🔥" />
-        <TotalItem label="Price" value={`$${totals.price.toFixed(2)}`} emoji="💰" />
-        <TotalItem label="Protein" value={`${Math.round(totals.protein)}g`} emoji="💪" />
-        <TotalItem label="Carbs" value={`${Math.round(totals.carbs)}g`} emoji="🌾" />
-        <TotalItem label="Fat" value={`${Math.round(totals.fat)}g`} emoji="🥑" />
-        <TotalItem label="Fiber" value={`${Math.round(totals.fiber)}g`} emoji="🥦" />
+        <TotalItem label="Calories" value={`${Math.round(totals.calories)} kcal`} emoji="🔥" sub={avgSub(`~${Math.round(avg?.calories ?? 0)} kcal/day`)} />
+        <TotalItem label="Price" value={`$${totals.price.toFixed(2)}`} emoji="💰" sub={avgSub(`~$${(avg?.price ?? 0).toFixed(2)}/day`)} />
+        <TotalItem label="Protein" value={`${Math.round(totals.protein)}g`} emoji="💪" sub={avgSub(`~${Math.round(avg?.protein ?? 0)}g/day`)} />
+        <TotalItem label="Carbs" value={`${Math.round(totals.carbs)}g`} emoji="🌾" sub={avgSub(`~${Math.round(avg?.carbs ?? 0)}g/day`)} />
+        <TotalItem label="Fat" value={`${Math.round(totals.fat)}g`} emoji="🥑" sub={avgSub(`~${Math.round(avg?.fat ?? 0)}g/day`)} />
+        <TotalItem label="Fiber" value={`${Math.round(totals.fiber)}g`} emoji="🥦" sub={avgSub(`~${Math.round(avg?.fiber ?? 0)}g/day`)} />
       </div>
     </Card>
   );
@@ -210,9 +246,10 @@ interface DayCardProps {
   onAdd: (date: number, category?: MealCategory) => void;
   onEdit: (pm: PlannedMeal) => void;
   onViewDetail: (day: number) => void;
+  onGoToDay: (day: number) => void;
 }
 
-function DayCard({ day, plannedMeals, meals, ingredients, compact, onAdd, onEdit, onViewDetail }: DayCardProps) {
+function DayCard({ day, plannedMeals, meals, ingredients, compact, onAdd, onEdit, onViewDetail, onGoToDay }: DayCardProps) {
   const hasMeals = plannedMeals.length > 0;
 
   const dayTotals = useMemo(
@@ -220,23 +257,39 @@ function DayCard({ day, plannedMeals, meals, ingredients, compact, onAdd, onEdit
     [plannedMeals, meals, ingredients]
   );
 
+  const mealStats = useMemo(() => {
+    if (compact) return new Map<string, NutrientTotals>();
+    const map = new Map<string, NutrientTotals>();
+    for (const pm of plannedMeals) {
+      map.set(pm.id, calculateTotals([pm], meals, ingredients));
+    }
+    return map;
+  }, [compact, plannedMeals, meals, ingredients]);
+
   return (
     <Card className="p-4 transition-transform hover:scale-[1.02]">
       <div className="flex items-center justify-between mb-3">
         <div>
           {compact ? (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase">
+            <div
+              className="cursor-pointer group"
+              onClick={() => onGoToDay(day)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onGoToDay(day); } }}
+              aria-label={`Go to day view for ${formatDateShort(day)}`}
+            >
+              <p className="text-xs font-medium text-muted-foreground uppercase group-hover:text-primary transition-colors">
                 {formatDayShort(day)}
               </p>
-              <p className="text-sm font-semibold text-foreground">{formatDateShort(day)}</p>
+              <p className="text-sm font-semibold text-foreground group-hover:text-primary group-hover:underline underline-offset-2 transition-colors">{formatDateShort(day)}</p>
             </div>
           ) : (
             <h2 className="text-lg font-semibold text-foreground">{formatDateFull(day)}</h2>
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          {hasMeals && (
+          {hasMeals && compact && (
             <Button
               variant="tertiary"
               size="sm"
@@ -270,25 +323,41 @@ function DayCard({ day, plannedMeals, meals, ingredients, compact, onAdd, onEdit
                 <div className="space-y-1">
                   {catMeals.map((pm) => {
                     const meal = meals.find((m) => m.id === pm.mealId);
+                    const mealEmoji = (meal && CATEGORY_EMOJIS[meal.category]) ? CATEGORY_EMOJIS[meal.category] : CATEGORY_EMOJIS[cat];
+                    const stats = !compact ? mealStats.get(pm.id) : undefined;
                     return (
                       <div
                         key={pm.id}
-                        className="flex items-center justify-between rounded py-1 gap-2 cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="rounded py-1 cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         onClick={() => onEdit(pm)}
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(pm); } }}
                         aria-label={`Edit ${meal?.title ?? 'meal'}`}
                       >
-                        <span className="text-sm font-medium text-foreground truncate">
-                          {meal?.title ?? 'Unknown Meal'}
-                        </span>
-                        <Badge
-                          variant="base"
-                          className={join('shrink-0 text-xs', CATEGORY_COLORS[cat])}
-                        >
-                          {CATEGORY_EMOJIS[cat]}
-                        </Badge>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-foreground truncate">
+                            {meal?.title ?? 'Unknown Meal'}
+                          </span>
+                          <Badge
+                            variant="base"
+                            className={join('shrink-0 text-xs', CATEGORY_COLORS[cat])}
+                          >
+                            {mealEmoji}
+                          </Badge>
+                        </div>
+                        {!compact && pm.notes && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{pm.notes}</p>
+                        )}
+                        {!compact && stats && (
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
+                            <span>🔥 {Math.round(stats.calories)} kcal</span>
+                            <span>💪 {Math.round(stats.protein)}g</span>
+                            <span>🌾 {Math.round(stats.carbs)}g</span>
+                            <span>🥑 {Math.round(stats.fat)}g</span>
+                            <span>💰 ${stats.price.toFixed(2)}</span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -300,10 +369,25 @@ function DayCard({ day, plannedMeals, meals, ingredients, compact, onAdd, onEdit
       )}
 
       {hasMeals && (
-        <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
-          <span>🔥 {Math.round(dayTotals.calories)} kcal</span>
-          <span>💪 {Math.round(dayTotals.protein)}g</span>
-          <span>💰 ${dayTotals.price.toFixed(2)}</span>
+        <div className="mt-3 pt-3 border-t border-border">
+          {compact ? (
+            <>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span>🔥 {Math.round(dayTotals.calories)} kcal</span>
+                <span>💪 {Math.round(dayTotals.protein)}g</span>
+                <span>💰 ${dayTotals.price.toFixed(2)}</span>
+              </div>
+              <p className="text-xs text-muted-foreground/60 mt-1">Tap 📊 for full breakdown</p>
+            </>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-foreground">
+              <span>🔥 {Math.round(dayTotals.calories)} kcal</span>
+              <span>💪 {Math.round(dayTotals.protein)}g</span>
+              <span>🌾 {Math.round(dayTotals.carbs)}g</span>
+              <span>🥑 {Math.round(dayTotals.fat)}g</span>
+              <span>💰 ${dayTotals.price.toFixed(2)}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -445,10 +529,72 @@ function DayDetailModal({ day, plannedMeals, meals, ingredients, onClose, onEdit
   );
 }
 
+// ─── Month View ───────────────────────────────────────────────────────────────
+
+interface MonthViewProps {
+  plannedMeals: PlannedMeal[];
+  onDateSelect: (date: number) => void;
+}
+
+function MonthView({ plannedMeals, onDateSelect }: MonthViewProps) {
+  const renderCell = (date: Date, isSelected: boolean, _isDisabled: boolean, isToday: boolean) => {
+    const dayTs = getStartOfDay(date.getTime());
+    const dayMeals = plannedMeals.filter((pm) => getStartOfDay(pm.date) === dayTs);
+
+    const hasBreakfast = dayMeals.some((pm) => pm.category === 'breakfast');
+    const hasLunch = dayMeals.some((pm) => pm.category === 'lunch');
+    const hasDinner = dayMeals.some((pm) => pm.category === 'dinner');
+
+    return (
+      <div className="flex flex-col items-center w-full">
+        <span className={join(
+          'text-sm leading-none',
+          isSelected && 'font-bold',
+          isToday && !isSelected && 'text-primary font-semibold',
+        )}>
+          {date.getDate()}
+        </span>
+        <div className="flex gap-0.5 mt-1 h-1.5 items-center">
+          {hasBreakfast && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
+          {hasLunch && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+          {hasDinner && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="w-full">
+      <Calendar
+        view="month"
+        mode="single"
+        size="auto"
+        showNavigation={true}
+        renderCell={renderCell}
+        onDateSelect={(date) => onDateSelect(getStartOfDay(date.getTime()))}
+      />
+      <div className="flex items-center gap-5 mt-4 text-xs text-muted-foreground justify-center">
+        <span className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
+          Breakfast
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+          Lunch
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+          Dinner
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export function CalendarScreen() {
-  const [view, setView] = useState<CalendarView>('week');
+  const [view, setView] = useState<CalendarView>('month');
   const [selectedDate, setSelectedDate] = useState(() => getStartOfDay(Date.now()));
   const [customStart, setCustomStart] = useState(() => getStartOfDay(Date.now()));
   const [customEnd, setCustomEnd] = useState(() =>
@@ -463,6 +609,7 @@ export function CalendarScreen() {
   const [formDate, setFormDate] = useState(() => formatDateInput(getStartOfDay(Date.now())));
   const [formCategory, setFormCategory] = useState<string>('breakfast');
   const [formNotes, setFormNotes] = useState('');
+  const [showMealStats, setShowMealStats] = useState(false);
 
   const plannedMeals = useAppSelector((state) => state.calendar.plannedMeals);
   const meals = useAppSelector((state) => state.meals.items);
@@ -471,8 +618,14 @@ export function CalendarScreen() {
   const { confirm } = useActionModal();
 
   const mealOptions = useMemo(
-    () => meals.map((m) => ({ value: m.id, text: m.title })),
-    [meals]
+    () =>
+      meals.map((m) => {
+        if (!showMealStats) return { value: m.id, text: m.title };
+        const t = calculateMealTotals(m, ingredients);
+        const description = `🔥 ${Math.round(t.calories)} kcal · 💪 ${Math.round(t.protein)}g · 🌾 ${Math.round(t.carbs)}g · 🥑 ${Math.round(t.fat)}g · 💰 $${t.price.toFixed(2)}`;
+        return { value: m.id, text: m.title, description };
+      }),
+    [meals, ingredients, showMealStats]
   );
 
   const dateRange = useMemo(() => {
@@ -587,11 +740,39 @@ export function CalendarScreen() {
     }
   };
 
+  const handleDeleteFromModal = async () => {
+    if (!editingPlannedMeal) return;
+    const meal = meals.find((m) => m.id === editingPlannedMeal.mealId);
+
+    const confirmed = await confirm({
+      title: 'Remove Planned Meal',
+      message: `Remove "${meal?.title ?? 'this meal'}" from your plan? This cannot be undone.`,
+      confirmText: 'Remove',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+
+    if (confirmed) {
+      dispatch(removePlannedMeal(editingPlannedMeal.id));
+      handleModalClose();
+    }
+  };
+
   const isWeekOrCustom = view === 'week' || view === 'custom';
 
   const handleDetailEdit = (pm: PlannedMeal) => {
     setDetailDay(null);
     openEditModal(pm);
+  };
+
+  const handleMonthDateSelect = (date: number) => {
+    setSelectedDate(date);
+    setView('day');
+  };
+
+  const handleGoToDay = (date: number) => {
+    setSelectedDate(date);
+    setView('day');
   };
 
   return (
@@ -601,7 +782,7 @@ export function CalendarScreen() {
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-4xl font-bold text-foreground">Meal Planner</h1>
           <Button onClick={() => openAddModal()} variant="primary">
-            Plan Meal
+            Add Meal
           </Button>
         </div>
         <p className="text-muted-foreground mb-6">
@@ -614,18 +795,20 @@ export function CalendarScreen() {
           onValueChange={(v) => setView(v as CalendarView)}
           variant="pills"
           tabsList={[
+            { value: 'month', label: '🗓️ Month' },
             { value: 'day', label: '📅 Day' },
             { value: 'week', label: '📆 Week' },
-            { value: 'custom', label: '🗓️ Custom' },
+            { value: 'custom', label: '⚙️ Custom' },
           ]}
         >
+          <TabsContent value="month" />
           <TabsContent value="day" />
           <TabsContent value="week" />
           <TabsContent value="custom" />
         </Tabs>
 
-        {/* Date navigation for Day/Week */}
-        {view !== 'custom' && (
+        {/* Date navigation for Day/Week only */}
+        {view !== 'custom' && view !== 'month' && (
           <div className="flex flex-wrap items-center gap-2 mt-4">
             <Button variant="secondary" size="sm" onClick={handlePrev}>
               ←
@@ -671,36 +854,44 @@ export function CalendarScreen() {
         )}
       </div>
 
-      {/* Totals */}
-      <TotalsCard totals={totals} />
+      {/* Month View */}
+      {view === 'month' && (
+        <MonthView plannedMeals={plannedMeals} onDateSelect={handleMonthDateSelect} />
+      )}
+
+      {/* Totals (hidden for month view) */}
+      {view !== 'month' && <TotalsCard totals={totals} dayCount={visibleDays.length} />}
 
       {/* Meal Plan Grid */}
-      {view === 'custom' && customEnd < customStart ? (
-        <div className="text-center py-12 text-muted-foreground">
-          End date must be on or after the start date.
-        </div>
-      ) : (
-        <div
-          className={join(
-            isWeekOrCustom
-              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-              : 'space-y-6'
-          )}
-        >
-          {visibleDays.map((day) => (
-            <DayCard
-              key={day}
-              day={day}
-              compact={isWeekOrCustom}
-              plannedMeals={visiblePlannedMeals.filter((pm) => getStartOfDay(pm.date) === day)}
-              meals={meals}
-              ingredients={ingredients}
-              onAdd={openAddModal}
-              onEdit={openEditModal}
-              onViewDetail={setDetailDay}
-            />
-          ))}
-        </div>
+      {view !== 'month' && (
+        view === 'custom' && customEnd < customStart ? (
+          <div className="text-center py-12 text-muted-foreground">
+            End date must be on or after the start date.
+          </div>
+        ) : (
+          <div
+            className={join(
+              isWeekOrCustom
+                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+                : 'space-y-6'
+            )}
+          >
+            {visibleDays.map((day) => (
+              <DayCard
+                key={day}
+                day={day}
+                compact={isWeekOrCustom}
+                plannedMeals={visiblePlannedMeals.filter((pm) => getStartOfDay(pm.date) === day)}
+                meals={meals}
+                ingredients={ingredients}
+                onAdd={openAddModal}
+                onEdit={openEditModal}
+                onViewDetail={setDetailDay}
+                onGoToDay={handleGoToDay}
+              />
+            ))}
+          </div>
+        )
       )}
 
       {/* Day Detail Modal */}
@@ -718,11 +909,11 @@ export function CalendarScreen() {
       <Modal
         isOpen={showModal}
         onClose={handleModalClose}
-        title={editingPlannedMeal ? 'Edit Planned Meal' : 'Plan a Meal'}
+        title={editingPlannedMeal ? 'Edit Planned Meal' : 'Add a Meal'}
         actions={[
           { label: 'Cancel', variant: 'secondary', onClick: handleModalClose },
           {
-            label: editingPlannedMeal ? 'Save Changes' : 'Add to Plan',
+            label: editingPlannedMeal ? 'Save Changes' : 'Add Meal',
             variant: 'primary',
             onClick: handleSubmit,
           },
@@ -730,12 +921,25 @@ export function CalendarScreen() {
       >
         <div className="space-y-4 min-w-0 sm:min-w-80">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Meal *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-foreground">Meal *</label>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Show stats</span>
+                <Toggle
+                  size="sm"
+                  checked={showMealStats}
+                  onCheckedChange={setShowMealStats}
+                  aria-label="Toggle meal stats in dropdown"
+                />
+              </div>
+            </div>
             <Select
               options={mealOptions}
               value={formMealId}
               onChange={setFormMealId}
               placeholder="Select a meal"
+              searchable
+              searchPlaceholder="Search meals..."
             />
           </div>
           <div>
@@ -764,6 +968,18 @@ export function CalendarScreen() {
               rows={2}
             />
           </div>
+          {editingPlannedMeal && (
+            <div className="pt-2 border-t border-border">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => { void handleDeleteFromModal(); }}
+                className="w-full text-destructive border-destructive/40 hover:bg-destructive/10"
+              >
+                🗑️ Delete Planned Meal
+              </Button>
+            </div>
+          )}
         </div>
       </Modal>
     </div>
