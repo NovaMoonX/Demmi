@@ -10,6 +10,7 @@ import {
   Textarea,
   Tabs,
   TabsContent,
+  Toggle,
 } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
@@ -165,37 +166,72 @@ function calculateTotals(
   return totals;
 }
 
+function calculateMealTotals(meal: Meal, ingredients: Ingredient[]): NutrientTotals {
+  const totals: NutrientTotals = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, price: 0 };
+  for (const mi of meal.ingredients) {
+    const ingredient = ingredients.find((i) => i.id === mi.ingredientId);
+    if (!ingredient) continue;
+    totals.calories += mi.servings * ingredient.nutrients.calories;
+    totals.protein += mi.servings * ingredient.nutrients.protein;
+    totals.carbs += mi.servings * ingredient.nutrients.carbs;
+    totals.fat += mi.servings * ingredient.nutrients.fat;
+    totals.fiber += mi.servings * ingredient.nutrients.fiber;
+    totals.price += mi.servings * getPricePerServing(ingredient);
+  }
+  return totals;
+}
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function TotalItem({
   label,
   value,
   emoji,
+  sub,
 }: {
   label: string;
   value: string;
   emoji: string;
+  sub?: string;
 }) {
   return (
     <div className="flex flex-col items-center text-center">
       <div className="text-2xl mb-1">{emoji}</div>
       <div className="text-lg font-bold text-foreground">{value}</div>
+      {sub && <div className="text-xs text-muted-foreground/70 mt-0.5">{sub}</div>}
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
 }
 
-function TotalsCard({ totals }: { totals: NutrientTotals }) {
+function TotalsCard({ totals, dayCount }: { totals: NutrientTotals; dayCount: number }) {
+  const showAvg = dayCount > 1;
+  const avg = showAvg
+    ? {
+        calories: totals.calories / dayCount,
+        protein: totals.protein / dayCount,
+        carbs: totals.carbs / dayCount,
+        fat: totals.fat / dayCount,
+        fiber: totals.fiber / dayCount,
+        price: totals.price / dayCount,
+      }
+    : null;
+
+  const avgSub = (formatted: string): string | undefined =>
+    avg ? formatted : undefined;
+
   return (
     <Card className="mb-6 p-5 transition-transform hover:scale-[1.02]">
-      <h2 className="text-base font-semibold text-foreground mb-4">Totals for Period</h2>
+      <h2 className="text-base font-semibold text-foreground mb-4">
+        {showAvg ? `Totals · ${dayCount}-Day Period` : 'Totals for Period'}
+      </h2>
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
-        <TotalItem label="Calories" value={`${Math.round(totals.calories)} kcal`} emoji="🔥" />
-        <TotalItem label="Price" value={`$${totals.price.toFixed(2)}`} emoji="💰" />
-        <TotalItem label="Protein" value={`${Math.round(totals.protein)}g`} emoji="💪" />
-        <TotalItem label="Carbs" value={`${Math.round(totals.carbs)}g`} emoji="🌾" />
-        <TotalItem label="Fat" value={`${Math.round(totals.fat)}g`} emoji="🥑" />
-        <TotalItem label="Fiber" value={`${Math.round(totals.fiber)}g`} emoji="🥦" />
+        <TotalItem label="Calories" value={`${Math.round(totals.calories)} kcal`} emoji="🔥" sub={avgSub(`~${Math.round(avg?.calories ?? 0)} kcal/day`)} />
+        <TotalItem label="Price" value={`$${totals.price.toFixed(2)}`} emoji="💰" sub={avgSub(`~$${(avg?.price ?? 0).toFixed(2)}/day`)} />
+        <TotalItem label="Protein" value={`${Math.round(totals.protein)}g`} emoji="💪" sub={avgSub(`~${Math.round(avg?.protein ?? 0)}g/day`)} />
+        <TotalItem label="Carbs" value={`${Math.round(totals.carbs)}g`} emoji="🌾" sub={avgSub(`~${Math.round(avg?.carbs ?? 0)}g/day`)} />
+        <TotalItem label="Fat" value={`${Math.round(totals.fat)}g`} emoji="🥑" sub={avgSub(`~${Math.round(avg?.fat ?? 0)}g/day`)} />
+        <TotalItem label="Fiber" value={`${Math.round(totals.fiber)}g`} emoji="🥦" sub={avgSub(`~${Math.round(avg?.fiber ?? 0)}g/day`)} />
       </div>
     </Card>
   );
@@ -210,9 +246,10 @@ interface DayCardProps {
   onAdd: (date: number, category?: MealCategory) => void;
   onEdit: (pm: PlannedMeal) => void;
   onViewDetail: (day: number) => void;
+  onGoToDay: (day: number) => void;
 }
 
-function DayCard({ day, plannedMeals, meals, ingredients, compact, onAdd, onEdit, onViewDetail }: DayCardProps) {
+function DayCard({ day, plannedMeals, meals, ingredients, compact, onAdd, onEdit, onViewDetail, onGoToDay }: DayCardProps) {
   const hasMeals = plannedMeals.length > 0;
 
   const dayTotals = useMemo(
@@ -234,11 +271,18 @@ function DayCard({ day, plannedMeals, meals, ingredients, compact, onAdd, onEdit
       <div className="flex items-center justify-between mb-3">
         <div>
           {compact ? (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase">
+            <div
+              className="cursor-pointer group"
+              onClick={() => onGoToDay(day)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onGoToDay(day); } }}
+              aria-label={`Go to day view for ${formatDateShort(day)}`}
+            >
+              <p className="text-xs font-medium text-muted-foreground uppercase group-hover:text-primary transition-colors">
                 {formatDayShort(day)}
               </p>
-              <p className="text-sm font-semibold text-foreground">{formatDateShort(day)}</p>
+              <p className="text-sm font-semibold text-foreground group-hover:text-primary group-hover:underline underline-offset-2 transition-colors">{formatDateShort(day)}</p>
             </div>
           ) : (
             <h2 className="text-lg font-semibold text-foreground">{formatDateFull(day)}</h2>
@@ -565,6 +609,7 @@ export function CalendarScreen() {
   const [formDate, setFormDate] = useState(() => formatDateInput(getStartOfDay(Date.now())));
   const [formCategory, setFormCategory] = useState<string>('breakfast');
   const [formNotes, setFormNotes] = useState('');
+  const [showMealStats, setShowMealStats] = useState(false);
 
   const plannedMeals = useAppSelector((state) => state.calendar.plannedMeals);
   const meals = useAppSelector((state) => state.meals.items);
@@ -573,8 +618,14 @@ export function CalendarScreen() {
   const { confirm } = useActionModal();
 
   const mealOptions = useMemo(
-    () => meals.map((m) => ({ value: m.id, text: m.title })),
-    [meals]
+    () =>
+      meals.map((m) => {
+        if (!showMealStats) return { value: m.id, text: m.title };
+        const t = calculateMealTotals(m, ingredients);
+        const description = `🔥 ${Math.round(t.calories)} kcal · 💪 ${Math.round(t.protein)}g · 🌾 ${Math.round(t.carbs)}g · 🥑 ${Math.round(t.fat)}g · 💰 $${t.price.toFixed(2)}`;
+        return { value: m.id, text: m.title, description };
+      }),
+    [meals, ingredients, showMealStats]
   );
 
   const dateRange = useMemo(() => {
@@ -719,6 +770,11 @@ export function CalendarScreen() {
     setView('day');
   };
 
+  const handleGoToDay = (date: number) => {
+    setSelectedDate(date);
+    setView('day');
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto mt-10 md:mt-0">
       {/* Header */}
@@ -804,7 +860,7 @@ export function CalendarScreen() {
       )}
 
       {/* Totals (hidden for month view) */}
-      {view !== 'month' && <TotalsCard totals={totals} />}
+      {view !== 'month' && <TotalsCard totals={totals} dayCount={visibleDays.length} />}
 
       {/* Meal Plan Grid */}
       {view !== 'month' && (
@@ -831,6 +887,7 @@ export function CalendarScreen() {
                 onAdd={openAddModal}
                 onEdit={openEditModal}
                 onViewDetail={setDetailDay}
+                onGoToDay={handleGoToDay}
               />
             ))}
           </div>
@@ -864,12 +921,25 @@ export function CalendarScreen() {
       >
         <div className="space-y-4 min-w-0 sm:min-w-80">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Meal *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-foreground">Meal *</label>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Show stats</span>
+                <Toggle
+                  size="sm"
+                  checked={showMealStats}
+                  onCheckedChange={setShowMealStats}
+                  aria-label="Toggle meal stats in dropdown"
+                />
+              </div>
+            </div>
             <Select
               options={mealOptions}
               value={formMealId}
               onChange={setFormMealId}
               placeholder="Select a meal"
+              searchable
+              searchPlaceholder="Search meals..."
             />
           </div>
           <div>
