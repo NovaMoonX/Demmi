@@ -85,7 +85,7 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={join(
-          'fixed left-0 h-full w-64 bg-card border-r border-border z-40 transition-transform duration-300 flex flex-col',
+          'fixed left-0 h-[calc(100%-40px)] w-64 bg-card border-r border-border z-40 transition-transform duration-300 flex flex-col',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full',
           'md:translate-x-0',
           isDemoActive ? 'top-10' : 'top-0'
