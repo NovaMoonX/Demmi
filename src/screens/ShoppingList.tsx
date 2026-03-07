@@ -108,11 +108,7 @@ interface ItemRowProps {
 }
 
 function ItemRow({ item, onToggle, onEdit, onDelete }: ItemRowProps) {
-  const unitLabel = item.unit
-    ? Object.keys(MEASUREMENT_UNIT_LABELS).includes(item.unit)
-      ? item.unit
-      : item.unit
-    : null;
+  const unitLabel = item.unit ?? null;
 
   return (
     <div
@@ -392,7 +388,8 @@ export function ShoppingList() {
         groups.set(cat, inCat);
       }
     }
-    return groups;
+    const result = groups;
+    return result;
   }, [visibleItems]);
 
   const checkedCount = useMemo(
@@ -418,7 +415,8 @@ export function ShoppingList() {
         }
       }
 
-      return next;
+      const result = next;
+      return result;
     });
   };
 
