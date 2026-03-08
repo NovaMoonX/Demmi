@@ -833,7 +833,7 @@ export function CalendarScreen() {
         {view === 'custom' && (
           <div className="flex flex-col sm:flex-row gap-4 mt-4 items-start sm:items-center">
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-muted-foreground whitespace-nowrap">From:</Label>
+              <Label>From:</Label>
               <Input
                 type="date"
                 value={formatDateInput(customStart)}
@@ -841,7 +841,7 @@ export function CalendarScreen() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-muted-foreground whitespace-nowrap">To:</Label>
+              <Label>To:</Label>
               <Input
                 type="date"
                 value={formatDateInput(customEnd)}

@@ -178,7 +178,7 @@ export function Chat() {
             </div>
             <div className="flex flex-1 flex-col items-end text-right">
               <h2 className="text-lg font-semibold text-foreground">
-                {currentChat?.title || 'New Chat'}
+                {currentChat?.title ?? 'New Chat'}
               </h2>
               {currentChat && (
                 <p className="text-sm text-muted-foreground">

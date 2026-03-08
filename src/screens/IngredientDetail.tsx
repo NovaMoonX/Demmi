@@ -14,6 +14,7 @@ import {
   MeasurementUnit,
   Product,
   INGREDIENT_TYPE_EMOJIS,
+  INGREDIENT_TYPE_COLORS,
   MEASUREMENT_UNIT_LABELS,
 } from '@lib/ingredients';
 import { useAppSelector, useAppDispatch } from '@store/hooks';
@@ -38,22 +39,24 @@ export function IngredientDetail() {
     ? ingredients.find((i) => i.id === id)
     : undefined;
 
+  const [isViewMode, setIsViewMode] = useState(isEditing);
+
   // Navigation state set by MealDetail when the user comes here to create an ingredient for a meal
   const fromMealPath =
     (location.state as { fromMealPath?: string } | null)?.fromMealPath ?? null;
 
   const [name, setName] = useState(existingIngredient?.name || '');
   const [type, setType] = useState<IngredientType>(
-    existingIngredient?.type || 'other',
+    existingIngredient?.type ?? 'other',
   );
   const [currentAmount, setCurrentAmount] = useState(
-    existingIngredient?.currentAmount.toString() || '0',
+    existingIngredient?.currentAmount.toString() ?? '0',
   );
   const [servingSize, setServingSize] = useState(
-    existingIngredient?.servingSize.toString() || '0',
+    existingIngredient?.servingSize.toString() ?? '0',
   );
   const [unit, setUnit] = useState<MeasurementUnit>(
-    existingIngredient?.unit || 'g',
+    existingIngredient?.unit ?? 'g',
   );
   const [otherUnit, setOtherUnit] = useState<string>(
     existingIngredient?.otherUnit || '',
@@ -64,33 +67,33 @@ export function IngredientDetail() {
 
   // Nutrient profile state
   const [protein, setProtein] = useState(
-    existingIngredient?.nutrients.protein.toString() || '0',
+    existingIngredient?.nutrients.protein.toString() ?? '0',
   );
   const [carbs, setCarbs] = useState(
-    existingIngredient?.nutrients.carbs.toString() || '0',
+    existingIngredient?.nutrients.carbs.toString() ?? '0',
   );
   const [fat, setFat] = useState(
-    existingIngredient?.nutrients.fat.toString() || '0',
+    existingIngredient?.nutrients.fat.toString() ?? '0',
   );
   const [fiber, setFiber] = useState(
-    existingIngredient?.nutrients.fiber.toString() || '0',
+    existingIngredient?.nutrients.fiber.toString() ?? '0',
   );
   const [sugar, setSugar] = useState(
-    existingIngredient?.nutrients.sugar.toString() || '0',
+    existingIngredient?.nutrients.sugar.toString() ?? '0',
   );
   const [sodium, setSodium] = useState(
-    existingIngredient?.nutrients.sodium.toString() || '0',
+    existingIngredient?.nutrients.sodium.toString() ?? '0',
   );
   const [calories, setCalories] = useState(
-    existingIngredient?.nutrients.calories.toString() || '0',
+    existingIngredient?.nutrients.calories.toString() ?? '0',
   );
 
   // Products state
   const [products, setProducts] = useState<Product[]>(
-    existingIngredient?.products || [],
+    existingIngredient?.products ?? [],
   );
   const [defaultProductId, setDefaultProductId] = useState<string | null>(
-    existingIngredient?.defaultProductId || null,
+    existingIngredient?.defaultProductId ?? null,
   );
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -285,8 +288,176 @@ export function IngredientDetail() {
   };
 
   const handleCancel = () => {
-    navigate(fromMealPath ?? '/ingredients');
+    if (isEditing) {
+      setIsViewMode(true);
+    } else {
+      navigate(fromMealPath ?? '/ingredients');
+    }
   };
+
+  if (isViewMode && isEditing && existingIngredient) {
+    const unitLabel =
+      existingIngredient.unit === 'other'
+        ? (existingIngredient.otherUnit ?? existingIngredient.unit)
+        : MEASUREMENT_UNIT_LABELS[existingIngredient.unit];
+
+    return (
+      <div className='mx-auto mt-10 max-w-4xl p-6 md:mt-0'>
+        <div className='mb-8'>
+          <Link
+            to={fromMealPath ?? '/ingredients'}
+            className='text-muted-foreground hover:text-foreground mb-4 inline-block text-sm'
+          >
+            {fromMealPath ? '← Back to Meal' : '← Back to Ingredients'}
+          </Link>
+          <div className='flex items-start justify-between gap-4'>
+            <div>
+              <h1 className='text-foreground mb-2 text-4xl font-bold'>
+                {existingIngredient.name}
+              </h1>
+              <Badge
+                variant='base'
+                className={join(
+                  'capitalize',
+                  INGREDIENT_TYPE_COLORS[existingIngredient.type],
+                )}
+              >
+                {INGREDIENT_TYPE_EMOJIS[existingIngredient.type]}{' '}
+                {capitalize(existingIngredient.type)}
+              </Badge>
+            </div>
+            <div className='flex shrink-0 gap-2'>
+              <Button
+                type='button'
+                variant='secondary'
+                onClick={() => setIsViewMode(false)}
+              >
+                Edit
+              </Button>
+              <Button
+                type='button'
+                variant='destructive'
+                onClick={handleDelete}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className='space-y-6'>
+          {existingIngredient.imageUrl && (
+            <img
+              src={existingIngredient.imageUrl}
+              alt={existingIngredient.name}
+              className='border-border h-64 w-full rounded-lg border object-cover'
+            />
+          )}
+
+          <div className='border-border grid grid-cols-3 gap-4 rounded-lg border p-4'>
+            <div className='text-center'>
+              <div className='text-foreground text-2xl font-bold'>
+                {existingIngredient.currentAmount}
+              </div>
+              <div className='text-muted-foreground text-xs'>Current Amount</div>
+            </div>
+            <div className='text-center'>
+              <div className='text-foreground text-2xl font-bold'>
+                {existingIngredient.servingSize}
+              </div>
+              <div className='text-muted-foreground text-xs'>Serving Size</div>
+            </div>
+            <div className='text-center'>
+              <div className='text-foreground text-2xl font-bold'>
+                {unitLabel}
+              </div>
+              <div className='text-muted-foreground text-xs'>Unit</div>
+            </div>
+          </div>
+
+          <div>
+            <h2 className='text-foreground mb-3 text-xl font-semibold'>
+              Nutrition (per serving)
+            </h2>
+            <div className='border-border grid grid-cols-2 gap-3 rounded-lg border p-4 sm:grid-cols-4'>
+              {[
+                { label: 'Protein', value: existingIngredient.nutrients.protein, unit: 'g' },
+                { label: 'Carbs', value: existingIngredient.nutrients.carbs, unit: 'g' },
+                { label: 'Fat', value: existingIngredient.nutrients.fat, unit: 'g' },
+                { label: 'Fiber', value: existingIngredient.nutrients.fiber, unit: 'g' },
+                { label: 'Sugar', value: existingIngredient.nutrients.sugar, unit: 'g' },
+                { label: 'Sodium', value: existingIngredient.nutrients.sodium, unit: 'mg' },
+                { label: 'Calories', value: existingIngredient.nutrients.calories, unit: 'kcal' },
+              ].map(({ label, value, unit: nutrUnit }) => (
+                <div key={label} className='text-center'>
+                  <div className='text-foreground font-bold'>
+                    {value}
+                    <span className='text-muted-foreground ml-1 text-xs font-normal'>
+                      {nutrUnit}
+                    </span>
+                  </div>
+                  <div className='text-muted-foreground text-xs'>{label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {existingIngredient.products.length > 0 && (
+            <div>
+              <h2 className='text-foreground mb-3 text-xl font-semibold'>
+                Products
+              </h2>
+              <ul className='space-y-3'>
+                {existingIngredient.products.map((product) => {
+                  const pricePerServing = product.cost / product.servings;
+                  return (
+                    <li
+                      key={product.id}
+                      className='border-border rounded-lg border p-4'
+                    >
+                      <div className='flex items-start justify-between gap-2'>
+                        <div>
+                          {existingIngredient.defaultProductId === product.id && (
+                            <Badge variant='primary' className='mb-1'>
+                              Default
+                            </Badge>
+                          )}
+                          <div className='text-foreground font-medium'>
+                            {product.label}
+                          </div>
+                          <div className='text-muted-foreground text-sm'>
+                            {product.retailer}
+                          </div>
+                          <div className='mt-1 flex gap-4 text-sm'>
+                            <span className='text-foreground'>
+                              ${product.cost.toFixed(2)} ({product.servings} servings)
+                            </span>
+                            <span className='text-muted-foreground'>
+                              ${pricePerServing.toFixed(2)}/serving
+                            </span>
+                          </div>
+                          {product.url && (
+                            <a
+                              href={product.url}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className='text-primary mt-1 inline-block text-sm hover:underline'
+                            >
+                              View Product →
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className='mx-auto mt-10 max-w-4xl p-6 md:mt-0'>

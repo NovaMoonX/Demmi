@@ -1,4 +1,22 @@
-export function generatedId(prefix = 'id'): string {
-  const result = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-  return result;
+import { nanoid } from 'nanoid';
+import { v4 as uuidv4 } from 'uuid';
+
+// URL-friendly entities (appear in routes) use nanoid (short, URL-safe)
+// Other entities (not in URLs) use uuid v4 (standard, unambiguous)
+type UrlFriendlyEntity = 'meal' | 'ingredient' | 'planned';
+type StandardEntity = 'chat' | 'msg' | 'sl' | 'prod';
+type EntityType = UrlFriendlyEntity | StandardEntity;
+
+export function generatedId(entity: EntityType): string {
+  switch (entity) {
+    case 'meal':
+    case 'ingredient':
+    case 'planned':
+      return nanoid();
+    case 'chat':
+    case 'msg':
+    case 'sl':
+    case 'prod':
+      return uuidv4();
+  }
 }

@@ -7,13 +7,33 @@ import {
   Button,
   DynamicList,
   Label,
+  Badge,
 } from '@moondreamsdev/dreamer-ui/components';
+import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
 import { Meal, MealCategory, MealIngredient } from '@lib/meals';
 import { useAppSelector, useAppDispatch } from '@store/hooks';
 import { createMeal, updateMeal, deleteMeal } from '@store/slices/mealsSlice';
 import type { DynamicListItem } from '@moondreamsdev/dreamer-ui/components';
 import { MealIngredientSelector } from '@components/meals/MealIngredientSelector';
+
+const categoryColors: Record<MealCategory, string> = {
+  breakfast: 'bg-amber-500/20 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
+  lunch: 'bg-emerald-500/20 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
+  dinner: 'bg-blue-500/20 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
+  snack: 'bg-purple-500/20 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
+  dessert: 'bg-pink-500/20 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400',
+  drink: 'bg-cyan-500/20 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400',
+};
+
+const categoryEmojis: Record<MealCategory, string> = {
+  breakfast: '🌅',
+  lunch: '🍱',
+  dinner: '🌙',
+  snack: '🍿',
+  dessert: '🍰',
+  drink: '🥤',
+};
 
 export function MealDetail() {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +47,8 @@ export function MealDetail() {
   const isEditing = id !== 'new';
   const existingMeal = isEditing ? meals.find((m) => m.id === id) : undefined;
 
+  const [isViewMode, setIsViewMode] = useState(isEditing);
+
   const fromMealPath =
     isEditing && existingMeal ? `/meals/${existingMeal.id}` : '/meals/new';
 
@@ -35,16 +57,16 @@ export function MealDetail() {
     existingMeal?.description || '',
   );
   const [category, setCategory] = useState<string>(
-    existingMeal?.category || 'breakfast',
+    existingMeal?.category ?? 'breakfast',
   );
   const [prepTime, setPrepTime] = useState(
-    existingMeal?.prepTime.toString() || '0',
+    existingMeal?.prepTime.toString() ?? '0',
   );
   const [cookTime, setCookTime] = useState(
-    existingMeal?.cookTime.toString() || '0',
+    existingMeal?.cookTime.toString() ?? '0',
   );
   const [servingSize, setServingSize] = useState(
-    existingMeal?.servingSize.toString() || '1',
+    existingMeal?.servingSize.toString() ?? '1',
   );
   const [imageUrl, setImageUrl] = useState<string>(
     existingMeal?.imageUrl || '',
@@ -53,7 +75,7 @@ export function MealDetail() {
     existingMeal?.instructions.map((inst, index) => ({
       id: `inst-${index}`,
       content: inst,
-    })) || [],
+    })) ?? [],
   );
   const [selectedIngredients, setSelectedIngredients] = useState<MealIngredient[]>(
     existingMeal?.ingredients ?? [],
@@ -156,8 +178,140 @@ export function MealDetail() {
   };
 
   const handleCancel = () => {
-    navigate('/meals');
+    if (isEditing) {
+      setIsViewMode(true);
+    } else {
+      navigate('/meals');
+    }
   };
+
+  if (isViewMode && isEditing && existingMeal) {
+    return (
+      <div className='mx-auto mt-10 max-w-4xl p-6 md:mt-0'>
+        <div className='mb-8'>
+          <Link
+            to='/meals'
+            className='text-muted-foreground hover:text-foreground mb-4 inline-block text-sm'
+          >
+            ← Back to Meals
+          </Link>
+          <div className='flex items-start justify-between gap-4'>
+            <div>
+              <h1 className='text-foreground mb-2 text-4xl font-bold'>
+                {existingMeal.title}
+              </h1>
+              <Badge
+                variant='base'
+                className={join(
+                  'capitalize',
+                  categoryColors[existingMeal.category],
+                )}
+              >
+                {categoryEmojis[existingMeal.category]} {existingMeal.category}
+              </Badge>
+            </div>
+            <div className='flex shrink-0 gap-2'>
+              <Button
+                type='button'
+                variant='secondary'
+                onClick={() => setIsViewMode(false)}
+              >
+                Edit
+              </Button>
+              <Button
+                type='button'
+                variant='destructive'
+                onClick={handleDelete}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className='space-y-6'>
+          {existingMeal.imageUrl && (
+            <img
+              src={existingMeal.imageUrl}
+              alt={existingMeal.title}
+              className='border-border h-64 w-full rounded-lg border object-cover'
+            />
+          )}
+
+          <p className='text-foreground'>{existingMeal.description}</p>
+
+          <div className='border-border grid grid-cols-3 gap-4 rounded-lg border p-4'>
+            <div className='text-center'>
+              <div className='text-foreground text-2xl font-bold'>
+                {existingMeal.prepTime}m
+              </div>
+              <div className='text-muted-foreground text-xs'>Prep Time</div>
+            </div>
+            <div className='text-center'>
+              <div className='text-foreground text-2xl font-bold'>
+                {existingMeal.cookTime}m
+              </div>
+              <div className='text-muted-foreground text-xs'>Cook Time</div>
+            </div>
+            <div className='text-center'>
+              <div className='text-foreground text-2xl font-bold'>
+                {existingMeal.servingSize}
+              </div>
+              <div className='text-muted-foreground text-xs'>
+                {existingMeal.servingSize === 1 ? 'Serving' : 'Servings'}
+              </div>
+            </div>
+          </div>
+
+          {existingMeal.ingredients.length > 0 && (
+            <div>
+              <h2 className='text-foreground mb-3 text-xl font-semibold'>
+                Ingredients
+              </h2>
+              <ul className='border-border divide-border divide-y rounded-lg border'>
+                {existingMeal.ingredients.map((ing) => {
+                  const ingredient = allIngredients.find(
+                    (i) => i.id === ing.ingredientId,
+                  );
+                  return (
+                    <li
+                      key={ing.ingredientId}
+                      className='flex items-center justify-between px-4 py-2'
+                    >
+                      <span className='text-foreground'>
+                        {ingredient?.name ?? ing.ingredientId}
+                      </span>
+                      <span className='text-muted-foreground text-sm'>
+                        {ing.servings} {ing.servings === 1 ? 'serving' : 'servings'}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {existingMeal.instructions.length > 0 && (
+            <div>
+              <h2 className='text-foreground mb-3 text-xl font-semibold'>
+                Instructions
+              </h2>
+              <ol className='space-y-2'>
+                {existingMeal.instructions.map((step, index) => (
+                  <li key={index} className='flex gap-3'>
+                    <span className='text-primary shrink-0 font-bold'>
+                      {index + 1}.
+                    </span>
+                    <span className='text-foreground'>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className='mx-auto mt-10 max-w-4xl p-6 md:mt-0'>
