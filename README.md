@@ -51,7 +51,22 @@ A cooking app powered with local LLM using Ollama.
 - **Light & Dark Modes**: Full support for both themes with automatic color adjustments
 - **Demmi Brand Logo**: Demeter-inspired wheat emblem displayed in the app navigation
 
-### 🎨 Navigation
+### � Home Page
+- **Hero Section**: Eye-catching landing experience featuring the Demmi logo and gradient title
+- **Feature Showcase**: Six key features displayed in an organized grid with emojis and descriptions
+- **Multiple CTAs**: Prominent "Get Started" and "Try Demo Mode" buttons for clear user action paths
+- **Three-Section Layout**: Hero introduction, feature highlights, and final call-to-action for optimal conversion flow
+- **Responsive Design**: Fully responsive layout that adapts from mobile to desktop with smooth transitions
+- **Brand Integration**: Wheat emblem logo prominently displayed with orange accent gradient branding
+- **Feature Highlights**:
+  - 💬 AI Chat Assistant
+  - 🍽️ Recipe Management
+  - 🍎 Ingredient Tracking
+  - 📅 Meal Planning
+  - 🛒 Shopping Lists
+  - 🎭 Demo Mode Access
+
+### �🎨 Navigation
 - **Sidebar Navigation**: ChatGPT-style sidebar with intuitive navigation
   - **Chat**: AI-powered cooking assistant
   - **Ingredients**: Manage your ingredients
