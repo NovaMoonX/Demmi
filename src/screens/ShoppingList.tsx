@@ -6,6 +6,7 @@ import {
   Textarea,
   Select,
   Modal,
+  Checkbox,
 } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
@@ -23,7 +24,7 @@ import {
   MEASUREMENT_UNIT_LABELS,
 } from '@lib/ingredients';
 import type { ShoppingListItem } from '@lib/shoppingList';
-import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
+import type { IngredientType, MeasurementUnit, Ingredient } from '@lib/ingredients';
 import { capitalize } from '@/utils';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -102,13 +103,24 @@ function itemToForm(item: ShoppingListItem): ItemFormState {
 
 interface ItemRowProps {
   item: ShoppingListItem;
+  ingredients: Ingredient[];
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-function ItemRow({ item, onToggle, onEdit, onDelete }: ItemRowProps) {
+function ItemRow({ item, ingredients, onToggle, onEdit, onDelete }: ItemRowProps) {
   const unitLabel = item.unit ?? null;
+  
+  // Look up product info if available
+  const productInfo = useMemo(() => {
+    if (!item.ingredientId || !item.productId) return null;
+    const ingredient = ingredients.find((ing) => ing.id === item.ingredientId);
+    if (!ingredient) return null;
+    const product = ingredient.products.find((p) => p.id === item.productId);
+    const result = product ?? null;
+    return result;
+  }, [item.ingredientId, item.productId, ingredients]);
 
   return (
     <div
@@ -117,23 +129,7 @@ function ItemRow({ item, onToggle, onEdit, onDelete }: ItemRowProps) {
         item.checked ? 'bg-muted/40 opacity-60' : 'bg-card',
       )}
     >
-      {/* Checkbox */}
-      <button
-        onClick={onToggle}
-        aria-label={item.checked ? 'Mark as unchecked' : 'Mark as checked'}
-        className={join(
-          'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors',
-          item.checked
-            ? 'border-accent bg-accent text-accent-foreground'
-            : 'border-border bg-background',
-        )}
-      >
-        {item.checked && (
-          <svg viewBox='0 0 12 10' className='h-3 w-3 fill-current'>
-            <polyline points='1,5 4.5,9 11,1' strokeWidth='2' stroke='currentColor' fill='none' />
-          </svg>
-        )}
-      </button>
+      <Checkbox size={18} checked={item.checked} onCheckedChange={onToggle} className='mt-0.5' />
 
       {/* Content */}
       <div className='min-w-0 flex-1'>
@@ -146,12 +142,17 @@ function ItemRow({ item, onToggle, onEdit, onDelete }: ItemRowProps) {
           >
             {item.name}
           </span>
-          {(item.amount !== null || unitLabel) && (
+          {(item.amount !== null) && (
             <span className='text-muted-foreground text-xs'>
-              {item.amount !== null ? item.amount : ''}{unitLabel ? ` ${unitLabel}` : ''}
+              {item.amount}{unitLabel ? ` ${unitLabel}` : ''}
             </span>
           )}
         </div>
+        {productInfo && (
+          <p className='text-muted-foreground mt-0.5 text-xs'>
+            🏪 {productInfo.retailer} – {productInfo.label}
+          </p>
+        )}
         {item.note && (
           <p className='text-muted-foreground mt-0.5 text-xs'>{item.note}</p>
         )}
@@ -198,7 +199,7 @@ function ItemFormModal({
   onSubmit,
   onClose,
 }: ItemFormModalProps) {
-  const isIngredientLinked = form.ingredientId !== null && form.ingredientId !== '';
+  const isIngredientLinked = form.ingredientId !== null;
 
   return (
     <Modal
@@ -507,9 +508,9 @@ export function ShoppingList() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className='flex h-full flex-col'>
+    <div className='flex h-full flex-col mt-10 md:mt-0'>
       {/* Header */}
-      <div className='border-border bg-background/95 sticky top-0 z-10 border-b px-4 py-4 backdrop-blur'>
+      <div className='border-border bg-background/95 sticky top-0 z-10 border-b px-4 py-6 backdrop-blur'>
         <div className='mx-auto max-w-2xl'>
           <div className='flex items-center justify-between gap-3'>
             <div>
@@ -596,6 +597,7 @@ export function ShoppingList() {
                     <ItemRow
                       key={item.id}
                       item={item}
+                      ingredients={ingredients}
                       onToggle={() => dispatch(toggleShoppingListItem(item.id))}
                       onEdit={() => openEditModal(item)}
                       onDelete={() => handleDelete(item.id)}
