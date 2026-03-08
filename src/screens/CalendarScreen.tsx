@@ -11,6 +11,7 @@ import {
   Tabs,
   TabsContent,
   Toggle,
+  Label,
 } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
@@ -832,7 +833,7 @@ export function CalendarScreen() {
         {view === 'custom' && (
           <div className="flex flex-col sm:flex-row gap-4 mt-4 items-start sm:items-center">
             <div className="flex items-center gap-2">
-              <label className="text-sm text-muted-foreground whitespace-nowrap">From:</label>
+              <Label className="text-sm text-muted-foreground whitespace-nowrap">From:</Label>
               <Input
                 type="date"
                 value={formatDateInput(customStart)}
@@ -840,7 +841,7 @@ export function CalendarScreen() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-sm text-muted-foreground whitespace-nowrap">To:</label>
+              <Label className="text-sm text-muted-foreground whitespace-nowrap">To:</Label>
               <Input
                 type="date"
                 value={formatDateInput(customEnd)}
@@ -922,7 +923,7 @@ export function CalendarScreen() {
         <div className="space-y-4 min-w-0 sm:min-w-80">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-foreground">Meal *</label>
+              <Label>Meal *</Label>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-muted-foreground">Show stats</span>
                 <Toggle
@@ -943,7 +944,7 @@ export function CalendarScreen() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Date *</label>
+            <Label>Date *</Label>
             <Input
               type="date"
               value={formDate}
@@ -951,7 +952,7 @@ export function CalendarScreen() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Category *</label>
+            <Label>Category *</Label>
             <Select
               options={CATEGORY_OPTIONS}
               value={formCategory}
@@ -960,7 +961,7 @@ export function CalendarScreen() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Notes</label>
+            <Label>Notes</Label>
             <Textarea
               value={formNotes}
               onChange={(e) => setFormNotes(e.target.value)}

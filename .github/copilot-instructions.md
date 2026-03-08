@@ -89,17 +89,24 @@ className={join('base-class', isActive ? 'active' : 'inactive')}
 Follow the existing structure:
 ```
 src/
-├── components/ # Reusable UI components
-├── contexts/   # React context providers (Should always import the context from its hook file)
-├── hooks/      # Custom React hooks (should always declare the context they use)
-├── lib/        # Utilities and constants
-├── routes/     # Router configuration
-├── screens/    # Page/route components
-├── store/      # State management (i.e. Redux store)
-├── styles/     # Additional CSS/styling files
-├── ui/         # Layout and core UI components
-├── utils/      # Utility functions
+├── components/         # Reusable UI components (organized in subfolders by screen/feature)
+│   ├── chat/           # Chat-related components
+│   └── meals/          # Meals-related components
+├── contexts/           # React context providers (Should always import the context from its hook file)
+├── hooks/              # Custom React hooks (should always declare the context they use)
+├── lib/                # Utilities and constants
+├── routes/             # Router configuration
+├── screens/            # Page/route components
+├── store/              # State management (i.e. Redux store)
+├── styles/             # Additional CSS/styling files
+├── ui/                 # Layout and core UI components
+├── utils/              # Utility functions
 ```
+
+**Components folder rules:**
+- Organize components into subfolders by screen/tab/feature (e.g., `chat/`, `meals/`)
+- Each subfolder should have a barrel `index.ts` that re-exports all components in it
+- Never dump all components directly in `components/` root — always use a subfolder
 
 ### 9. Import Patterns
 ```tsx
@@ -113,11 +120,13 @@ import { APP_TITLE } from '@lib/app';
 import Home from '@screens/Home';
 import Layout from '@ui/Layout';
 import { router } from '@routes/AppRoutes';
-import MyComponent from '@components/MyComponent';
+import { MealCard } from '@components/meals/MealCard';  // subfolder path
+import { ChatHistory } from '@components/chat/ChatHistory';  // subfolder path
 import { useCustomHook } from '@hooks/useCustomHook';
 import { MyContext } from '@contexts/MyContext';
 import { store } from '@store';
 import { helper } from '@utils/helper';
+import { generatedId } from '@utils/generatedId';
 ```
 
 ### 10. Available Import Aliases
@@ -133,6 +142,51 @@ import { helper } from '@utils/helper';
 - `@ui/` → `src/ui/`
 - `@utils/` → `src/utils/`
 
+### 11. ID Generation
+- **ALWAYS** use `generatedId(prefix)` from `@utils/generatedId` for all ID creation
+- **NEVER** use `Date.now()`, `Math.random()`, or template literals to create IDs inline
+- The `prefix` should be a short meaningful string describing the entity (e.g., `'meal'`, `'ingredient'`, `'sl'`)
+
+```tsx
+// ❌ NEVER DO THIS - inline ID generation
+id: `meal-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+id: `msg-${Date.now()}`
+
+// ✅ ALWAYS DO THIS - use generatedId utility
+import { generatedId } from '@utils/generatedId';
+id: generatedId('meal')
+id: generatedId('msg')
+```
+
+### 12. Number Parsing
+- **ALWAYS** use `Number()` for converting strings to numbers
+- **NEVER** use `parseFloat()` or `parseInt()` — use `Number()` instead
+
+```tsx
+// ❌ NEVER DO THIS
+parseFloat(someString)
+parseInt(someString, 10)
+
+// ✅ ALWAYS DO THIS
+Number(someString)
+Number(someString) || 0  // with fallback
+```
+
+### 13. Label Component
+- **ALWAYS** use the `Label` component from `@moondreamsdev/dreamer-ui/components` for form labels
+- **NEVER** use the native HTML `<label>` element
+
+```tsx
+// ❌ NEVER DO THIS
+<label htmlFor="name" className="text-foreground mb-1 block text-sm font-medium">
+  Name
+</label>
+
+// ✅ ALWAYS DO THIS
+import { Label } from '@moondreamsdev/dreamer-ui/components';
+<Label htmlFor="name">Name</Label>
+```
+
 ## Quick Reference
 - Component syntax: `export function ComponentName`
 - **Indentation: Always use 2 spaces (NOT 4 spaces or tabs)**
@@ -140,12 +194,20 @@ import { helper } from '@utils/helper';
 - Check Dreamer UI first
 - Use import aliases: `@components/`, `@hooks/`, `@lib/`, `@screens/`, `@ui/`, etc.
 - Follow structured folder organization with proper separation of concerns
+- **ID generation: ALWAYS use `generatedId(prefix)` from `@utils/generatedId`**
+- **Number parsing: ALWAYS use `Number()`, NEVER `parseFloat()` or `parseInt()`**
+- **Form labels: ALWAYS use `Label` from Dreamer UI, NEVER native `<label>`**
+- **Components: Organize in subfolders by screen/feature under `src/components/`**
 
 ## ⚠️ Critical Reminders
 - **2 spaces for indentation - ALWAYS**
 - **Template literals with `${` in className are FORBIDDEN**
 - **Always import and use `join` from `@moondreamsdev/dreamer-ui/utils`**
 - **Before writing any conditional className, ask: "Am I using join()?"**
+- **`parseFloat` and `parseInt` are FORBIDDEN - use `Number()` instead**
+- **Inline ID generation (Date.now, Math.random) is FORBIDDEN - use `generatedId()`**
+- **HTML `<label>` is FORBIDDEN - use `Label` from `@moondreamsdev/dreamer-ui/components`**
+- **Components must be organized in subfolders by feature under `src/components/`**
 
 ## 📚 Documentation Maintenance
 

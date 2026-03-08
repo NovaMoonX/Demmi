@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Select, Input, Toggle, Button } from '@moondreamsdev/dreamer-ui/components';
-import { MealCard } from '@components/MealCard';
+import { MealCard } from '@components/meals/MealCard';
 import { useAppSelector } from '@store/hooks';
 import { Meal } from '@lib/meals';
 

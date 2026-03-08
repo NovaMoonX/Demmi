@@ -6,22 +6,14 @@ import {
   Select,
   Button,
   DynamicList,
-  Modal,
   Label,
 } from '@moondreamsdev/dreamer-ui/components';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
 import { Meal, MealCategory, MealIngredient } from '@lib/meals';
-import { MEASUREMENT_UNIT_LABELS } from '@lib/ingredients';
 import { useAppSelector, useAppDispatch } from '@store/hooks';
 import { createMeal, updateMeal, deleteMeal } from '@store/slices/mealsSlice';
 import type { DynamicListItem } from '@moondreamsdev/dreamer-ui/components';
-import { generatedId } from '@utils/generatedId';
-
-type MealIngredientListItemData = {
-  ingredientId: string;
-  servings: number;
-  unit: string;
-};
+import { MealIngredientSelector } from '@components/meals/MealIngredientSelector';
 
 export function MealDetail() {
   const { id } = useParams<{ id: string }>();
@@ -63,52 +55,8 @@ export function MealDetail() {
       content: inst,
     })) || [],
   );
-  const [mealIngredientItems, setMealIngredientItems] = useState<
-    DynamicListItem<MealIngredientListItemData>[]
-  >(() => {
-    if (!existingMeal) {
-      return [];
-    }
-
-    const result = existingMeal.ingredients.map((ingredient, index) => {
-      const ing = allIngredients.find((i) => i.id === ingredient.ingredientId);
-      const unitValue =
-        ing?.unit === 'other' && ing.otherUnit
-          ? ing.otherUnit
-          : (ing?.unit ?? 'unit');
-
-      return {
-        id: `meal-ing-${index}`,
-        content: ingredient.ingredientId,
-        ingredientId: ingredient.ingredientId,
-        servings: ingredient.servings,
-        unit: unitValue,
-      };
-    });
-
-    return result;
-  });
-  const [isIngredientModalOpen, setIsIngredientModalOpen] = useState(false);
-  const [ingredientModalItemId, setIngredientModalItemId] = useState<
-    string | null
-  >(null);
-  const [ingredientModalIngredientId, setIngredientModalIngredientId] =
-    useState('');
-  const [ingredientModalServings, setIngredientModalServings] = useState('1');
-  const [ingredientModalUnit, setIngredientModalUnit] = useState('');
-  const [ingredientModalCustomUnit, setIngredientModalCustomUnit] =
-    useState('');
-
-  const ingredientOptions = allIngredients.map((ingredient) => ({
-    value: ingredient.id,
-    text: ingredient.name,
-  }));
-
-  const unitOptions = Object.entries(MEASUREMENT_UNIT_LABELS).map(
-    ([unitKey, label]) => ({
-      value: unitKey,
-      text: label,
-    }),
+  const [selectedIngredients, setSelectedIngredients] = useState<MealIngredient[]>(
+    existingMeal?.ingredients ?? [],
   );
 
   // Auto-add a newly created ingredient when returning from the ingredient creation flow
@@ -121,215 +69,16 @@ export function MealDetail() {
       if (ing) {
         processedNewIngredientRef.current = newId;
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setMealIngredientItems((prev) => {
+        setSelectedIngredients((prev) => {
           if (prev.some((item) => item.ingredientId === newId)) {
             return prev;
           }
-
-          const unitValue =
-            ing.unit === 'other' && ing.otherUnit ? ing.otherUnit : ing.unit;
-          const result = [
-            ...prev,
-            {
-              id: `meal-ing-${newId}`,
-              content: newId,
-              ingredientId: newId,
-              servings: 1,
-              unit: unitValue,
-            },
-          ];
-
+          const result = [...prev, { ingredientId: newId, servings: 1 }];
           return result;
         });
       }
     }
   }, [location.state, allIngredients]);
-
-  const availableIngredientOptions = ingredientOptions.filter(
-    (option) =>
-      !mealIngredientItems.some((item) => item.ingredientId === option.value),
-  );
-
-  const handleIngredientChange = (ingredientId: string) => {
-    setIngredientModalIngredientId(ingredientId);
-
-    const ing = allIngredients.find((i) => i.id === ingredientId);
-    if (ing) {
-      if (ing.unit === 'other' && ing.otherUnit) {
-        setIngredientModalUnit('other');
-        setIngredientModalCustomUnit(ing.otherUnit);
-      } else {
-        setIngredientModalUnit(ing.unit);
-        setIngredientModalCustomUnit('');
-      }
-    }
-  };
-
-  const updateIngredientItem = (
-    itemId: string,
-    updates: Partial<DynamicListItem<MealIngredientListItemData>>,
-  ) => {
-    setMealIngredientItems((prev) => {
-      const nextIngredientId = updates.ingredientId;
-
-      if (
-        nextIngredientId &&
-        prev.some(
-          (item) =>
-            item.id !== itemId && item.ingredientId === nextIngredientId,
-        )
-      ) {
-        return prev;
-      }
-
-      const result = prev.map((item) => {
-        if (item.id !== itemId) {
-          return item;
-        }
-
-        const updatedItem = {
-          ...item,
-          ...updates,
-        };
-
-        return updatedItem;
-      });
-
-      return result;
-    });
-  };
-  
-  const getIngredientById = (ingredientId: string) => {
-    const result = allIngredients.find(
-      (ingredient) => ingredient.id === ingredientId,
-    );
-    return result;
-  };
-
-  const getIngredientUnitById = (ingredientId: string) => {
-    const ingredient = getIngredientById(ingredientId);
-
-    if (!ingredient) {
-      return 'unit';
-    }
-
-    if (ingredient.unit === 'other' && ingredient.otherUnit) {
-      const result = ingredient.otherUnit;
-      return result;
-    }
-
-    const result = ingredient.unit;
-    return result;
-  };
-
-  const openAddIngredientModal = () => {
-    const firstOption = availableIngredientOptions[0];
-    const nextIngredientId = firstOption?.value ?? '';
-    const ing = allIngredients.find((i) => i.id === nextIngredientId);
-
-    let nextUnit = ing?.unit ?? 'g';
-    let nextCustomUnit = '';
-    if (ing?.unit === 'other' && ing.otherUnit) {
-      nextUnit = 'other';
-      nextCustomUnit = ing.otherUnit;
-    }
-
-    setIngredientModalItemId(null);
-    setIngredientModalIngredientId(nextIngredientId);
-    setIngredientModalServings('1');
-    setIngredientModalUnit(nextUnit);
-    setIngredientModalCustomUnit(nextCustomUnit);
-    setIsIngredientModalOpen(true);
-  };
-
-  const openEditIngredientModal = (
-    item: DynamicListItem<MealIngredientListItemData>,
-  ) => {
-    // Determine if the stored unit is the base unit or a custom one
-    let modalUnit = item.unit;
-    let modalCustomUnit = '';
-
-    // Check if this is a standard unit
-    const isStandardUnit = Object.keys(MEASUREMENT_UNIT_LABELS).includes(
-      item.unit,
-    );
-
-    if (isStandardUnit) {
-      modalUnit = item.unit;
-    } else {
-      // Custom unit - show as "other" with custom text
-      modalUnit = 'other';
-      modalCustomUnit = item.unit;
-    }
-
-    setIngredientModalItemId(item.id);
-    setIngredientModalIngredientId(item.ingredientId);
-    setIngredientModalServings(item.servings.toString());
-    setIngredientModalUnit(modalUnit);
-    setIngredientModalCustomUnit(modalCustomUnit);
-    setIsIngredientModalOpen(true);
-  };
-
-  const closeIngredientModal = () => {
-    setIsIngredientModalOpen(false);
-    setIngredientModalItemId(null);
-    setIngredientModalIngredientId('');
-    setIngredientModalServings('1');
-    setIngredientModalUnit('');
-    setIngredientModalCustomUnit('');
-  };
-
-  const handleSaveIngredientModal = () => {
-    if (!ingredientModalIngredientId) {
-      return;
-    }
-
-    const parsedServings = Number(ingredientModalServings);
-    const nextServings =
-      Number.isNaN(parsedServings) || parsedServings <= 0
-        ? 0.1
-        : parsedServings;
-
-    let nextUnit =
-      ingredientModalUnit.trim() ||
-      getIngredientUnitById(ingredientModalIngredientId);
-    if (nextUnit === 'other' && ingredientModalCustomUnit.trim()) {
-      nextUnit = ingredientModalCustomUnit.trim();
-    }
-
-    if (ingredientModalItemId) {
-      updateIngredientItem(ingredientModalItemId, {
-        ingredientId: ingredientModalIngredientId,
-        servings: nextServings,
-        unit: nextUnit,
-      });
-      closeIngredientModal();
-      return;
-    }
-
-    setMealIngredientItems((prev) => {
-      if (
-        prev.some((item) => item.ingredientId === ingredientModalIngredientId)
-      ) {
-        return prev;
-      }
-
-      const result = [
-        ...prev,
-        {
-          id: generatedId('meal-ing'),
-          content: ingredientModalIngredientId,
-          ingredientId: ingredientModalIngredientId,
-          servings: nextServings,
-          unit: nextUnit,
-        },
-      ];
-
-      return result;
-    });
-
-    closeIngredientModal();
-  };
 
   const categoryOptions = [
     { value: 'breakfast', text: '🌅 Breakfast' },
@@ -361,7 +110,7 @@ export function MealDetail() {
       .map((item) => (typeof item.content === 'string' ? item.content : ''))
       .filter((line) => line.trim().length > 0);
 
-    const selectedIngredients: MealIngredient[] = mealIngredientItems
+    const ingredientsList: MealIngredient[] = selectedIngredients
       .filter((item) => item.ingredientId.trim().length > 0)
       .map((item) => ({
         ingredientId: item.ingredientId,
@@ -377,7 +126,7 @@ export function MealDetail() {
       servingSize: Number(servingSize) || 1,
       imageUrl: imageUrl,
       instructions: instructionsList,
-      ingredients: selectedIngredients,
+      ingredients: ingredientsList,
     };
 
     if (isEditing && existingMeal) {
@@ -543,151 +292,12 @@ export function MealDetail() {
           <Label>
             Ingredients
           </Label>
-          <div className='space-y-3'>
-            {mealIngredientItems.length > 0 ? (
-              <ul className='border-border divide-border divide-y rounded-lg border'>
-                {mealIngredientItems.map((item) => (
-                  <li
-                    key={item.id}
-                    onClick={() => openEditIngredientModal(item)}
-                    className='hover:bg-muted flex cursor-pointer items-center text-sm justify-between gap-4 px-3 py-2 transition-colors list-disc list-inside'
-                  >
-                    <div className='flex items-center gap-3'>
-                      <span className='text-foreground'>
-                        <b>
-                          {item.servings} {item.unit}
-                          {item.servings === 1 ? '' : 's'}
-                        </b>{' '}
-                        {getIngredientById(item.ingredientId)?.name ??
-                          'Unknown ingredient'}
-                      </span>
-                    </div>
-                    <div className='flex gap-2'>
-                      <Button
-                        type='button'
-                        variant='destructive'
-                        size='sm'
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMealIngredientItems((prev) =>
-                            prev.filter((i) => i.id !== item.id),
-                          );
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className='text-muted-foreground text-sm'>
-                No ingredients added yet. Click "Add Ingredient" to get
-                started.
-              </p>
-            )}
-
-            <div className='flex gap-2'>
-              <Button
-                type='button'
-                variant='tertiary'
-                size='sm'
-                onClick={openAddIngredientModal}
-                disabled={availableIngredientOptions.length === 0}
-              >
-                + Add Ingredient
-              </Button>
-              <Button
-                type='button'
-                variant='tertiary'
-                size='sm'
-                onClick={() =>
-                  navigate('/ingredients/new', { state: { fromMealPath } })
-                }
-              >
-                + Create New Ingredient
-              </Button>
-            </div>
-
-            <Modal
-              isOpen={isIngredientModalOpen}
-              onClose={closeIngredientModal}
-              title={
-                ingredientModalItemId ? 'Edit Ingredient' : 'Add Ingredient'
-              }
-              actions={[
-                {
-                  label: 'Cancel',
-                  variant: 'secondary',
-                  onClick: closeIngredientModal,
-                },
-                {
-                  label: ingredientModalItemId
-                    ? 'Save Changes'
-                    : 'Add Ingredient',
-                  variant: 'primary',
-                  onClick: handleSaveIngredientModal,
-                },
-              ]}
-            >
-              <div className='w-full space-y-3 sm:min-w-96'>
-                <div>
-                  <Label>
-                    Ingredient
-                  </Label>
-                  <Select
-                    options={ingredientOptions}
-                    value={ingredientModalIngredientId}
-                    onChange={handleIngredientChange}
-                    placeholder='Select ingredient'
-                  />
-                </div>
-                <div>
-                  <Label>
-                    Quantity
-                  </Label>
-                  <Input
-                    type='number'
-                    min='0.1'
-                    step='0.1'
-                    value={ingredientModalServings}
-                    onChange={(e) => setIngredientModalServings(e.target.value)}
-                    placeholder='Enter quantity'
-                  />
-                </div>
-                <div>
-                  <Label>
-                    Unit
-                  </Label>
-                  <Select
-                    options={unitOptions}
-                    value={ingredientModalUnit}
-                    onChange={(value) => setIngredientModalUnit(value)}
-                    placeholder='Select unit'
-                  />
-                </div>
-                {ingredientModalUnit === 'other' && (
-                  <div>
-                    <Label
-                      htmlFor='ingredient-custom-unit'
-                      description='Enter unit in its singular form (e.g "serving" instead of "servings")'
-                    >
-                      Custom Unit
-                    </Label>
-                    <Input
-                      id='ingredient-custom-unit'
-                      type='text'
-                      value={ingredientModalCustomUnit}
-                      onChange={(e) =>
-                        setIngredientModalCustomUnit(e.target.value)
-                      }
-                      placeholder='e.g., serving, portion'
-                    />
-                  </div>
-                )}
-              </div>
-            </Modal>
-          </div>
+          <MealIngredientSelector
+            ingredients={allIngredients}
+            selectedIngredients={selectedIngredients}
+            onChange={setSelectedIngredients}
+            fromMealPath={fromMealPath}
+          />
         </div>
 
         <div>
