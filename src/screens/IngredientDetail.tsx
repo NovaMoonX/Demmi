@@ -148,6 +148,10 @@ export function IngredientDetail() {
       label: productLabel,
       cost: Number(productCost),
       servings: Number(productServings),
+      url: productUrl || null,
+    };
+
+    const updatedProducts = [...products, newProduct];
     setProducts(updatedProducts);
     resetProductForm();
   };
