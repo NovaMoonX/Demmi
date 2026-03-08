@@ -11,29 +11,11 @@ import {
 } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
-import { Meal, MealCategory, MealIngredient } from '@lib/meals';
+import { Meal, MealCategory, MealIngredient, MEAL_CATEGORY_COLORS, MEAL_CATEGORY_EMOJIS } from '@lib/meals';
 import { useAppSelector, useAppDispatch } from '@store/hooks';
 import { createMeal, updateMeal, deleteMeal } from '@store/slices/mealsSlice';
 import type { DynamicListItem } from '@moondreamsdev/dreamer-ui/components';
 import { MealIngredientSelector } from '@components/meals/MealIngredientSelector';
-
-const categoryColors: Record<MealCategory, string> = {
-  breakfast: 'bg-amber-500/20 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
-  lunch: 'bg-emerald-500/20 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  dinner: 'bg-blue-500/20 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-  snack: 'bg-purple-500/20 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
-  dessert: 'bg-pink-500/20 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400',
-  drink: 'bg-cyan-500/20 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400',
-};
-
-const categoryEmojis: Record<MealCategory, string> = {
-  breakfast: '🌅',
-  lunch: '🍱',
-  dinner: '🌙',
-  snack: '🍿',
-  dessert: '🍰',
-  drink: '🥤',
-};
 
 export function MealDetail() {
   const { id } = useParams<{ id: string }>();
@@ -102,14 +84,12 @@ export function MealDetail() {
     }
   }, [location.state, allIngredients]);
 
-  const categoryOptions = [
-    { value: 'breakfast', text: '🌅 Breakfast' },
-    { value: 'lunch', text: '🍱 Lunch' },
-    { value: 'dinner', text: '🌙 Dinner' },
-    { value: 'snack', text: '🍿 Snack' },
-    { value: 'dessert', text: '🍰 Dessert' },
-    { value: 'drink', text: '🥤 Drink' },
-  ];
+  const categoryOptions = Object.entries(MEAL_CATEGORY_EMOJIS).map(
+    ([cat, emoji]) => ({
+      value: cat,
+      text: `${emoji} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`,
+    }),
+  );
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -204,10 +184,10 @@ export function MealDetail() {
                 variant='base'
                 className={join(
                   'capitalize',
-                  categoryColors[existingMeal.category],
+                  MEAL_CATEGORY_COLORS[existingMeal.category],
                 )}
               >
-                {categoryEmojis[existingMeal.category]} {existingMeal.category}
+                {MEAL_CATEGORY_EMOJIS[existingMeal.category]} {existingMeal.category}
               </Badge>
             </div>
             <div className='flex shrink-0 gap-2'>
@@ -279,7 +259,7 @@ export function MealDetail() {
                       className='flex items-center justify-between px-4 py-2'
                     >
                       <span className='text-foreground'>
-                        {ingredient?.name ?? ing.ingredientId}
+                        {ingredient?.name ?? 'Unknown Ingredient'}
                       </span>
                       <span className='text-muted-foreground text-sm'>
                         {ing.servings} {ing.servings === 1 ? 'serving' : 'servings'}

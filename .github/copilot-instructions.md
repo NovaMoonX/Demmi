@@ -143,9 +143,11 @@ import { generatedId } from '@utils/generatedId';
 - `@utils/` → `src/utils/`
 
 ### 11. ID Generation
-- **ALWAYS** use `generatedId(prefix)` from `@utils/generatedId` for all ID creation
+- **ALWAYS** use `generatedId(entity)` from `@utils/generatedId` for all ID creation
 - **NEVER** use `Date.now()`, `Math.random()`, or template literals to create IDs inline
-- The `prefix` should be a short meaningful string describing the entity (e.g., `'meal'`, `'ingredient'`, `'sl'`)
+- Uses **nanoid** for URL-friendly entities (appear in routes): `'meal'`, `'ingredient'`, `'planned'`
+- Uses **uuid v4** for other entities: `'chat'`, `'msg'`, `'sl'`, `'prod'`
+- The `entity` param is a typed union — use the right entity type for the context
 
 ```tsx
 // ❌ NEVER DO THIS - inline ID generation
@@ -154,8 +156,9 @@ id: `msg-${Date.now()}`
 
 // ✅ ALWAYS DO THIS - use generatedId utility
 import { generatedId } from '@utils/generatedId';
-id: generatedId('meal')
-id: generatedId('msg')
+id: generatedId('meal')      // nanoid - URL-friendly
+id: generatedId('msg')       // uuid v4
+id: generatedId('ingredient') // nanoid - URL-friendly
 ```
 
 ### 12. Number Parsing
@@ -175,16 +178,66 @@ Number(someString) || 0  // with fallback
 ### 13. Label Component
 - **ALWAYS** use the `Label` component from `@moondreamsdev/dreamer-ui/components` for form labels
 - **NEVER** use the native HTML `<label>` element
+- **NEVER** add `className` to `Label` — the component handles its own styling
 
 ```tsx
 // ❌ NEVER DO THIS
 <label htmlFor="name" className="text-foreground mb-1 block text-sm font-medium">
   Name
 </label>
+<Label htmlFor="name" className="text-sm text-muted-foreground">Name</Label>
 
 // ✅ ALWAYS DO THIS
 import { Label } from '@moondreamsdev/dreamer-ui/components';
 <Label htmlFor="name">Name</Label>
+```
+
+### 14. Nullish Coalescing (`??` vs `||`)
+- **ALWAYS** use `??` (nullish coalescing) instead of `||` by default
+- Only use `||` when you explicitly need to handle falsy values like empty strings (`''`), `0`, or `NaN`
+
+```tsx
+// ❌ Use || only when falsy check is intentional
+existingItem?.category || 'breakfast'   // use ?? instead
+existingItem?.products || []            // use ?? instead
+conversations[0]?.id || null            // use ?? instead
+
+// ✅ Use ?? for null/undefined fallbacks
+existingItem?.category ?? 'breakfast'
+existingItem?.products ?? []
+conversations[0]?.id ?? null
+
+// ✅ Keep || for explicit falsy checks
+productUrl || null           // converts empty string '' to null (intentional)
+form.note.trim() || null     // converts empty string to null (intentional)
+Number(x) || 0               // handles NaN (intentional)
+```
+
+### 15. View / Edit Mode for Detail Pages
+- Detail pages for **existing items** must support a **read-only view mode** by default
+- Creating a **new item** always shows the form directly (no view mode)
+- Use `const [isViewMode, setIsViewMode] = useState(isEditing)` to initialize
+
+```tsx
+const isEditing = id !== 'new';
+const [isViewMode, setIsViewMode] = useState(isEditing);
+
+// Cancel in edit form:
+const handleCancel = () => {
+  if (isEditing) {
+    setIsViewMode(true);  // return to view mode
+  } else {
+    navigate('/items');   // leave create form
+  }
+};
+
+// View mode: show read-only UI with "Edit" and "Delete" buttons
+if (isViewMode && isEditing && existingItem) {
+  return <ViewModeUI onEdit={() => setIsViewMode(false)} ... />;
+}
+
+// Edit/Create form (default when not view mode)
+return <form>...</form>;
 ```
 
 ## Quick Reference
@@ -194,10 +247,12 @@ import { Label } from '@moondreamsdev/dreamer-ui/components';
 - Check Dreamer UI first
 - Use import aliases: `@components/`, `@hooks/`, `@lib/`, `@screens/`, `@ui/`, etc.
 - Follow structured folder organization with proper separation of concerns
-- **ID generation: ALWAYS use `generatedId(prefix)` from `@utils/generatedId`**
+- **ID generation: ALWAYS use `generatedId(entity)` from `@utils/generatedId`**
 - **Number parsing: ALWAYS use `Number()`, NEVER `parseFloat()` or `parseInt()`**
-- **Form labels: ALWAYS use `Label` from Dreamer UI, NEVER native `<label>`**
+- **Form labels: ALWAYS use `Label` from Dreamer UI, NEVER native `<label>` or className on Label**
 - **Components: Organize in subfolders by screen/feature under `src/components/`**
+- **Nullish coalescing: Use `??` by default, only `||` for explicit falsy checks**
+- **Detail pages: Always implement view/edit mode for existing items**
 
 ## ⚠️ Critical Reminders
 - **2 spaces for indentation - ALWAYS**
@@ -207,7 +262,9 @@ import { Label } from '@moondreamsdev/dreamer-ui/components';
 - **`parseFloat` and `parseInt` are FORBIDDEN - use `Number()` instead**
 - **Inline ID generation (Date.now, Math.random) is FORBIDDEN - use `generatedId()`**
 - **HTML `<label>` is FORBIDDEN - use `Label` from `@moondreamsdev/dreamer-ui/components`**
+- **`className` on `Label` is FORBIDDEN - Label handles its own styling**
 - **Components must be organized in subfolders by feature under `src/components/`**
+- **Use `??` instead of `||` unless explicitly handling falsy values (empty string, NaN, 0)**
 
 ## 📚 Documentation Maintenance
 
