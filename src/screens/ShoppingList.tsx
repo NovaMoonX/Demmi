@@ -7,6 +7,7 @@ import {
   Select,
   Modal,
   Checkbox,
+  Label,
 } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
@@ -237,9 +238,9 @@ function ItemFormModal({
         {/* Ingredient selector */}
         {isIngredientLinked && ingredientOptions.length > 0 && (
           <div>
-            <label className='text-foreground mb-1 block text-sm font-medium'>
+            <Label>
               Ingredient
-            </label>
+            </Label>
             <Select
               options={[{ value: '', text: 'Select ingredient…' }, ...ingredientOptions]}
               value={form.ingredientId ?? ''}
@@ -253,9 +254,9 @@ function ItemFormModal({
         {/* Product selector */}
         {isIngredientLinked && productOptions.length > 0 && (
           <div>
-            <label className='text-foreground mb-1 block text-sm font-medium'>
+            <Label>
               Product <span className='text-muted-foreground font-normal'>(optional)</span>
-            </label>
+            </Label>
             <Select
               options={[{ value: '', text: 'No specific product' }, ...productOptions]}
               value={form.productId ?? ''}
@@ -266,9 +267,9 @@ function ItemFormModal({
 
         {/* Name */}
         <div>
-          <label className='text-foreground mb-1 block text-sm font-medium'>
+          <Label>
             Name <span className='text-destructive'>*</span>
-          </label>
+          </Label>
           <Input
             value={form.name}
             onChange={(e) => onFormChange({ name: e.target.value })}
@@ -279,9 +280,9 @@ function ItemFormModal({
         {/* Amount + Unit */}
         <div className='flex gap-3'>
           <div className='flex-1'>
-            <label className='text-foreground mb-1 block text-sm font-medium'>
+            <Label>
               Amount <span className='text-muted-foreground font-normal'>(optional)</span>
-            </label>
+            </Label>
             <Input
               type='number'
               min='0'
@@ -292,9 +293,9 @@ function ItemFormModal({
             />
           </div>
           <div className='flex-1'>
-            <label className='text-foreground mb-1 block text-sm font-medium'>
+            <Label>
               Unit <span className='text-muted-foreground font-normal'>(optional)</span>
-            </label>
+            </Label>
             <Select
               options={[{ value: '', text: 'No unit' }, ...UNIT_OPTIONS]}
               value={form.unit}
@@ -305,9 +306,9 @@ function ItemFormModal({
 
         {/* Category */}
         <div>
-          <label className='text-foreground mb-1 block text-sm font-medium'>
+          <Label>
             Category
-          </label>
+          </Label>
           <Select
             options={CATEGORY_OPTIONS}
             value={form.category}
@@ -317,9 +318,9 @@ function ItemFormModal({
 
         {/* Note */}
         <div>
-          <label className='text-foreground mb-1 block text-sm font-medium'>
+          <Label>
             Note <span className='text-muted-foreground font-normal'>(optional)</span>
-          </label>
+          </Label>
           <Textarea
             value={form.note}
             onChange={(e) => onFormChange({ note: e.target.value })}
@@ -441,7 +442,7 @@ export function ShoppingList() {
   const handleSubmit = () => {
     if (form.name.trim() === '') return;
 
-    const amountParsed = form.amount !== '' ? parseFloat(form.amount) : null;
+    const amountParsed = form.amount !== '' ? Number(form.amount) : null;
     const unitParsed = form.unit !== '' ? (form.unit as MeasurementUnit) : null;
 
     if (editingItem) {

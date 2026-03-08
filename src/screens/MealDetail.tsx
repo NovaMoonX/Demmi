@@ -15,6 +15,7 @@ import { MEASUREMENT_UNIT_LABELS } from '@lib/ingredients';
 import { useAppSelector, useAppDispatch } from '@store/hooks';
 import { createMeal, updateMeal, deleteMeal } from '@store/slices/mealsSlice';
 import type { DynamicListItem } from '@moondreamsdev/dreamer-ui/components';
+import { generatedId } from '@utils/generatedId';
 
 type MealIngredientListItemData = {
   ingredientId: string;
@@ -283,7 +284,7 @@ export function MealDetail() {
       return;
     }
 
-    const parsedServings = parseFloat(ingredientModalServings);
+    const parsedServings = Number(ingredientModalServings);
     const nextServings =
       Number.isNaN(parsedServings) || parsedServings <= 0
         ? 0.1
@@ -316,7 +317,7 @@ export function MealDetail() {
       const result = [
         ...prev,
         {
-          id: `meal-ing-${Date.now()}`,
+          id: generatedId('meal-ing'),
           content: ingredientModalIngredientId,
           ingredientId: ingredientModalIngredientId,
           servings: nextServings,
@@ -371,9 +372,9 @@ export function MealDetail() {
       title,
       description,
       category: category as MealCategory,
-      prepTime: parseInt(prepTime, 10) || 0,
-      cookTime: parseInt(cookTime, 10) || 0,
-      servingSize: parseInt(servingSize, 10) || 1,
+      prepTime: Number(prepTime) || 0,
+      cookTime: Number(cookTime) || 0,
+      servingSize: Number(servingSize) || 1,
       imageUrl: imageUrl,
       instructions: instructionsList,
       ingredients: selectedIngredients,
@@ -430,12 +431,9 @@ export function MealDetail() {
 
       <form onSubmit={handleSubmit} className='space-y-6'>
         <div>
-          <label
-            htmlFor='title'
-            className='text-foreground mb-1 block text-sm font-medium'
-          >
+          <Label htmlFor='title'>
             Title *
-          </label>
+          </Label>
           <Input
             id='title'
             type='text'
@@ -447,12 +445,9 @@ export function MealDetail() {
         </div>
 
         <div>
-          <label
-            htmlFor='description'
-            className='text-foreground mb-1 block text-sm font-medium'
-          >
+          <Label htmlFor='description'>
             Description *
-          </label>
+          </Label>
           <Textarea
             id='description'
             value={description}
@@ -464,12 +459,9 @@ export function MealDetail() {
         </div>
 
         <div>
-          <label
-            htmlFor='category'
-            className='text-foreground mb-1 block text-sm font-medium'
-          >
+          <Label htmlFor='category'>
             Category *
-          </label>
+          </Label>
           <Select
             options={categoryOptions}
             value={category}
@@ -480,12 +472,9 @@ export function MealDetail() {
 
         <div className='grid grid-cols-3 items-end gap-4'>
           <div className='flex flex-col'>
-            <label
-              htmlFor='prepTime'
-              className='text-foreground mb-1 block min-h-10 text-sm font-medium sm:min-h-0'
-            >
+            <Label htmlFor='prepTime'>
               Prep Time (min) *
-            </label>
+            </Label>
             <Input
               id='prepTime'
               type='number'
@@ -497,12 +486,9 @@ export function MealDetail() {
           </div>
 
           <div className='flex flex-col'>
-            <label
-              htmlFor='cookTime'
-              className='text-foreground mb-1 block min-h-10 text-sm font-medium sm:min-h-0'
-            >
+            <Label htmlFor='cookTime'>
               Cook Time (min) *
-            </label>
+            </Label>
             <Input
               id='cookTime'
               type='number'
@@ -514,12 +500,9 @@ export function MealDetail() {
           </div>
 
           <div className='flex flex-col'>
-            <label
-              htmlFor='servingSize'
-              className='text-foreground mb-1 block min-h-10 text-sm font-medium sm:min-h-0'
-            >
+            <Label htmlFor='servingSize'>
               Servings *
-            </label>
+            </Label>
             <Input
               id='servingSize'
               type='number'
@@ -532,12 +515,9 @@ export function MealDetail() {
         </div>
 
         <div>
-          <label
-            htmlFor='image'
-            className='text-foreground mb-1 block text-sm font-medium'
-          >
+          <Label htmlFor='image'>
             Meal Image
-          </label>
+          </Label>
           <input
             id='image'
             type='file'
@@ -560,9 +540,9 @@ export function MealDetail() {
         </div>
 
         <div>
-          <label className='text-foreground mb-2 block text-sm font-medium'>
+          <Label>
             Ingredients
-          </label>
+          </Label>
           <div className='space-y-3'>
             {mealIngredientItems.length > 0 ? (
               <ul className='border-border divide-border divide-y rounded-lg border'>
@@ -652,9 +632,9 @@ export function MealDetail() {
             >
               <div className='w-full space-y-3 sm:min-w-96'>
                 <div>
-                  <label className='text-foreground mb-1 block text-sm font-medium'>
+                  <Label>
                     Ingredient
-                  </label>
+                  </Label>
                   <Select
                     options={ingredientOptions}
                     value={ingredientModalIngredientId}
@@ -663,9 +643,9 @@ export function MealDetail() {
                   />
                 </div>
                 <div>
-                  <label className='text-foreground mb-1 block text-sm font-medium'>
+                  <Label>
                     Quantity
-                  </label>
+                  </Label>
                   <Input
                     type='number'
                     min='0.1'
@@ -676,9 +656,9 @@ export function MealDetail() {
                   />
                 </div>
                 <div>
-                  <label className='text-foreground mb-1 block text-sm font-medium'>
+                  <Label>
                     Unit
-                  </label>
+                  </Label>
                   <Select
                     options={unitOptions}
                     value={ingredientModalUnit}
@@ -711,9 +691,9 @@ export function MealDetail() {
         </div>
 
         <div>
-          <label className='text-foreground mb-2 block text-sm font-medium'>
+          <Label>
             Instructions *
-          </label>
+          </Label>
           <DynamicList
             items={instructions}
             onItemsChange={setInstructions}

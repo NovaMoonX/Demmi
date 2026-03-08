@@ -22,7 +22,7 @@ import {
   updateIngredient,
   deleteIngredient,
 } from '@store/slices/ingredientsSlice';
-import { capitalize } from '@/utils';
+import { capitalize, generatedId } from '@/utils';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 
 export function IngredientDetail() {
@@ -143,15 +143,11 @@ export function IngredientDetail() {
       return;
 
     const newProduct: Product = {
-      id: `prod-${Date.now()}`,
+      id: generatedId('prod'),
       retailer: productRetailer,
       label: productLabel,
-      cost: parseFloat(productCost),
-      servings: parseFloat(productServings),
-      url: productUrl || null,
-    };
-
-    const updatedProducts = [...products, newProduct];
+      cost: Number(productCost),
+      servings: Number(productServings),
     setProducts(updatedProducts);
     resetProductForm();
   };
@@ -182,8 +178,8 @@ export function IngredientDetail() {
           id: p.id,
           retailer: productRetailer,
           label: productLabel,
-          cost: parseFloat(productCost),
-          servings: parseFloat(productServings),
+          cost: Number(productCost),
+          servings: Number(productServings),
           url: productUrl || null,
         };
         return result;
@@ -230,21 +226,21 @@ export function IngredientDetail() {
     const ingredientData: Omit<Ingredient, 'id'> = {
       name,
       type: type as IngredientType,
-      currentAmount: parseFloat(currentAmount) || 0,
-      servingSize: parseFloat(servingSize) || 100,
+      currentAmount: Number(currentAmount) || 0,
+      servingSize: Number(servingSize) || 100,
       unit: unit as MeasurementUnit,
       otherUnit: unit === 'other' ? otherUnit : null,
       products: products,
       defaultProductId: defaultProductId,
       imageUrl: imageUrl,
       nutrients: {
-        protein: parseFloat(protein) || 0,
-        carbs: parseFloat(carbs) || 0,
-        fat: parseFloat(fat) || 0,
-        fiber: parseFloat(fiber) || 0,
-        sugar: parseFloat(sugar) || 0,
-        sodium: parseFloat(sodium) || 0,
-        calories: parseFloat(calories) || 0,
+        protein: Number(protein) || 0,
+        carbs: Number(carbs) || 0,
+        fat: Number(fat) || 0,
+        fiber: Number(fiber) || 0,
+        sugar: Number(sugar) || 0,
+        sodium: Number(sodium) || 0,
+        calories: Number(calories) || 0,
       },
     };
 
@@ -257,7 +253,7 @@ export function IngredientDetail() {
       );
       navigate(fromMealPath ?? '/ingredients');
     } else {
-      const newIngredientId = `ingredient-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+      const newIngredientId = generatedId('ingredient');
       dispatch(createIngredient({ ...ingredientData, id: newIngredientId }));
       if (fromMealPath) {
         navigate(fromMealPath, { state: { newIngredientId } });
@@ -311,12 +307,9 @@ export function IngredientDetail() {
 
       <form onSubmit={handleSubmit} className='space-y-6'>
         <div>
-          <label
-            htmlFor='name'
-            className='text-foreground mb-1 block text-sm font-medium'
-          >
+          <Label htmlFor='name'>
             Name *
-          </label>
+          </Label>
           <Input
             id='name'
             type='text'
@@ -328,12 +321,9 @@ export function IngredientDetail() {
         </div>
 
         <div>
-          <label
-            htmlFor='type'
-            className='text-foreground mb-1 block text-sm font-medium'
-          >
+          <Label htmlFor='type'>
             Type *
-          </label>
+          </Label>
           <Select
             options={typeOptions}
             value={type}
@@ -344,12 +334,9 @@ export function IngredientDetail() {
 
         <div className='grid grid-cols-2 items-end gap-4'>
           <div className='flex flex-col'>
-            <label
-              htmlFor='currentAmount'
-              className='text-foreground mb-1 block text-sm font-medium'
-            >
+            <Label htmlFor='currentAmount'>
               Current Amount *
-            </label>
+            </Label>
             <Input
               id='currentAmount'
               type='number'
@@ -362,12 +349,9 @@ export function IngredientDetail() {
           </div>
 
           <div className='flex flex-col'>
-            <label
-              htmlFor='servingSize'
-              className='text-foreground mb-1 block text-sm font-medium'
-            >
+            <Label htmlFor='servingSize'>
               Serving Size *
-            </label>
+            </Label>
             <Input
               id='servingSize'
               type='number'
@@ -382,12 +366,9 @@ export function IngredientDetail() {
 
         <div className='grid grid-cols-2 items-end gap-4'>
           <div className='flex flex-col'>
-            <label
-              htmlFor='unit'
-              className='text-foreground mb-1 block text-sm font-medium'
-            >
+            <Label htmlFor='unit'>
               Unit *
-            </label>
+            </Label>
             <Select
               options={unitOptions}
               value={unit}
@@ -418,12 +399,9 @@ export function IngredientDetail() {
         </div>
 
         <div>
-          <label
-            htmlFor='image'
-            className='text-foreground mb-1 block text-sm font-medium'
-          >
+          <Label htmlFor='image'>
             Ingredient Image
-          </label>
+          </Label>
           <input
             id='image'
             type='file'
@@ -452,12 +430,9 @@ export function IngredientDetail() {
 
           <div className='grid grid-cols-2 gap-4'>
             <div className='flex flex-col'>
-              <label
-                htmlFor='protein'
-                className='text-foreground mb-1 block text-sm font-medium'
-              >
+              <Label htmlFor='protein'>
                 Protein (g) *
-              </label>
+              </Label>
               <Input
                 id='protein'
                 type='number'
@@ -470,12 +445,9 @@ export function IngredientDetail() {
             </div>
 
             <div className='flex flex-col'>
-              <label
-                htmlFor='carbs'
-                className='text-foreground mb-1 block text-sm font-medium'
-              >
+              <Label htmlFor='carbs'>
                 Carbohydrates (g) *
-              </label>
+              </Label>
               <Input
                 id='carbs'
                 type='number'
@@ -488,12 +460,9 @@ export function IngredientDetail() {
             </div>
 
             <div className='flex flex-col'>
-              <label
-                htmlFor='fat'
-                className='text-foreground mb-1 block text-sm font-medium'
-              >
+              <Label htmlFor='fat'>
                 Fat (g) *
-              </label>
+              </Label>
               <Input
                 id='fat'
                 type='number'
@@ -506,12 +475,9 @@ export function IngredientDetail() {
             </div>
 
             <div className='flex flex-col'>
-              <label
-                htmlFor='fiber'
-                className='text-foreground mb-1 block text-sm font-medium'
-              >
+              <Label htmlFor='fiber'>
                 Fiber (g) *
-              </label>
+              </Label>
               <Input
                 id='fiber'
                 type='number'
@@ -524,12 +490,9 @@ export function IngredientDetail() {
             </div>
 
             <div className='flex flex-col'>
-              <label
-                htmlFor='sugar'
-                className='text-foreground mb-1 block text-sm font-medium'
-              >
+              <Label htmlFor='sugar'>
                 Sugar (g) *
-              </label>
+              </Label>
               <Input
                 id='sugar'
                 type='number'
@@ -542,12 +505,9 @@ export function IngredientDetail() {
             </div>
 
             <div className='flex flex-col'>
-              <label
-                htmlFor='sodium'
-                className='text-foreground mb-1 block text-sm font-medium'
-              >
+              <Label htmlFor='sodium'>
                 Sodium (mg) *
-              </label>
+              </Label>
               <Input
                 id='sodium'
                 type='number'
@@ -560,12 +520,9 @@ export function IngredientDetail() {
             </div>
 
             <div className='col-span-2 flex flex-col'>
-              <label
-                htmlFor='calories'
-                className='text-foreground mb-1 block text-sm font-medium'
-              >
+              <Label htmlFor='calories'>
                 Calories (kcal) *
-              </label>
+              </Label>
               <Input
                 id='calories'
                 type='number'
@@ -692,9 +649,9 @@ export function IngredientDetail() {
                 </h3>
                 <div className='grid grid-cols-2 gap-4'>
                   <div className='flex flex-col'>
-                    <label className='text-foreground mb-1 block text-sm font-medium'>
+                    <Label>
                       Retailer
-                    </label>
+                    </Label>
                     <Input
                       type='text'
                       value={productRetailer}
@@ -704,9 +661,9 @@ export function IngredientDetail() {
                   </div>
 
                   <div className='flex flex-col'>
-                    <label className='text-foreground mb-1 block text-sm font-medium'>
+                    <Label>
                       Product Label
-                    </label>
+                    </Label>
                     <Input
                       type='text'
                       value={productLabel}
@@ -716,9 +673,9 @@ export function IngredientDetail() {
                   </div>
 
                   <div className='flex flex-col'>
-                    <label className='text-foreground mb-1 block text-sm font-medium'>
+                    <Label>
                       Cost ($)
-                    </label>
+                    </Label>
                     <Input
                       type='number'
                       step='0.01'
@@ -730,9 +687,9 @@ export function IngredientDetail() {
                   </div>
 
                   <div className='flex flex-col'>
-                    <label className='text-foreground mb-1 block text-sm font-medium'>
+                    <Label>
                       Servings
-                    </label>
+                    </Label>
                     <Input
                       type='number'
                       step='0.01'
@@ -744,9 +701,9 @@ export function IngredientDetail() {
                   </div>
 
                   <div className='col-span-2 flex flex-col'>
-                    <label className='text-foreground mb-1 block text-sm font-medium'>
+                    <Label>
                       Product URL (optional)
-                    </label>
+                    </Label>
                     <Input
                       type='url'
                       value={productUrl}
