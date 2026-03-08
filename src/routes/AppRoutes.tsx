@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Outlet } from 'react-router-dom';
 
 import Home from '@screens/Home';
 import Layout from '@ui/Layout';
@@ -9,7 +9,7 @@ import ErrorFallback from '@screens/ErrorFallback';
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Layout />,
+    element: <Outlet />,
     ErrorBoundary: ErrorFallback,
     children: [
       {
@@ -45,68 +45,73 @@ export const router = createBrowserRouter([
         element: <ProtectedRoutes />,
         children: [
           {
-            path: 'chat',
-            HydrateFallback: Loading,
-            lazy: async () => {
-              const { default: Chat } = await import('@screens/Chat');
-              return { Component: Chat };
-            },
-          },
-          {
-            path: 'ingredients',
-            HydrateFallback: Loading,
-            lazy: async () => {
-              const { default: Ingredients } = await import('@screens/Ingredients');
-              return { Component: Ingredients };
-            },
-          },
-          {
-            path: 'ingredients/:id',
-            HydrateFallback: Loading,
-            lazy: async () => {
-              const { default: IngredientDetail } = await import('@screens/IngredientDetail');
-              return { Component: IngredientDetail };
-            },
-          },
-          {
-            path: 'meals',
-            HydrateFallback: Loading,
-            lazy: async () => {
-              const { default: Meals } = await import('@screens/Meals');
-              return { Component: Meals };
-            },
-          },
-          {
-            path: 'meals/:id',
-            HydrateFallback: Loading,
-            lazy: async () => {
-              const { default: MealDetail } = await import('@screens/MealDetail');
-              return { Component: MealDetail };
-            },
-          },
-          {
-            path: 'calendar',
-            HydrateFallback: Loading,
-            lazy: async () => {
-              const { default: CalendarScreen } = await import('@screens/CalendarScreen');
-              return { Component: CalendarScreen };
-            },
-          },
-          {
-            path: 'shopping-list',
-            HydrateFallback: Loading,
-            lazy: async () => {
-              const { ShoppingList } = await import('@screens/ShoppingList');
-              return { Component: ShoppingList };
-            },
-          },
-          {
-            path: 'account',
-            HydrateFallback: Loading,
-            lazy: async () => {
-              const { default: Account } = await import('@screens/Account');
-              return { Component: Account };
-            },
+            element: <Layout />,
+            children: [
+              {
+                path: 'chat',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { default: Chat } = await import('@screens/Chat');
+                  return { Component: Chat };
+                },
+              },
+              {
+                path: 'ingredients',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { default: Ingredients } = await import('@screens/Ingredients');
+                  return { Component: Ingredients };
+                },
+              },
+              {
+                path: 'ingredients/:id',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { default: IngredientDetail } = await import('@screens/IngredientDetail');
+                  return { Component: IngredientDetail };
+                },
+              },
+              {
+                path: 'meals',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { default: Meals } = await import('@screens/Meals');
+                  return { Component: Meals };
+                },
+              },
+              {
+                path: 'meals/:id',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { default: MealDetail } = await import('@screens/MealDetail');
+                  return { Component: MealDetail };
+                },
+              },
+              {
+                path: 'calendar',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { default: CalendarScreen } = await import('@screens/CalendarScreen');
+                  return { Component: CalendarScreen };
+                },
+              },
+              {
+                path: 'shopping-list',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { ShoppingList } = await import('@screens/ShoppingList');
+                  return { Component: ShoppingList };
+                },
+              },
+              {
+                path: 'account',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { default: Account } = await import('@screens/Account');
+                  return { Component: Account };
+                },
+              },
+            ],
           },
         ],
       },
