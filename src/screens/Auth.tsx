@@ -1,15 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthForm } from '@moondreamsdev/dreamer-ui/components';
 import { useAuth } from '@hooks/useAuth';
-import { useAppDispatch } from '@store/hooks';
+import { useAppDispatch, useAppSelector } from '@store/hooks';
 import { startDemoSession } from '@store/slices/demoSlice';
 
 export function Auth() {
   const navigate = useNavigate();
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user, loading } = useAuth();
   const dispatch = useAppDispatch();
+  const isDemoActive = useAppSelector((state) => state.demo.isActive);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (!loading && (user || isDemoActive)) {
+      navigate('/chat');
+    }
+  }, [loading, user, isDemoActive, navigate]);
 
   const handleEmailSubmit = async ({
     data,

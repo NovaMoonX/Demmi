@@ -1,16 +1,25 @@
 import { useNavigate } from 'react-router-dom';
 import { Button, Card } from '@moondreamsdev/dreamer-ui/components';
 import { APP_TITLE } from '@lib/app';
-import { useAppDispatch } from '@store/hooks';
+import { useAppDispatch, useAppSelector } from '@store/hooks';
 import { startDemoSession } from '@store/slices/demoSlice';
+import { useAuth } from '@hooks/useAuth';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 
 function Home() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { user } = useAuth();
+  const isDemoActive = useAppSelector((state) => state.demo.isActive);
+
+  const isAuthenticated = !!user || isDemoActive;
 
   const handleGetStarted = () => {
-    navigate('/auth');
+    if (isAuthenticated) {
+      navigate('/chat');
+    } else {
+      navigate('/auth');
+    }
   };
 
   const handleTryDemo = async () => {
@@ -85,16 +94,18 @@ function Home() {
                 size="lg"
                 className="min-w-50"
               >
-                Get Started
+                {isAuthenticated ? 'Enter App' : 'Get Started'}
               </Button>
-              <Button
-                onClick={handleTryDemo}
-                variant="outline"
-                size="lg"
-                className="min-w-50"
-              >
-                🎭 Try Demo Mode
-              </Button>
+              {!isAuthenticated && (
+                <Button
+                  onClick={handleTryDemo}
+                  variant="outline"
+                  size="lg"
+                  className="min-w-50"
+                >
+                  🎭 Try Demo Mode
+                </Button>
+              )}
             </div>
           </div>
         </section>
@@ -147,16 +158,18 @@ function Home() {
                 size="lg"
                 className="min-w-50"
               >
-                Sign Up Free
+                {isAuthenticated ? 'Enter App' : 'Sign Up Free'}
               </Button>
-              <Button
-                href="/about"
-                variant="outline"
-                size="lg"
-                className="min-w-50"
-              >
-                Learn More
-              </Button>
+              {!isAuthenticated && (
+                <Button
+                  href="/about"
+                  variant="outline"
+                  size="lg"
+                  className="min-w-50"
+                >
+                  Learn More
+                </Button>
+              )}
             </div>
           </div>
         </section>
