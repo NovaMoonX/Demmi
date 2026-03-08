@@ -58,12 +58,12 @@ export function Auth() {
 
   const handleSuccess = () => {
     // Navigation will be handled by ProtectedRoute
-    navigate('/');
+    navigate('/chat');
   };
 
   const handleTryDemo = async () => {
     await dispatch(startDemoSession());
-    navigate('/');
+    navigate('/chat');
   };
 
   const validatePassword = (password: string): string | undefined => {
