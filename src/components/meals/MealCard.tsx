@@ -97,19 +97,19 @@ export function MealCard({ meal, onClick }: MealCardProps) {
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Total Time</span>
             <span className="font-semibold text-foreground">
-              {totalTime} { totalTime === 1 ? 'minute' : 'minutes' }
+              {totalTime}{totalTime === 1 ? ' minute' : ' minutes'}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm mt-2">
             <span className="text-muted-foreground">Instructions</span>
             <span className="font-semibold text-foreground">
-              {meal.instructions.length} { meal.instructions.length === 1 ? 'step' : 'steps' }
+              {meal.instructions.length}{meal.instructions.length === 1 ? ' step' : ' steps'}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm mt-2">
             <span className="text-muted-foreground">Ingredients</span>
             <span className="font-semibold text-foreground">
-              {meal.ingredients.length} { meal.ingredients.length === 1 ? 'item' : 'items' }
+              {meal.ingredients.length}{meal.ingredients.length === 1 ? ' item' : ' items'}
             </span>
           </div>
         </div>

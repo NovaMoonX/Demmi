@@ -59,6 +59,7 @@ export function Chat() {
     // Create user message
     const userMessage: ChatMessageType = {
       id: generatedId('msg'),
+      role: 'user',
       content: messageContent,
       timestamp: Date.now(),
     };
