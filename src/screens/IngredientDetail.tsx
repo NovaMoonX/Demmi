@@ -15,6 +15,7 @@ import {
   Product,
   INGREDIENT_TYPE_EMOJIS,
   INGREDIENT_TYPE_COLORS,
+  MEASUREMENT_UNIT_OPTIONS,
   MEASUREMENT_UNIT_LABELS,
 } from '@lib/ingredients';
 import { useAppSelector, useAppDispatch } from '@store/hooks';
@@ -107,13 +108,6 @@ export function IngredientDetail() {
     ([typeKey, emoji]) => ({
       value: typeKey,
       text: `${emoji} ${capitalize(typeKey)}`,
-    }),
-  );
-
-  const unitOptions = Object.entries(MEASUREMENT_UNIT_LABELS).map(
-    ([unitKey, label]) => ({
-      value: unitKey,
-      text: label,
     }),
   );
 
@@ -545,7 +539,7 @@ export function IngredientDetail() {
               Unit *
             </Label>
             <Select
-              options={unitOptions}
+              options={MEASUREMENT_UNIT_OPTIONS}
               value={unit}
               onChange={(value) => setUnit(value as MeasurementUnit)}
               placeholder='Select unit'

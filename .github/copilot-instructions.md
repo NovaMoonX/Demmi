@@ -16,6 +16,9 @@
 - **Always use 2 spaces for indentation** (NOT 4 spaces or tabs)
 - Ensure consistent indentation across all files
 - Configure your editor to use 2 spaces for TypeScript, JavaScript, TSX, and JSX files
+- **DO NOT add comments for file structure sections** like `// ─── Constants ───` or `// ─── Component ───`
+  - These comments are visual noise and should be omitted
+  - Code organization should be self-evident from the structure itself
 
 ### 5. Return Value Debugging
 - Always store return values in variables before returning them for easier debugging
@@ -90,23 +93,38 @@ Follow the existing structure:
 ```
 src/
 ├── components/         # Reusable UI components (organized in subfolders by screen/feature)
+│   ├── calendar/       # Calendar-related components (e.g., TotalsCard, DayCard, MonthView)
 │   ├── chat/           # Chat-related components
-│   └── meals/          # Meals-related components
+│   ├── meals/          # Meals-related components
+│   └── shopping/       # Shopping list components (e.g., ItemRow, ItemFormModal)
 ├── contexts/           # React context providers (Should always import the context from its hook file)
 ├── hooks/              # Custom React hooks (should always declare the context they use)
-├── lib/                # Utilities and constants
+├── lib/                # Domain logic, types, constants, and utilities per feature
+│   ├── calendar/       # Calendar types, constants
+│   ├── ingredients/    # Ingredient types, constants, emojis, colors
+│   ├── meals/          # Meal types, constants, emojis, colors
+│   └── shoppingList/   # Shopping list types
 ├── routes/             # Router configuration
-├── screens/            # Page/route components
-├── store/              # State management (i.e. Redux store)
+├── screens/            # Page/route components (main views)
+├── store/              # State management (Redux store and slices)
 ├── styles/             # Additional CSS/styling files
 ├── ui/                 # Layout and core UI components
-├── utils/              # Utility functions
+├── utils/              # Shared utility functions (capitalize, generatedId, etc.)
 ```
 
 **Components folder rules:**
-- Organize components into subfolders by screen/tab/feature (e.g., `chat/`, `meals/`)
-- Each subfolder should have a barrel `index.ts` that re-exports all components in it
+- Organize components into subfolders by screen/tab/feature (e.g., `calendar/`, `meals/`, `shopping/`)
+- Extract sub-components from screen files into dedicated component files
+- Each subfolder should have a barrel `index.ts` that re-exports all components, types, and utilities
+- Component files may include utility functions specific to that component
 - Never dump all components directly in `components/` root — always use a subfolder
+
+**Lib folder rules:**
+- Each feature domain gets its own subfolder (e.g., `meals/`, `ingredients/`, `calendar/`)
+- Use `.types.ts` for TypeScript interfaces and types
+- Use `.constants.ts` for constants, colors, emojis, and options
+- Use `.mock.ts` for mock data (development only)
+- Export everything through barrel `index.ts` files
 
 ### 9. Import Patterns
 ```tsx
@@ -120,8 +138,10 @@ import { APP_TITLE } from '@lib/app';
 import Home from '@screens/Home';
 import Layout from '@ui/Layout';
 import { router } from '@routes/AppRoutes';
-import { MealCard } from '@components/meals/MealCard';  // subfolder path
-import { ChatHistory } from '@components/chat/ChatHistory';  // subfolder path
+import { MealCard } from '@components/meals';
+import { ChatHistory } from '@components/chat';
+import { TotalsCard, DayCard, MonthView } from '@components/calendar';
+import { ItemRow, ItemFormModal } from '@components/shopping';
 import { useCustomHook } from '@hooks/useCustomHook';
 import { MyContext } from '@contexts/MyContext';
 import { store } from '@store';
@@ -243,19 +263,22 @@ return <form>...</form>;
 ## Quick Reference
 - Component syntax: `export function ComponentName`
 - **Indentation: Always use 2 spaces (NOT 4 spaces or tabs)**
+- **NO file structure comments** like `// ─── Constants ───`
 - **Class names: ALWAYS use `join()` for conditionals - NEVER template literals**
 - Check Dreamer UI first
 - Use import aliases: `@components/`, `@hooks/`, `@lib/`, `@screens/`, `@ui/`, etc.
+- **Components: Extract to subfolders under `src/components/` by feature (calendar/, shopping/, meals/)**
+- **Lib: Organize by domain with `.types.ts`, `.constants.ts`, and barrel `index.ts` exports**
 - Follow structured folder organization with proper separation of concerns
 - **ID generation: ALWAYS use `generatedId(entity)` from `@utils/generatedId`**
 - **Number parsing: ALWAYS use `Number()`, NEVER `parseFloat()` or `parseInt()`**
 - **Form labels: ALWAYS use `Label` from Dreamer UI, NEVER native `<label>` or className on Label**
-- **Components: Organize in subfolders by screen/feature under `src/components/`**
 - **Nullish coalescing: Use `??` by default, only `||` for explicit falsy checks**
 - **Detail pages: Always implement view/edit mode for existing items**
 
 ## ⚠️ Critical Reminders
 - **2 spaces for indentation - ALWAYS**
+- **NO file structure comments** (e.g., `// ─── Constants ───`) - code should be self-documenting
 - **Template literals with `${` in className are FORBIDDEN**
 - **Always import and use `join` from `@moondreamsdev/dreamer-ui/utils`**
 - **Before writing any conditional className, ask: "Am I using join()?"**
@@ -264,6 +287,8 @@ return <form>...</form>;
 - **HTML `<label>` is FORBIDDEN - use `Label` from `@moondreamsdev/dreamer-ui/components`**
 - **`className` on `Label` is FORBIDDEN - Label handles its own styling**
 - **Components must be organized in subfolders by feature under `src/components/`**
+- **Extract screen sub-components to separate files in `@components/<feature>/`**
+- **Use `.types.ts` and `.constants.ts` in `@lib/<feature>/` for domain logic**
 - **Use `??` instead of `||` unless explicitly handling falsy values (empty string, NaN, 0)**
 
 ## 📚 Documentation Maintenance
