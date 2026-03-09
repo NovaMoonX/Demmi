@@ -1,16 +1,7 @@
 import { Calendar } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { PlannedMeal } from '@lib/calendar';
-
-// ─── Utilities ──────────────────────────────────────────────────────────────
-
-function getStartOfDay(ts: number): number {
-  const d = new Date(ts);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-}
-
-// ─── MonthView Component ────────────────────────────────────────────────────
+import { getStartOfDay } from '@/utils';
 
 export interface MonthViewProps {
   plannedMeals: PlannedMeal[];
