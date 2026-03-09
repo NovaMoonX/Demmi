@@ -69,12 +69,17 @@ function getWeekStart(ts: number): number {
 
 function getDaysInRange(start: number, end: number): number[] {
   const days: number[] = [];
-  let current = getStartOfDay(start);
+  const startDay = getStartOfDay(start);
   const endDay = getStartOfDay(end);
-  while (current <= endDay) {
-    days.push(current);
-    current += 86400000;
+  
+  const currentDate = new Date(startDay);
+  const endDate = new Date(endDay);
+  
+  while (currentDate <= endDate) {
+    days.push(currentDate.getTime());
+    currentDate.setDate(currentDate.getDate() + 1);
   }
+  
   return days;
 }
 
