@@ -222,7 +222,7 @@ function TotalsCard({ totals, dayCount }: { totals: NutrientTotals; dayCount: nu
     avg ? formatted : undefined;
 
   return (
-    <Card className="mb-6 p-5 transition-transform hover:scale-[1.02]">
+    <Card className="mb-6 p-5">
       <h2 className="text-base font-semibold text-foreground mb-4">
         {showAvg ? `Totals · ${dayCount}-Day Period` : 'Totals for Period'}
       </h2>
@@ -268,7 +268,7 @@ function DayCard({ day, plannedMeals, meals, ingredients, compact, onAdd, onEdit
   }, [compact, plannedMeals, meals, ingredients]);
 
   return (
-    <Card className="p-4 transition-transform hover:scale-[1.02]">
+    <Card className="p-4">
       <div className="flex items-center justify-between mb-3">
         <div>
           {compact ? (
