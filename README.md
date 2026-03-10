@@ -190,6 +190,13 @@ A cooking app powered with local LLM using Ollama.
   - 🥦 Total Fiber (g)
 - **Price Calculation**: Uses the default product per ingredient; falls back to the first listed product when no default is set
 - **Ingredient-Based Nutrition**: Totals derive from the ingredient composition of each planned meal
+- **Cloud Persistence**: All planned meal changes are synced to Firestore for signed-in users
+  - **Fetch**: Planned meals are loaded from Firestore on demand via `fetchPlannedMeals`
+  - **Create**: New planned meals are stored in Firestore under the authenticated user's account
+  - **Update**: Edits are persisted to Firestore with ownership verification (only the owner can update)
+  - **Delete**: Removals are persisted to Firestore with ownership verification (only the owner can delete)
+  - **Error Toasts**: Toast notifications alert the user if any Firestore operation fails
+- **Demo Mode Isolation**: When demo mode is active, all planned meal changes update in-memory state only — nothing is written to Firestore
 
 ### 🛒 Shopping List
 - **Grouped by Category**: Items are automatically grouped and displayed by category (🥩 Meat, 🐟 Seafood, 🥬 Produce, 🥛 Dairy, 🌾 Grains, 🫘 Legumes, 🥜 Nuts, 🫒 Oils, 🧂 Spices, 📦 Other)
@@ -270,7 +277,8 @@ The Redux store is organized into five main slices:
 
 5. **Calendar Slice** (`calendarSlice.ts`)
    - Manages the meal planner / calendar feature
-   - Actions: `addPlannedMeal`, `updatePlannedMeal`, `removePlannedMeal`
+   - Actions: `addPlannedMeal`, `updatePlannedMeal`, `removePlannedMeal`, `setPlannedMeals`, `resetCalendar`
+   - Async thunks: `fetchPlannedMeals`, `createPlannedMeal`, `updatePlannedMeal`, `deletePlannedMeal` (in `calendarActions.ts`)
    - State: Array of planned meal entries (each entry links a `Meal` to a date, category, and optional notes)
 
 ### Usage
@@ -394,6 +402,7 @@ interface MealIngredient {
 
 interface PlannedMeal {
   id: string;
+  userId: string;       // Firebase Auth UID of the owner
   mealId: string;       // references a Meal
   date: number;         // start-of-day timestamp (ms)
   category: MealCategory;

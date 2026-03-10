@@ -11,12 +11,18 @@ import {
   Label,
 } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
-import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
+import { useActionModal, useToast } from '@moondreamsdev/dreamer-ui/hooks';
 import { useAppSelector, useAppDispatch } from '@store/hooks';
 import { addPlannedMeal, updatePlannedMeal, removePlannedMeal } from '@store/slices/calendarSlice';
+import {
+  createPlannedMeal as createPlannedMealAsync,
+  updatePlannedMeal as updatePlannedMealAsync,
+  deletePlannedMeal as deletePlannedMealAsync,
+} from '@store/actions/calendarActions';
 import { PlannedMeal, CalendarView, NutrientTotals } from '@lib/calendar';
 import { Meal, MEAL_CATEGORY_OPTIONS, MealCategory } from '@lib/meals';
 import { Ingredient } from '@lib/ingredients';
+import { DEMO_USER_ID } from '@lib/app';
 import { TotalsCard, DayCard, DayDetailModal, MonthView } from '@components/calendar';
 import { getPricePerServing } from '@/lib/ingredients/ingredients.utils';
 import { formatDateFull, formatDateInput, formatDateShort, getDaysInRange, getStartOfDay, getWeekStart, parseDateInput } from '@/utils';
@@ -58,8 +64,10 @@ export function CalendarScreen() {
   const plannedMeals = useAppSelector((state) => state.calendar.plannedMeals);
   const meals = useAppSelector((state) => state.meals.items);
   const ingredients = useAppSelector((state) => state.ingredients.items);
+  const isDemoActive = useAppSelector((state) => state.demo.isActive);
   const dispatch = useAppDispatch();
   const { confirm } = useActionModal();
+  const { addToast } = useToast();
 
   const mealOptions = useMemo(
     () =>
@@ -149,7 +157,7 @@ export function CalendarScreen() {
     setEditingPlannedMeal(null);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formMealId) return;
 
     const data = {
@@ -159,13 +167,32 @@ export function CalendarScreen() {
       notes: formNotes.trim() || null,
     };
 
-    if (editingPlannedMeal) {
-      dispatch(updatePlannedMeal({ id: editingPlannedMeal.id, updates: data }));
-    } else {
-      dispatch(addPlannedMeal(data));
+    if (isDemoActive) {
+      if (editingPlannedMeal) {
+        dispatch(updatePlannedMeal({ id: editingPlannedMeal.id, updates: data }));
+      } else {
+        dispatch(addPlannedMeal({ ...data, userId: DEMO_USER_ID }));
+      }
+      handleModalClose();
+      return;
     }
 
-    handleModalClose();
+    try {
+      if (editingPlannedMeal) {
+        const updatedPlannedMeal: PlannedMeal = { ...editingPlannedMeal, ...data };
+        await dispatch(updatePlannedMealAsync(updatedPlannedMeal)).unwrap();
+      } else {
+        await dispatch(createPlannedMealAsync(data)).unwrap();
+      }
+      handleModalClose();
+    } catch (err) {
+      console.error(editingPlannedMeal ? 'Failed to update planned meal:' : 'Failed to add planned meal:', err);
+      addToast({
+        title: editingPlannedMeal ? 'Failed to update planned meal' : 'Failed to add planned meal',
+        description: 'An error occurred. Please try again.',
+        type: 'destructive',
+      });
+    }
   };
 
   const handleDelete = async (pm: PlannedMeal) => {
@@ -179,8 +206,22 @@ export function CalendarScreen() {
       destructive: true,
     });
 
-    if (confirmed) {
+    if (!confirmed) return;
+
+    if (isDemoActive) {
       dispatch(removePlannedMeal(pm.id));
+      return;
+    }
+
+    try {
+      await dispatch(deletePlannedMealAsync(pm.id)).unwrap();
+    } catch (err) {
+      console.error('Failed to remove planned meal:', err);
+      addToast({
+        title: 'Failed to remove planned meal',
+        description: 'An error occurred. Please try again.',
+        type: 'destructive',
+      });
     }
   };
 
@@ -196,9 +237,24 @@ export function CalendarScreen() {
       destructive: true,
     });
 
-    if (confirmed) {
+    if (!confirmed) return;
+
+    if (isDemoActive) {
       dispatch(removePlannedMeal(editingPlannedMeal.id));
       handleModalClose();
+      return;
+    }
+
+    try {
+      await dispatch(deletePlannedMealAsync(editingPlannedMeal.id)).unwrap();
+      handleModalClose();
+    } catch (err) {
+      console.error('Failed to remove planned meal:', err);
+      addToast({
+        title: 'Failed to remove planned meal',
+        description: 'An error occurred. Please try again.',
+        type: 'destructive',
+      });
     }
   };
 
@@ -359,7 +415,7 @@ export function CalendarScreen() {
           {
             label: editingPlannedMeal ? 'Save Changes' : 'Add Meal',
             variant: 'primary',
-            onClick: handleSubmit,
+            onClick: () => { void handleSubmit(); },
           },
         ]}
       >
