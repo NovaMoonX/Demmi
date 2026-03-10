@@ -12,6 +12,7 @@ export const mockChatConversations: ChatConversation[] = [
     title: 'Quick Breakfast Ideas',
     isPinned: true,
     lastUpdated: oneHourAgo,
+    userId: 'demo',
     messages: [
       {
         id: 'msg-001',
@@ -32,6 +33,7 @@ export const mockChatConversations: ChatConversation[] = [
     title: 'Meal Prep for the Week',
     isPinned: true,
     lastUpdated: oneDayAgo,
+    userId: 'demo',
     messages: [
       {
         id: 'msg-003',
@@ -64,6 +66,7 @@ export const mockChatConversations: ChatConversation[] = [
     title: 'Vegetarian Dinner Options',
     isPinned: false,
     lastUpdated: twoDaysAgo,
+    userId: 'demo',
     messages: [
       {
         id: 'msg-007',
@@ -84,6 +87,7 @@ export const mockChatConversations: ChatConversation[] = [
     title: 'Baking Tips for Beginners',
     isPinned: false,
     lastUpdated: oneWeekAgo,
+    userId: 'demo',
     messages: [
       {
         id: 'msg-009',

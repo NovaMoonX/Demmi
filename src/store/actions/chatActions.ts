@@ -18,13 +18,26 @@ import {
 } from 'firebase/firestore';
 import { RootState } from '..';
 
+function isDemoActive(getState: () => unknown): boolean {
+  const state = getState() as RootState;
+  return state.demo.isActive;
+}
+
 /**
  * Fetch all chat conversations belonging to the current user from Firestore.
+ * No-ops silently when demo mode is active.
  */
-export const fetchChats = createAsyncThunk<ChatConversation[], string>(
+export const fetchChats = createAsyncThunk<
+  ChatConversation[],
+  void,
+  { state: RootState }
+>(
   'chats/fetchChats',
-  async (userId) => {
+  async (_, { getState }) => {
     try {
+      const userId = getState().user.user?.uid;
+      if (!userId) throw new Error('You must be signed in to fetch chats.');
+
       const q = query(
         collection(db, 'chats'),
         where('userId', '==', userId),
@@ -39,10 +52,12 @@ export const fetchChats = createAsyncThunk<ChatConversation[], string>(
       throw err;
     }
   },
+  { condition: (_, { getState }) => !isDemoActive(getState) },
 );
 
 /**
  * Create a new chat conversation in Firestore for the current user.
+ * No-ops silently when demo mode is active.
  */
 export const createChat = createAsyncThunk<
   ChatConversation,
@@ -71,23 +86,20 @@ export const createChat = createAsyncThunk<
       throw err;
     }
   },
+  { condition: (_, { getState }) => !isDemoActive(getState) },
 );
 
 /**
  * Update metadata (e.g. title, isPinned, lastUpdated) for a chat conversation.
- * Messages and userId are not updatable via this thunk.
+ * Messages and userId are not written to Firestore via this thunk.
+ * No-ops silently when demo mode is active.
  */
-export const updateChat = createAsyncThunk<
-  Pick<ChatConversation, 'id'> &
-    Partial<Omit<ChatConversation, 'id' | 'userId' | 'messages'>>,
-  Pick<ChatConversation, 'id'> &
-    Partial<Omit<ChatConversation, 'id' | 'userId' | 'messages'>>,
-  { state: RootState }
->(
+export const updateChat = createAsyncThunk(
   'chats/updateChat',
-  async (chat, { getState }) => {
+  async (chat: ChatConversation, { getState }) => {
+    const state = getState() as RootState;
     try {
-      const userId = getState().user.user?.uid;
+      const userId = state.user.user?.uid;
       if (!userId) throw new Error('You must be signed in to update a chat.');
 
       const chatDocRef = doc(db, 'chats', chat.id);
@@ -100,8 +112,8 @@ export const updateChat = createAsyncThunk<
         if (existing.userId !== userId)
           throw new Error('You can only update your own chats.');
 
-        const { id: _id, ...updates } = chat;
-        tx.update(chatDocRef, updates);
+        const { id: _id, userId: _userId, messages: _messages, ...updatableFields } = chat;
+        tx.update(chatDocRef, updatableFields);
       });
 
       return chat;
@@ -110,10 +122,12 @@ export const updateChat = createAsyncThunk<
       throw err;
     }
   },
+  { condition: (_, { getState }) => !isDemoActive(getState) },
 );
 
 /**
  * Delete a chat conversation from Firestore. Only the owner may delete.
+ * No-ops silently when demo mode is active.
  */
 export const deleteChat = createAsyncThunk<
   string,
@@ -145,10 +159,12 @@ export const deleteChat = createAsyncThunk<
       throw err;
     }
   },
+  { condition: (_, { getState }) => !isDemoActive(getState) },
 );
 
 /**
  * Append a message to a chat conversation in Firestore using arrayUnion.
+ * No-ops silently when demo mode is active.
  */
 export const addChatMessage = createAsyncThunk<
   { chatId: string; message: ChatMessage; lastUpdated: number },
@@ -171,10 +187,12 @@ export const addChatMessage = createAsyncThunk<
       throw err;
     }
   },
+  { condition: (_, { getState }) => !isDemoActive(getState) },
 );
 
 /**
  * Fetch the messages array for a specific chat conversation from Firestore.
+ * No-ops silently when demo mode is active.
  */
 export const fetchChatMessages = createAsyncThunk<
   { chatId: string; messages: ChatMessage[] },
@@ -195,4 +213,5 @@ export const fetchChatMessages = createAsyncThunk<
       throw err;
     }
   },
+  { condition: (_, { getState }) => !isDemoActive(getState) },
 );

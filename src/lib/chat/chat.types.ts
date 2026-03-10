@@ -13,5 +13,5 @@ export interface ChatConversation {
   messages: ChatMessage[];
   isPinned: boolean;
   lastUpdated: number; // milliseconds timestamp
-  userId: string | null; // owner's Firebase Auth uid
+  userId: string; // owner's Firebase Auth uid
 }

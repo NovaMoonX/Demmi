@@ -29,6 +29,7 @@ export function Chat() {
   const dispatch = useAppDispatch();
   const conversations = useAppSelector((state) => state.chats.conversations);
   const currentChatId = useAppSelector((state) => state.chats.currentChatId);
+  const authUser = useAppSelector((state) => state.user.user);
   const [inputValue, setInputValue] = useState('');
   const isMobileDevice = useIsMobileDevice();
   const [isHistoryOpen, setIsHistoryOpen] = useState(() => !isMobileDevice);
@@ -71,7 +72,7 @@ export function Chat() {
         messages: [userMessage],
         isPinned: false,
         lastUpdated: Date.now(),
-        userId: null,
+        userId: authUser?.uid ?? 'demo',
       };
 
       dispatch(createConversation(newConversation));

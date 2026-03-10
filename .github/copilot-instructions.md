@@ -291,7 +291,47 @@ return <form>...</form>;
 - **Use `.types.ts` and `.constants.ts` in `@lib/<feature>/` for domain logic**
 - **Use `??` instead of `||` unless explicitly handling falsy values (empty string, NaN, 0)**
 
-## 📚 Documentation Maintenance
+## Firestore Security Rules
+
+Rules live in `firestore.rules`. Always use the reusable helper functions defined at the top of the rules file:
+
+- `isSignedIn()` — returns `true` if the request is authenticated
+- `isOwner(userId)` — returns `true` if the requester is signed in and their uid matches `userId`
+
+### Conventions
+
+- Every collection that stores user data **must** include a `userId` field (type `string`) containing the owner's Firebase Auth `uid`.
+- Read/update/delete rules must use `isOwner(resource.data.userId)`.
+- Create rules must verify `request.resource.data.userId == request.auth.uid`.
+- `userId` must be immutable on update: assert `request.resource.data.userId == resource.data.userId`.
+
+### Example
+
+```js
+match /chats/{chatId} {
+  allow read:   if isOwner(resource.data.userId);
+  allow create: if isSignedIn()
+    && request.resource.data.userId == request.auth.uid;
+  allow update: if isOwner(resource.data.userId)
+    && request.resource.data.userId == resource.data.userId;
+  allow delete: if isOwner(resource.data.userId);
+}
+```
+
+### Async Thunks and Demo Mode
+
+All Firestore async thunks (in `src/store/actions/`) must:
+
+1. Read the current user from Redux state via `getState().user.user?.uid` — never accept `userId` as a parameter.
+2. Use the `condition` option to silently skip execution when demo mode is active:
+
+```ts
+{ condition: (_, { getState }) => !(getState() as RootState).demo.isActive }
+```
+
+This ensures demo mode never touches Firestore and throws no errors.
+
+
 
 ### 11. README.md Update Rule
 **CRITICAL**: The README.md must be updated with **EVERY** change to the codebase.
