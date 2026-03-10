@@ -19,5 +19,10 @@ service cloud.firestore {
         && request.resource.data.userId == resource.data.userId;
       allow delete: if isOwner(resource.data.userId);
     }
+
+    match /{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
   }
 }
