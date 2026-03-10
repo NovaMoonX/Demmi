@@ -71,6 +71,7 @@ export function Chat() {
         messages: [userMessage],
         isPinned: false,
         lastUpdated: Date.now(),
+        userId: null,
       };
 
       dispatch(createConversation(newConversation));

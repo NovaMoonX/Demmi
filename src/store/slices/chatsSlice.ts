@@ -4,6 +4,14 @@ import {
   ChatMessage,
 } from '@lib/chat';
 import { generatedId } from '@utils/generatedId';
+import {
+  fetchChats,
+  createChat,
+  updateChat,
+  deleteChat,
+  addChatMessage,
+  fetchChatMessages,
+} from '@store/actions/chatActions';
 
 interface ChatsState {
   conversations: ChatConversation[];
@@ -85,6 +93,53 @@ const chatsSlice = createSlice({
       state.conversations = [];
       state.currentChatId = null;
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchChats.fulfilled, (state, action) => {
+        state.conversations = action.payload;
+        state.currentChatId = action.payload[0]?.id ?? null;
+      })
+      .addCase(createChat.fulfilled, (state, action) => {
+        state.conversations.unshift(action.payload);
+        state.currentChatId = action.payload.id;
+      })
+      .addCase(updateChat.fulfilled, (state, action) => {
+        const index = state.conversations.findIndex(
+          (c) => c.id === action.payload.id,
+        );
+        if (index !== -1) {
+          state.conversations[index] = {
+            ...state.conversations[index],
+            ...action.payload,
+          };
+        }
+      })
+      .addCase(deleteChat.fulfilled, (state, action) => {
+        state.conversations = state.conversations.filter(
+          (c) => c.id !== action.payload,
+        );
+        if (state.currentChatId === action.payload) {
+          state.currentChatId = state.conversations[0]?.id ?? null;
+        }
+      })
+      .addCase(addChatMessage.fulfilled, (state, action) => {
+        const conversation = state.conversations.find(
+          (c) => c.id === action.payload.chatId,
+        );
+        if (conversation) {
+          conversation.messages.push(action.payload.message);
+          conversation.lastUpdated = action.payload.lastUpdated;
+        }
+      })
+      .addCase(fetchChatMessages.fulfilled, (state, action) => {
+        const conversation = state.conversations.find(
+          (c) => c.id === action.payload.chatId,
+        );
+        if (conversation) {
+          conversation.messages = action.payload.messages;
+        }
+      });
   },
 });
 
