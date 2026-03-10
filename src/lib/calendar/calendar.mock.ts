@@ -1,3 +1,4 @@
+import { DEMO_USER_ID } from '@lib/app';
 import { PlannedMeal } from './calendar.types';
 
 function startOfDay(date: Date): number {
@@ -16,25 +17,25 @@ export function generateDemoCalendarData(): Omit<PlannedMeal, 'id'>[] {
 
   return [
     // Yesterday
-    { mealId: 'meal-007', date: yesterday, category: 'breakfast', notes: null },
-    { mealId: 'meal-004', date: yesterday, category: 'snack', notes: null },
-    { mealId: 'meal-002', date: yesterday, category: 'lunch', notes: null },
-    { mealId: 'meal-003', date: yesterday, category: 'dinner', notes: 'Made enough for leftovers' },
+    { userId: DEMO_USER_ID, mealId: 'meal-007', date: yesterday, category: 'breakfast', notes: null },
+    { userId: DEMO_USER_ID, mealId: 'meal-004', date: yesterday, category: 'snack', notes: null },
+    { userId: DEMO_USER_ID, mealId: 'meal-002', date: yesterday, category: 'lunch', notes: null },
+    { userId: DEMO_USER_ID, mealId: 'meal-003', date: yesterday, category: 'dinner', notes: 'Made enough for leftovers' },
     // Today
-    { mealId: 'meal-001', date: today, category: 'breakfast', notes: 'Add blueberries on top' },
-    { mealId: 'meal-006', date: today, category: 'drink', notes: 'Morning smoothie' },
-    { mealId: 'meal-002', date: today, category: 'lunch', notes: null },
-    { mealId: 'meal-004', date: today, category: 'snack', notes: null },
-    { mealId: 'meal-008', date: today, category: 'dinner', notes: 'Taco night!' },
-    { mealId: 'meal-005', date: today, category: 'dessert', notes: 'Special treat' },
+    { userId: DEMO_USER_ID, mealId: 'meal-001', date: today, category: 'breakfast', notes: 'Add blueberries on top' },
+    { userId: DEMO_USER_ID, mealId: 'meal-006', date: today, category: 'drink', notes: 'Morning smoothie' },
+    { userId: DEMO_USER_ID, mealId: 'meal-002', date: today, category: 'lunch', notes: null },
+    { userId: DEMO_USER_ID, mealId: 'meal-004', date: today, category: 'snack', notes: null },
+    { userId: DEMO_USER_ID, mealId: 'meal-008', date: today, category: 'dinner', notes: 'Taco night!' },
+    { userId: DEMO_USER_ID, mealId: 'meal-005', date: today, category: 'dessert', notes: 'Special treat' },
     // Tomorrow
-    { mealId: 'meal-007', date: tomorrow, category: 'breakfast', notes: null },
-    { mealId: 'meal-006', date: tomorrow, category: 'drink', notes: null },
-    { mealId: 'meal-002', date: tomorrow, category: 'lunch', notes: 'Meal prepped' },
-    { mealId: 'meal-003', date: tomorrow, category: 'dinner', notes: null },
+    { userId: DEMO_USER_ID, mealId: 'meal-007', date: tomorrow, category: 'breakfast', notes: null },
+    { userId: DEMO_USER_ID, mealId: 'meal-006', date: tomorrow, category: 'drink', notes: null },
+    { userId: DEMO_USER_ID, mealId: 'meal-002', date: tomorrow, category: 'lunch', notes: 'Meal prepped' },
+    { userId: DEMO_USER_ID, mealId: 'meal-003', date: tomorrow, category: 'dinner', notes: null },
     // Day after tomorrow
-    { mealId: 'meal-001', date: dayAfterTomorrow, category: 'breakfast', notes: null },
-    { mealId: 'meal-008', date: dayAfterTomorrow, category: 'dinner', notes: null },
-    { mealId: 'meal-004', date: dayAfterTomorrow, category: 'snack', notes: null },
+    { userId: DEMO_USER_ID, mealId: 'meal-001', date: dayAfterTomorrow, category: 'breakfast', notes: null },
+    { userId: DEMO_USER_ID, mealId: 'meal-008', date: dayAfterTomorrow, category: 'dinner', notes: null },
+    { userId: DEMO_USER_ID, mealId: 'meal-004', date: dayAfterTomorrow, category: 'snack', notes: null },
   ];
 }

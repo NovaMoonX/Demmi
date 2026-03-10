@@ -2,6 +2,7 @@ import { MealCategory } from '@lib/meals';
 
 export interface PlannedMeal {
   id: string;
+  userId: string;
   mealId: string;
   date: number; // start-of-day timestamp (ms)
   category: MealCategory;
