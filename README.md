@@ -305,6 +305,7 @@ interface ChatConversation {
   messages: ChatMessage[];
   isPinned: boolean;
   lastUpdated: number; // milliseconds timestamp
+  userId: string;      // owner's Firebase Auth uid
 }
 ```
 
