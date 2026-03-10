@@ -3,11 +3,12 @@ import { ChatMessage as ChatMessageType } from '@lib/chat';
 
 interface ChatMessageProps {
   message: ChatMessageType;
+  isStreaming?: boolean;
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) {
   const isUser = message.role === 'user';
-  
+
   return (
     <div
       className={join(
@@ -23,9 +24,18 @@ export function ChatMessage({ message }: ChatMessageProps) {
             : 'bg-muted text-foreground'
         )}
       >
-        <div className="whitespace-pre-wrap break-words">
-          {message.content}
-        </div>
+        {isStreaming && message.content === '' ? (
+          <div className="flex gap-1">
+            <span className="animate-bounce">●</span>
+            <span className="animate-bounce [animation-delay:0.2s]">●</span>
+            <span className="animate-bounce [animation-delay:0.4s]">●</span>
+          </div>
+        ) : (
+          <div className="whitespace-pre-wrap break-words">
+            {message.content}
+            {isStreaming && <span className="ml-0.5 inline-block w-0.5 h-4 bg-current animate-pulse align-middle" />}
+          </div>
+        )}
       </div>
     </div>
   );

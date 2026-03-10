@@ -6,20 +6,21 @@ import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { ChatHistoryToggleIcon } from '@components/chat/ChatHistoryToggleIcon';
 import { ChatHistory } from '@components/chat/ChatHistory';
 import { ChatMessage } from '@components/chat/ChatMessage';
+import { OllamaModelSelector } from '@components/chat/OllamaModelSelector';
 import { useIsMobileDevice } from '@hooks/useIsMobileDevice';
+import { useOllamaModels } from '@hooks/useOllamaModels';
 import { useAppSelector, useAppDispatch } from '@store/hooks';
 import { store } from '@store/index';
 import {
   setCurrentChat,
   createConversation,
   addMessage,
+  updateMessageContent,
   deleteConversation,
   togglePinConversation,
 } from '@store/slices/chatsSlice';
-import {
-  ChatMessage as ChatMessageType,
-  generateMockResponse,
-} from '@lib/chat';
+import { ChatMessage as ChatMessageType } from '@lib/chat';
+import { streamChatResponse } from '@lib/ollama';
 import { generatedId } from '@utils/generatedId';
 
 // Delay to allow UI to render before scrolling to bottom
@@ -36,6 +37,14 @@ export function Chat() {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const {
+    availableModels,
+    selectedModel,
+    isLoading: isLoadingModels,
+    error: modelError,
+    selectModel,
+  } = useOllamaModels();
+
   const currentChat = conversations.find((c) => c.id === currentChatId);
 
   const scrollToBottom = useCallback(() => {
@@ -49,7 +58,7 @@ export function Chat() {
   }, [currentChat?.messages, scrollToBottom]);
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isSending) {
+    if (!inputValue.trim() || isSending || !selectedModel) {
       return;
     }
 
@@ -57,7 +66,6 @@ export function Chat() {
     setInputValue('');
     setIsSending(true);
 
-    // Create user message
     const userMessage: ChatMessageType = {
       id: generatedId('msg'),
       role: 'user',
@@ -65,50 +73,73 @@ export function Chat() {
       timestamp: Date.now(),
     };
 
-    // If no current chat, create a new one
+    const assistantMessageId = generatedId('msg');
+    const assistantMessage: ChatMessageType = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: Date.now(),
+    };
+
+    let targetChatId: string | null;
+
     if (!currentChatId) {
       const newConversation = {
         title: messageContent.slice(0, 50) + (messageContent.length > 50 ? '...' : ''),
-        messages: [userMessage],
+        messages: [userMessage, assistantMessage],
         isPinned: false,
         lastUpdated: Date.now(),
         userId: authUser?.uid ?? 'demo',
       };
 
       dispatch(createConversation(newConversation));
-
-      // Simulate AI response
-      setTimeout(() => {
-        const assistantMessage: ChatMessageType = {
-          id: generatedId('msg'),
-          role: 'assistant',
-          content: generateMockResponse(messageContent),
-          timestamp: Date.now(),
-        };
-
-        // Get the current chat ID from the Redux store after createConversation has set it
-        const currentChatId = store.getState().chats.currentChatId;
-        if (currentChatId) {
-          dispatch(addMessage({ chatId: currentChatId, message: assistantMessage }));
-        }
-        setIsSending(false);
-      }, 1000);
+      targetChatId = store.getState().chats.currentChatId;
     } else {
-      // Add message to existing chat
+      targetChatId = currentChatId;
       dispatch(addMessage({ chatId: currentChatId, message: userMessage }));
+      dispatch(addMessage({ chatId: currentChatId, message: assistantMessage }));
+    }
 
-      // Simulate AI response
-      setTimeout(() => {
-        const assistantMessage: ChatMessageType = {
-          id: generatedId('msg'),
-          role: 'assistant',
-          content: generateMockResponse(messageContent),
-          timestamp: Date.now(),
-        };
+    if (!targetChatId) {
+      setIsSending(false);
+      return;
+    }
 
-        dispatch(addMessage({ chatId: currentChatId, message: assistantMessage }));
-        setIsSending(false);
-      }, 1000);
+    const chatIdForStream = targetChatId;
+
+    try {
+      const allMessages = store
+        .getState()
+        .chats.conversations.find((c) => c.id === chatIdForStream)
+        ?.messages.filter((m) => m.id !== assistantMessageId) ?? [];
+
+      let accumulatedContent = '';
+
+      for await (const chunk of streamChatResponse(selectedModel, allMessages)) {
+        accumulatedContent += chunk;
+        dispatch(
+          updateMessageContent({
+            chatId: chatIdForStream,
+            messageId: assistantMessageId,
+            content: accumulatedContent,
+          }),
+        );
+      }
+    } catch (err) {
+      const errorContent =
+        err instanceof Error
+          ? `⚠️ Ollama error: ${err.message}`
+          : '⚠️ Could not reach Ollama. Make sure it is running on localhost:11434.';
+
+      dispatch(
+        updateMessageContent({
+          chatId: chatIdForStream,
+          messageId: assistantMessageId,
+          content: errorContent,
+        }),
+      );
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -136,7 +167,7 @@ export function Chat() {
     }
   };
 
-  const isSendDisabled = !inputValue.trim() || isSending;
+  const isSendDisabled = !inputValue.trim() || isSending || !selectedModel;
 
   return (
     <div className="h-full flex overflow-hidden">
@@ -178,7 +209,7 @@ export function Chat() {
                 <ChatHistoryToggleIcon />
               </button>
             </div>
-            <div className="flex flex-1 flex-col items-end text-right">
+            <div className="flex flex-1 flex-col items-end gap-1 text-right">
               <h2 className="text-lg font-semibold text-foreground">
                 {currentChat?.title ?? 'New Chat'}
               </h2>
@@ -187,6 +218,13 @@ export function Chat() {
                   {currentChat.messages.length} message{currentChat.messages.length !== 1 ? 's' : ''}
                 </p>
               )}
+              <OllamaModelSelector
+                models={availableModels}
+                selectedModel={selectedModel}
+                isLoading={isLoadingModels}
+                error={modelError}
+                onSelectModel={selectModel}
+              />
             </div>
           </div>
         </div>
@@ -195,20 +233,17 @@ export function Chat() {
         <ScrollArea className="flex-1 p-4 md:p-6">
           {currentChat ? (
             <div className="max-w-4xl mx-auto">
-              {currentChat.messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
+              {currentChat.messages.map((message, index) => (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  isStreaming={
+                    isSending &&
+                    message.role === 'assistant' &&
+                    index === currentChat.messages.length - 1
+                  }
+                />
               ))}
-              {isSending && (
-                <div className="flex justify-start mb-4">
-                  <div className="max-w-[80%] md:max-w-[70%] rounded-2xl px-4 py-3 bg-muted text-foreground">
-                    <div className="flex gap-1">
-                      <span className="animate-bounce">●</span>
-                      <span className="animate-bounce [animation-delay:0.2s]">●</span>
-                      <span className="animate-bounce [animation-delay:0.4s]">●</span>
-                    </div>
-                  </div>
-                </div>
-              )}
               <div ref={messagesEndRef} />
             </div>
           ) : (
@@ -234,9 +269,9 @@ export function Chat() {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
+                placeholder={selectedModel ? 'Type your message... (Press Enter to send, Shift+Enter for new line)' : 'Select a model above to start chatting...'}
                 className="min-h-11 max-h-50 resize-none pr-12"
-                disabled={isSending}
+                disabled={isSending || !selectedModel}
               />
               <Button
                 onClick={handleSendMessage}

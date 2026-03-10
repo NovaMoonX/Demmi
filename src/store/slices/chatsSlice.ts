@@ -16,11 +16,13 @@ import {
 interface ChatsState {
   conversations: ChatConversation[];
   currentChatId: string | null;
+  selectedModel: string | null;
 }
 
 const initialState: ChatsState = {
   conversations: [],
   currentChatId: null,
+  selectedModel: null,
 };
 
 const chatsSlice = createSlice({
@@ -89,9 +91,29 @@ const chatsSlice = createSlice({
       state.conversations = action.payload;
       state.currentChatId = action.payload[0]?.id ?? null;
     },
+    setSelectedModel: (state, action: PayloadAction<string | null>) => {
+      state.selectedModel = action.payload;
+    },
+    updateMessageContent: (
+      state,
+      action: PayloadAction<{ chatId: string; messageId: string; content: string }>
+    ) => {
+      const conversation = state.conversations.find(
+        (c) => c.id === action.payload.chatId
+      );
+      if (conversation) {
+        const message = conversation.messages.find(
+          (m) => m.id === action.payload.messageId
+        );
+        if (message) {
+          message.content = action.payload.content;
+        }
+      }
+    },
     resetChats: (state) => {
       state.conversations = [];
       state.currentChatId = null;
+      state.selectedModel = null;
     },
   },
   extraReducers: (builder) => {
@@ -151,6 +173,8 @@ export const {
   deleteConversation,
   togglePinConversation,
   setConversations,
+  setSelectedModel,
+  updateMessageContent,
   resetChats,
 } = chatsSlice.actions;
 
