@@ -27,15 +27,12 @@ function isDemoActive(getState: () => unknown): boolean {
  * Fetch all chat conversations belonging to the current user from Firestore.
  * No-ops silently when demo mode is active.
  */
-export const fetchChats = createAsyncThunk<
-  ChatConversation[],
-  void,
-  { state: RootState }
->(
+export const fetchChats = createAsyncThunk(
   'chats/fetchChats',
   async (_, { getState }) => {
+    const state = getState() as RootState;
     try {
-      const userId = getState().user.user?.uid;
+      const userId = state.user.user?.uid;
       if (!userId) throw new Error('You must be signed in to fetch chats.');
 
       const q = query(
@@ -59,15 +56,12 @@ export const fetchChats = createAsyncThunk<
  * Create a new chat conversation in Firestore for the current user.
  * No-ops silently when demo mode is active.
  */
-export const createChat = createAsyncThunk<
-  ChatConversation,
-  Omit<ChatConversation, 'id' | 'userId'>,
-  { state: RootState }
->(
+export const createChat = createAsyncThunk(
   'chats/createChat',
-  async (params, { getState }) => {
+  async (params: Omit<ChatConversation, 'id' | 'userId'>, { getState }) => {
+    const state = getState() as RootState
     try {
-      const userId = getState().user.user?.uid;
+      const userId = state.user.user?.uid;
       if (!userId) throw new Error('You must be signed in to create a chat.');
 
       const chatId = generatedId('chat');
@@ -129,15 +123,12 @@ export const updateChat = createAsyncThunk(
  * Delete a chat conversation from Firestore. Only the owner may delete.
  * No-ops silently when demo mode is active.
  */
-export const deleteChat = createAsyncThunk<
-  string,
-  string,
-  { state: RootState }
->(
+export const deleteChat = createAsyncThunk(
   'chats/deleteChat',
-  async (chatId, { getState }) => {
+  async (chatId: string, { getState }) => {
+    const state = getState() as RootState;
     try {
-      const userId = getState().user.user?.uid;
+      const userId = state.user.user?.uid;
       if (!userId) throw new Error('You must be signed in to delete a chat.');
 
       const chatDocRef = doc(db, 'chats', chatId);
@@ -166,12 +157,9 @@ export const deleteChat = createAsyncThunk<
  * Append a message to a chat conversation in Firestore using arrayUnion.
  * No-ops silently when demo mode is active.
  */
-export const addChatMessage = createAsyncThunk<
-  { chatId: string; message: ChatMessage; lastUpdated: number },
-  { chatId: string; message: ChatMessage }
->(
+export const addChatMessage = createAsyncThunk(
   'chats/addChatMessage',
-  async ({ chatId, message }) => {
+  async ({ chatId, message }: { chatId: string; message: ChatMessage }) => {
     try {
       const chatDocRef = doc(db, 'chats', chatId);
       const lastUpdated = Date.now();
@@ -194,12 +182,9 @@ export const addChatMessage = createAsyncThunk<
  * Fetch the messages array for a specific chat conversation from Firestore.
  * No-ops silently when demo mode is active.
  */
-export const fetchChatMessages = createAsyncThunk<
-  { chatId: string; messages: ChatMessage[] },
-  string
->(
+export const fetchChatMessages = createAsyncThunk(
   'chats/fetchChatMessages',
-  async (chatId) => {
+  async (chatId: string) => {
     try {
       const chatDocRef = doc(db, 'chats', chatId);
       const chatSnap = await getDoc(chatDocRef);
