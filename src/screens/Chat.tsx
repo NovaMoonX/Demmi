@@ -28,6 +28,7 @@ import { createIngredient } from '@store/actions/ingredientActions';
 import { createMeal } from '@store/actions/mealActions';
 import { ChatMessage as ChatMessageType } from '@lib/chat';
 import type { MealIngredient } from '@lib/meals';
+import { findSimilarMeals } from '@lib/meals/meals.utils';
 import type { AbortableAsyncIterator } from 'ollama';
 import type { ChatResponse } from 'ollama/browser';
 import { startChatStream, extractPartialResponse, parseOllamaResponse } from '@lib/ollama';
@@ -130,6 +131,37 @@ export function Chat() {
     setIsSending(false);
   };
 
+  const handleConfirmIntent = async (messageId: string) => {
+    const chatId = currentChatId;
+    if (!chatId) return;
+
+    const message = store
+      .getState()
+      .chats.conversations.find((c) => c.id === chatId)
+      ?.messages.find((m) => m.id === messageId);
+
+    const action = message?.agentAction;
+    if (!action || action.type !== 'create_meal' || action.status !== 'pending_confirmation') return;
+
+    dispatch(updateAgentActionStatus({ chatId, messageId, status: 'searching' }));
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 900));
+
+    const existingMeals = store.getState().meals.items;
+    const similarMeals = findSimilarMeals(action.meals, existingMeals);
+
+    if (similarMeals.length > 0) {
+      dispatch(updateAgentActionStatus({ chatId, messageId, status: 'similar_found', similarMeals }));
+    } else {
+      dispatch(updateAgentActionStatus({ chatId, messageId, status: 'pending_approval', similarMeals: [] }));
+    }
+  };
+
+  const handleRejectIntent = (messageId: string) => {
+    if (!currentChatId) return;
+    dispatch(updateAgentActionStatus({ chatId: currentChatId, messageId, status: 'rejected' }));
+  };
+
   const handleApproveAction = async (messageId: string) => {
     const chatId = currentChatId;
     if (!chatId) return;
@@ -140,26 +172,16 @@ export function Chat() {
       ?.messages.find((m) => m.id === messageId);
 
     const action = message?.agentAction;
-    if (!action || action.type !== 'create_meal' || action.status !== 'pending') return;
+    if (!action || action.type !== 'create_meal' || action.status !== 'pending_approval') return;
 
     dispatch(updateAgentActionStatus({ chatId, messageId, status: 'approved' }));
 
-    const existingMeals = store.getState().meals.items;
     const existingIngredients = store.getState().ingredients.items;
 
     let mealsCreated = 0;
-    let skipped = 0;
 
     try {
       for (const mealProposal of action.meals) {
-        const duplicate = existingMeals.some(
-          (m) => m.title.toLowerCase() === mealProposal.title.toLowerCase(),
-        );
-        if (duplicate) {
-          skipped++;
-          continue;
-        }
-
         const mealIngredients: MealIngredient[] = [];
 
         for (const ingredientProposal of mealProposal.ingredients) {
@@ -217,13 +239,13 @@ export function Chat() {
         mealsCreated++;
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      const errMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
       addToast({
         title: 'Failed to save',
-        description: message,
+        description: errMsg,
         type: 'error',
       });
-      dispatch(updateAgentActionStatus({ chatId, messageId, status: 'pending' }));
+      dispatch(updateAgentActionStatus({ chatId, messageId, status: 'pending_approval' }));
       return;
     }
 
@@ -232,14 +254,6 @@ export function Chat() {
         title: 'Meals saved!',
         description: `${mealsCreated} ${mealsCreated === 1 ? 'meal' : 'meals'} added to your collection.`,
         type: 'success',
-      });
-    }
-
-    if (skipped > 0) {
-      addToast({
-        title: 'Some meals skipped',
-        description: `${skipped} ${skipped === 1 ? 'meal was' : 'meals were'} already in your collection.`,
-        type: 'warning',
       });
     }
   };
@@ -373,7 +387,7 @@ export function Chat() {
         const displayContent = parsed?.response ?? rawJsonContent;
         const agentAction =
           parsed && parsed.meals.length > 0
-            ? { type: 'create_meal' as const, status: 'pending' as const, meals: parsed.meals }
+            ? { type: 'create_meal' as const, status: 'pending_confirmation' as const, meals: parsed.meals, similarMeals: [] }
             : null;
 
         dispatch(
@@ -534,6 +548,8 @@ export function Chat() {
                   }
                   showDetails={showDetails}
                   onEdit={() => handleEditMessage(message.id)}
+                  onConfirmIntent={handleConfirmIntent}
+                  onRejectIntent={handleRejectIntent}
                   onApproveAction={handleApproveAction}
                   onRejectAction={handleRejectAction}
                 />

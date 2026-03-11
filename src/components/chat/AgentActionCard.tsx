@@ -1,12 +1,19 @@
 import { Badge, Button, Card } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useAppSelector } from '@store/hooks';
-import type { AgentCreateMealAction, AgentMealProposal, AgentIngredientProposal } from '@lib/chat/agent-actions.types';
+import type {
+  AgentCreateMealAction,
+  AgentMealProposal,
+  AgentIngredientProposal,
+  SimilarMealResult,
+} from '@lib/chat/agent-actions.types';
 import { MEAL_CATEGORY_COLORS, MEAL_CATEGORY_EMOJIS } from '@lib/meals';
 import { INGREDIENT_TYPE_EMOJIS } from '@lib/ingredients';
 
 interface AgentActionCardProps {
   action: AgentCreateMealAction;
+  onConfirmIntent: () => void;
+  onRejectIntent: () => void;
   onApprove: () => void;
   onReject: () => void;
 }
@@ -16,11 +23,31 @@ interface ResolvedIngredient extends AgentIngredientProposal {
 }
 
 interface ResolvedMeal extends AgentMealProposal {
-  isDuplicate: boolean;
   ingredients: ResolvedIngredient[];
 }
 
-function MealPreview({ meal }: { meal: ResolvedMeal }) {
+function IntentSummary({ meals }: { meals: AgentMealProposal[] }) {
+  if (meals.length === 1) {
+    return (
+      <span>
+        <span className="font-semibold text-foreground">{meals[0].title}</span>
+      </span>
+    );
+  }
+  return (
+    <span>
+      {meals.length} meals:{' '}
+      {meals.map((m, i) => (
+        <span key={i}>
+          {i > 0 && ', '}
+          <span className="font-semibold text-foreground">{m.title}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function MealPreviewCard({ meal }: { meal: ResolvedMeal }) {
   const totalTime = meal.prepTime + meal.cookTime;
 
   return (
@@ -28,14 +55,7 @@ function MealPreview({ meal }: { meal: ResolvedMeal }) {
       <div className="p-4 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="font-semibold text-foreground text-base">{meal.title}</h4>
-              {meal.isDuplicate && (
-                <Badge variant="base" className="bg-yellow-500/20 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400 shrink-0">
-                  Already exists
-                </Badge>
-              )}
-            </div>
+            <h4 className="font-semibold text-foreground text-base">{meal.title}</h4>
             <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{meal.description}</p>
           </div>
           <span className="text-2xl shrink-0">{MEAL_CATEGORY_EMOJIS[meal.category]}</span>
@@ -93,15 +113,34 @@ function MealPreview({ meal }: { meal: ResolvedMeal }) {
   );
 }
 
-export function AgentActionCard({ action, onApprove, onReject }: AgentActionCardProps) {
-  const existingMeals = useAppSelector((state) => state.meals.items);
+function SimilarMealEntry({ result }: { result: SimilarMealResult }) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 px-3 py-2">
+      <span className="text-base">⚠️</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground">
+          "{result.proposedTitle}"
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Similar to existing meal: <span className="font-medium text-foreground">"{result.existingTitle}"</span>
+          <span className="ml-1 opacity-60">({Math.round(result.similarity * 100)}% match)</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function AgentActionCard({
+  action,
+  onConfirmIntent,
+  onRejectIntent,
+  onApprove,
+  onReject,
+}: AgentActionCardProps) {
   const existingIngredients = useAppSelector((state) => state.ingredients.items);
 
   const resolvedMeals: ResolvedMeal[] = action.meals.map((meal) => ({
     ...meal,
-    isDuplicate: existingMeals.some(
-      (m) => m.title.toLowerCase() === meal.title.toLowerCase(),
-    ),
     ingredients: meal.ingredients.map((ing) => ({
       ...ing,
       isExisting: existingIngredients.some(
@@ -110,86 +149,139 @@ export function AgentActionCard({ action, onApprove, onReject }: AgentActionCard
     })),
   }));
 
-  const allDuplicates = resolvedMeals.every((m) => m.isDuplicate);
   const newIngredientCount = resolvedMeals.reduce(
     (sum, meal) => sum + meal.ingredients.filter((i) => !i.isExisting).length,
     0,
   );
-  const newMealCount = resolvedMeals.filter((m) => !m.isDuplicate).length;
 
-  const isPending = action.status === 'pending';
-  const isApproved = action.status === 'approved';
-  const isRejected = action.status === 'rejected';
-
-  return (
-    <div className="mt-3 flex flex-col gap-3 rounded-xl border border-border bg-card/50 p-3">
-      <div className="flex items-center gap-2">
-        <span className="text-lg">🍽️</span>
-        <span className="font-semibold text-foreground text-sm">
-          {action.meals.length === 1
-            ? 'New Meal Proposal'
-            : `${action.meals.length} New Meal Proposals`}
-        </span>
-        {isApproved && (
-          <Badge variant="base" className="bg-green-500/20 text-green-700 dark:bg-green-500/10 dark:text-green-400 ml-auto">
-            ✓ Saved
-          </Badge>
-        )}
-        {isRejected && (
-          <Badge variant="base" className="bg-muted text-muted-foreground ml-auto">
-            Declined
-          </Badge>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-2">
-        {resolvedMeals.map((meal, i) => (
-          <MealPreview key={i} meal={meal} />
-        ))}
-      </div>
-
-      {isPending && (
-        <>
-          {allDuplicates && (
-            <p className="text-xs text-yellow-600 dark:text-yellow-400">
-              ⚠️ {action.meals.length === 1 ? 'This meal already exists' : 'All meals already exist'} in your collection.
+  if (action.status === 'pending_confirmation') {
+    return (
+      <div className="mt-3 flex flex-col gap-3 rounded-xl border border-border bg-card/50 p-4">
+        <div className="flex items-start gap-3">
+          <span className="text-xl mt-0.5">🍽️</span>
+          <div className="flex-1">
+            <p className="text-sm text-foreground">
+              Sounds like you want to create{' '}
+              {action.meals.length === 1 ? 'a meal' : `${action.meals.length} meals`}:{' '}
+              <IntentSummary meals={action.meals} />
+              . Is that correct?
             </p>
-          )}
-          {!allDuplicates && (newMealCount > 0 || newIngredientCount > 0) && (
-            <p className="text-xs text-muted-foreground">
-              Will create{' '}
-              {newMealCount > 0 && (
-                <span className="text-primary font-medium">
-                  {newMealCount} {newMealCount === 1 ? 'meal' : 'meals'}
-                </span>
-              )}
-              {newMealCount > 0 && newIngredientCount > 0 && ' and '}
-              {newIngredientCount > 0 && (
-                <span className="text-primary font-medium">
-                  {newIngredientCount} new {newIngredientCount === 1 ? 'ingredient' : 'ingredients'}
-                </span>
-              )}
-              .
-            </p>
-          )}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={onApprove}
-              disabled={allDuplicates}
-            >
-              ✓ Save to My Meals
-            </Button>
-            <Button variant="secondary" size="sm" onClick={onReject}>
-              Decline
-            </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            💬 Not quite right? Reply to adjust the details.
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="primary" size="sm" onClick={onConfirmIntent}>
+            Yes, create {action.meals.length === 1 ? 'it' : 'them'}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={onRejectIntent}>
+            No, cancel
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          💬 Not quite right? Reply to adjust the details first.
+        </p>
+      </div>
+    );
+  }
+
+  if (action.status === 'searching') {
+    return (
+      <div className="mt-3 flex flex-col gap-3 rounded-xl border border-border bg-card/50 p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1">
+            <span className="animate-bounce text-sm">●</span>
+            <span className="animate-bounce text-sm [animation-delay:0.15s]">●</span>
+            <span className="animate-bounce text-sm [animation-delay:0.3s]">●</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Searching your meals for something similar…
           </p>
-        </>
-      )}
-    </div>
-  );
+        </div>
+      </div>
+    );
+  }
+
+  if (action.status === 'similar_found') {
+    return (
+      <div className="mt-3 flex flex-col gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-4">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🔍</span>
+          <span className="font-semibold text-foreground text-sm">Similar Meal Found</span>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          We found existing meals that are very similar to what you asked for. Creation cancelled to avoid duplicates.
+        </p>
+        <div className="flex flex-col gap-2">
+          {action.similarMeals.map((result, i) => (
+            <SimilarMealEntry key={i} result={result} />
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          💬 Want something different? Reply with more details to refine.
+        </p>
+      </div>
+    );
+  }
+
+  if (action.status === 'pending_approval') {
+    return (
+      <div className="mt-3 flex flex-col gap-3 rounded-xl border border-border bg-card/50 p-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">✅</span>
+          <span className="font-semibold text-foreground text-sm">
+            No similar meals found —{' '}
+            {action.meals.length === 1 ? 'ready to create' : `ready to create ${action.meals.length} meals`}
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {resolvedMeals.map((meal, i) => (
+            <MealPreviewCard key={i} meal={meal} />
+          ))}
+        </div>
+
+        {newIngredientCount > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Will also create{' '}
+            <span className="text-primary font-medium">
+              {newIngredientCount} new {newIngredientCount === 1 ? 'ingredient' : 'ingredients'}
+            </span>{' '}
+            marked with <span className="text-primary font-semibold">+new</span>.
+          </p>
+        )}
+
+        <div className="flex items-center gap-2">
+          <Button variant="primary" size="sm" onClick={onApprove}>
+            ✓ Save to My Meals
+          </Button>
+          <Button variant="secondary" size="sm" onClick={onReject}>
+            Decline
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          💬 Not quite right? Reply to adjust the details.
+        </p>
+      </div>
+    );
+  }
+
+  if (action.status === 'approved') {
+    return (
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3">
+        <span className="text-base">✓</span>
+        <span className="text-sm font-medium text-green-700 dark:text-green-400">
+          {action.meals.length === 1 ? 'Meal saved' : `${action.meals.length} meals saved`} to your collection
+        </span>
+      </div>
+    );
+  }
+
+  if (action.status === 'rejected') {
+    return (
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-4 py-3">
+        <span className="text-sm text-muted-foreground">Declined</span>
+      </div>
+    );
+  }
+
+  return null;
 }

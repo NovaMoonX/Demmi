@@ -9,6 +9,8 @@ interface ChatMessageProps {
   isStreaming?: boolean;
   showDetails?: boolean;
   onEdit?: () => void;
+  onConfirmIntent?: (messageId: string) => void;
+  onRejectIntent?: (messageId: string) => void;
   onApproveAction?: (messageId: string) => void;
   onRejectAction?: (messageId: string) => void;
 }
@@ -25,6 +27,8 @@ export function ChatMessage({
   isStreaming = false,
   showDetails = false,
   onEdit,
+  onConfirmIntent,
+  onRejectIntent,
   onApproveAction,
   onRejectAction,
 }: ChatMessageProps) {
@@ -75,9 +79,11 @@ export function ChatMessage({
           )}
         </div>
 
-        {!isStreaming && message.agentAction?.type === 'create_meal' && onApproveAction && onRejectAction && (
+        {!isStreaming && message.agentAction?.type === 'create_meal' && onConfirmIntent && onRejectIntent && onApproveAction && onRejectAction && (
           <AgentActionCard
             action={message.agentAction}
+            onConfirmIntent={() => onConfirmIntent(message.id)}
+            onRejectIntent={() => onRejectIntent(message.id)}
             onApprove={() => onApproveAction(message.id)}
             onReject={() => onRejectAction(message.id)}
           />
