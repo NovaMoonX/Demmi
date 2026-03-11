@@ -20,10 +20,11 @@ import {
   togglePinConversation,
 } from '@store/slices/chatsSlice';
 import { ChatMessage as ChatMessageType } from '@lib/chat';
-import { streamChatResponse } from '@lib/ollama';
+import type { AbortableAsyncIterator } from 'ollama';
+import type { ChatResponse } from 'ollama/browser';
+import { startChatStream } from '@lib/ollama';
 import { generatedId } from '@utils/generatedId';
 
-// Delay to allow UI to render before scrolling to bottom
 const SCROLL_DELAY_MS = 100;
 
 export function Chat() {
@@ -35,7 +36,9 @@ export function Chat() {
   const isMobileDevice = useIsMobileDevice();
   const [isHistoryOpen, setIsHistoryOpen] = useState(() => !isMobileDevice);
   const [isSending, setIsSending] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const activeStreamRef = useRef<AbortableAsyncIterator<ChatResponse> | null>(null);
 
   const {
     availableModels,
@@ -43,6 +46,10 @@ export function Chat() {
     isLoading: isLoadingModels,
     error: modelError,
     selectModel,
+    isPulling,
+    pullProgress,
+    pullError,
+    pullMistral,
   } = useOllamaModels();
 
   const currentChat = conversations.find((c) => c.id === currentChatId);
@@ -56,6 +63,14 @@ export function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [currentChat?.messages, scrollToBottom]);
+
+  const handleCancelStream = () => {
+    if (activeStreamRef.current) {
+      activeStreamRef.current.abort();
+      activeStreamRef.current = null;
+    }
+    setIsSending(false);
+  };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isSending || !selectedModel) {
@@ -71,6 +86,7 @@ export function Chat() {
       role: 'user',
       content: messageContent,
       timestamp: Date.now(),
+      model: null,
     };
 
     const assistantMessageId = generatedId('msg');
@@ -79,6 +95,7 @@ export function Chat() {
       role: 'assistant',
       content: '',
       timestamp: Date.now(),
+      model: null,
     };
 
     let targetChatId: string | null;
@@ -106,6 +123,7 @@ export function Chat() {
     }
 
     const chatIdForStream = targetChatId;
+    const modelUsed = selectedModel;
 
     try {
       const allMessages = store
@@ -113,32 +131,43 @@ export function Chat() {
         .chats.conversations.find((c) => c.id === chatIdForStream)
         ?.messages.filter((m) => m.id !== assistantMessageId) ?? [];
 
+      const stream = await startChatStream(modelUsed, allMessages);
+      activeStreamRef.current = stream;
+
       let accumulatedContent = '';
 
-      for await (const chunk of streamChatResponse(selectedModel, allMessages)) {
-        accumulatedContent += chunk;
+      for await (const chunk of stream) {
+        accumulatedContent += chunk.message.content;
         dispatch(
           updateMessageContent({
             chatId: chatIdForStream,
             messageId: assistantMessageId,
             content: accumulatedContent,
+            model: modelUsed,
           }),
         );
       }
     } catch (err) {
-      const errorContent =
-        err instanceof Error
-          ? `⚠️ Ollama error: ${err.message}`
-          : '⚠️ Could not reach Ollama. Make sure it is running on localhost:11434.';
+      const isAbort =
+        err instanceof Error &&
+        (err.name === 'AbortError' || err.message.toLowerCase().includes('abort'));
 
-      dispatch(
-        updateMessageContent({
-          chatId: chatIdForStream,
-          messageId: assistantMessageId,
-          content: errorContent,
-        }),
-      );
+      if (!isAbort) {
+        const errorContent =
+          err instanceof Error
+            ? `⚠️ Ollama error: ${err.message}`
+            : '⚠️ Could not reach Ollama. Make sure it is running on localhost:11434.';
+
+        dispatch(
+          updateMessageContent({
+            chatId: chatIdForStream,
+            messageId: assistantMessageId,
+            content: errorContent,
+          }),
+        );
+      }
     } finally {
+      activeStreamRef.current = null;
       setIsSending(false);
     }
   };
@@ -171,7 +200,6 @@ export function Chat() {
 
   return (
     <div className="h-full flex overflow-hidden">
-      {/* Chat History Sidebar */}
       <div
         className={join(
           'transition-all duration-300 border-r border-border',
@@ -190,9 +218,7 @@ export function Chat() {
         )}
       </div>
 
-      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-background">
-        {/* Chat Header */}
         <div className="border-b border-border p-4 bg-card">
           <div className="flex items-start justify-between gap-4">
             <div
@@ -218,18 +244,37 @@ export function Chat() {
                   {currentChat.messages.length} message{currentChat.messages.length !== 1 ? 's' : ''}
                 </p>
               )}
-              <OllamaModelSelector
-                models={availableModels}
-                selectedModel={selectedModel}
-                isLoading={isLoadingModels}
-                error={modelError}
-                onSelectModel={selectModel}
-              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowDetails((v) => !v)}
+                  className={join(
+                    'text-xs px-2 py-1 rounded border transition-colors',
+                    showDetails
+                      ? 'border-accent text-accent bg-accent/10'
+                      : 'border-border text-muted-foreground hover:text-foreground'
+                  )}
+                  aria-label="Toggle message details"
+                  title="Toggle timestamps and model info"
+                >
+                  {showDetails ? 'Hide details' : 'Show details'}
+                </button>
+                <OllamaModelSelector
+                  models={availableModels}
+                  selectedModel={selectedModel}
+                  isLoading={isLoadingModels}
+                  error={modelError}
+                  disabled={isSending}
+                  isPulling={isPulling}
+                  pullProgress={pullProgress}
+                  pullError={pullError}
+                  onSelectModel={selectModel}
+                  onPullMistral={pullMistral}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Messages Area */}
         <ScrollArea className="flex-1 p-4 md:p-6">
           {currentChat ? (
             <div className="max-w-4xl mx-auto">
@@ -242,6 +287,7 @@ export function Chat() {
                     message.role === 'assistant' &&
                     index === currentChat.messages.length - 1
                   }
+                  showDetails={showDetails}
                 />
               ))}
               <div ref={messagesEndRef} />
@@ -261,7 +307,6 @@ export function Chat() {
           )}
         </ScrollArea>
 
-        {/* Input Area */}
         <div className="border-t border-border p-4 bg-card">
           <div className="max-w-4xl mx-auto">
             <div className="relative">
@@ -269,20 +314,33 @@ export function Chat() {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={selectedModel ? 'Type your message... (Press Enter to send, Shift+Enter for new line)' : 'Select a model above to start chatting...'}
-                className="min-h-11 max-h-50 resize-none pr-12"
+                placeholder={selectedModel ? 'Type your message... (Enter to send, Shift+Enter for new line)' : 'Select a model above to start chatting...'}
+                className="min-h-11 max-h-50 resize-none pr-24"
                 disabled={isSending || !selectedModel}
               />
-              <Button
-                onClick={handleSendMessage}
-                disabled={isSendDisabled}
-                variant="primary"
-                className="absolute bottom-2.5 right-1.5  text-muted-foreground hover:text-foreground rounded-full!"
-                aria-label="Send message"
-                size='sm'
-              >
-                ↑
-              </Button>
+              <div className="absolute bottom-2.5 right-1.5 flex gap-1">
+                {isSending && (
+                  <Button
+                    onClick={handleCancelStream}
+                    variant="secondary"
+                    className="rounded-full!"
+                    aria-label="Cancel response"
+                    size="sm"
+                  >
+                    ✕
+                  </Button>
+                )}
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={isSendDisabled}
+                  variant="primary"
+                  className="text-muted-foreground hover:text-foreground rounded-full!"
+                  aria-label="Send message"
+                  size="sm"
+                >
+                  ↑
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -292,3 +350,4 @@ export function Chat() {
 }
 
 export default Chat;
+

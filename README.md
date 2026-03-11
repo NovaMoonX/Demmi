@@ -29,11 +29,15 @@ A cooking app powered with local LLM using Ollama.
 
 ### 💬 Chat
 - **Local LLM via Ollama**: Connects to [Ollama](https://ollama.com) running on your machine (localhost:11434) for fully private, offline AI responses
-- **Model Selection**: Dropdown in the chat header lists all models available in your local Ollama installation — pick any model on the fly
+- **Model Selection**: Dropdown in the chat header lists all text models available in your local Ollama installation — pick any model on the fly; selector is disabled while a response is streaming
+- **Auto-download Mistral**: If no text models are installed, a "Download Mistral" button appears. Clicking it streams the pull progress (status text + animated progress bar with percentage) directly in the header until the model is ready
 - **Streaming Responses**: Assistant replies stream token-by-token in real time, just like a native chat app — no waiting for the full response
 - **Streaming Cursor**: A blinking cursor shows while the assistant is typing; a bouncing dots indicator appears before the first token arrives
+- **Cancel Response**: A cancel button (✕) appears next to the send button while a response is streaming — clicking it immediately interrupts the generation and keeps the partial response visible
+- **Message Details Toggle**: "Show details / Hide details" button in the header reveals the timestamp and the model name below each message
+- **Per-message Model Tracking**: Each assistant message stores which Ollama model generated it, shown as a monospace badge when details are visible
 - **Meal-Focused System Prompt**: The assistant is instructed to focus on cooking, recipes, meal planning, ingredients, and nutrition
-- **Ollama Status Indicator**: The model selector shows "Connecting to Ollama…" on load, "⚠️ Ollama offline" if the service is unreachable, and falls back gracefully with an error message in chat
+- **Ollama Status Indicator**: The model selector shows "Connecting to Ollama..." on load, "⚠️ Ollama offline" if the service is unreachable, and falls back gracefully with an error message in chat
 - **Full Conversation Context**: Each request sends the full conversation history so the assistant can reference earlier messages
 - **AI Chat Interface**: Modern ChatGPT-style interface for cooking assistance
 - **Message Bubbles**: User messages (orange) and assistant responses (gray) with distinct styling

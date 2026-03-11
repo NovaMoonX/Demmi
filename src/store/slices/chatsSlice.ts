@@ -96,7 +96,7 @@ const chatsSlice = createSlice({
     },
     updateMessageContent: (
       state,
-      action: PayloadAction<{ chatId: string; messageId: string; content: string }>
+      action: PayloadAction<{ chatId: string; messageId: string; content: string; model?: string | null }>
     ) => {
       const conversation = state.conversations.find(
         (c) => c.id === action.payload.chatId
@@ -107,6 +107,9 @@ const chatsSlice = createSlice({
         );
         if (message) {
           message.content = action.payload.content;
+          if (action.payload.model !== undefined) {
+            message.model = action.payload.model;
+          }
         }
       }
     },

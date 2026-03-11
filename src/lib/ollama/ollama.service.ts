@@ -1,4 +1,6 @@
 import { Ollama } from 'ollama/browser';
+import type { AbortableAsyncIterator } from 'ollama';
+import type { ChatResponse, ProgressResponse } from 'ollama/browser';
 import { ChatMessage } from '@lib/chat';
 
 const SYSTEM_PROMPT =
@@ -11,19 +13,19 @@ export const ollamaClient = new Ollama();
 export async function listLocalModels(): Promise<string[]> {
   const response = await ollamaClient.list();
   const allModels = response.models.map((m) => m.name);
-  
+
   const textModels = allModels.filter((name) => {
     const lowerName = name.toLowerCase();
     return !lowerName.includes('embed') && !lowerName.includes('vision') && !lowerName.includes('multimodal');
   });
-  
+
   return textModels;
 }
 
-export async function* streamChatResponse(
+export async function startChatStream(
   model: string,
   messages: ChatMessage[],
-): AsyncGenerator<string> {
+): Promise<AbortableAsyncIterator<ChatResponse>> {
   const ollamaMessages = [
     { role: 'system' as const, content: SYSTEM_PROMPT },
     ...messages.map((m) => ({
@@ -32,13 +34,15 @@ export async function* streamChatResponse(
     })),
   ];
 
-  const stream = await ollamaClient.chat({
+  return ollamaClient.chat({
     model,
     messages: ollamaMessages,
     stream: true,
   });
+}
 
-  for await (const chunk of stream) {
-    yield chunk.message.content;
-  }
+export async function pullModelStream(
+  model: string,
+): Promise<AbortableAsyncIterator<ProgressResponse>> {
+  return ollamaClient.pull({ model, stream: true });
 }
