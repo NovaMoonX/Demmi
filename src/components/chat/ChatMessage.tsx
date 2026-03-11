@@ -89,7 +89,13 @@ export function ChatMessage({
           </div>
         )}
         {showDetails && (
-          <div className='flex items-center gap-2 px-1'>
+          <div
+            className={join(
+              'flex items-center gap-2 px-1',
+              showActions &&
+                '-mt-6 transition-[margin] group-hover:mt-0',
+            )}
+          >
             <span className='text-muted-foreground text-xs'>
               {formatTimestamp(message.timestamp)}
             </span>
