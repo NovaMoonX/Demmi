@@ -79,13 +79,6 @@ export function Chat() {
     setInputValue('');
   }, [currentChatId]);
 
-  const handleCopyMessage = (messageId: string) => {
-    const message = currentChat?.messages.find((m) => m.id === messageId);
-    if (message) {
-      navigator.clipboard.writeText(message.content.trim());
-    }
-  };
-
   const handleEditMessage = async (messageId: string) => {
     const message = currentChat?.messages.find((m) => m.id === messageId);
     if (!message) return;
@@ -387,7 +380,6 @@ export function Chat() {
                     index === currentChat.messages.length - 1
                   }
                   showDetails={showDetails}
-                  onCopy={() => handleCopyMessage(message.id)}
                   onEdit={() => handleEditMessage(message.id)}
                 />
               ))}
