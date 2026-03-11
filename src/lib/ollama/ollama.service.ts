@@ -10,7 +10,14 @@ export const ollamaClient = new Ollama();
 
 export async function listLocalModels(): Promise<string[]> {
   const response = await ollamaClient.list();
-  return response.models.map((m) => m.name);
+  const allModels = response.models.map((m) => m.name);
+  
+  const textModels = allModels.filter((name) => {
+    const lowerName = name.toLowerCase();
+    return !lowerName.includes('embed') && !lowerName.includes('vision') && !lowerName.includes('multimodal');
+  });
+  
+  return textModels;
 }
 
 export async function* streamChatResponse(
