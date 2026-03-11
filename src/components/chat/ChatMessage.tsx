@@ -25,13 +25,13 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
         )}
       >
         {isStreaming && message.content === '' ? (
-          <div className="flex gap-1">
+          <div className="flex gap-1 text-xs">
             <span className="animate-bounce">●</span>
             <span className="animate-bounce [animation-delay:0.2s]">●</span>
             <span className="animate-bounce [animation-delay:0.4s]">●</span>
           </div>
         ) : (
-          <div className="whitespace-pre-wrap break-words">
+          <div className="whitespace-pre-wrap wrap-break-word">
             {message.content}
             {isStreaming && <span className="ml-0.5 inline-block w-0.5 h-4 bg-current animate-pulse align-middle" />}
           </div>
