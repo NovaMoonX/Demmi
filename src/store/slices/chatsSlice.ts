@@ -54,6 +54,21 @@ const chatsSlice = createSlice({
         conversation.lastUpdated = Date.now();
       }
     },
+    removeMessage: (
+      state,
+      action: PayloadAction<{ chatId: string; messageId: string }>
+    ) => {
+      const conversation = state.conversations.find(
+        (c) => c.id === action.payload.chatId
+      );
+
+      if (conversation) {
+        conversation.messages = conversation.messages.filter(
+          (m) => m.id !== action.payload.messageId
+        );
+        conversation.lastUpdated = Date.now();
+      }
+    },
     updateConversation: (
       state,
       action: PayloadAction<{ id: string; updates: Partial<Omit<ChatConversation, 'id'>> }>
@@ -172,6 +187,7 @@ export const {
   setCurrentChat,
   createConversation,
   addMessage,
+  removeMessage,
   updateConversation,
   deleteConversation,
   togglePinConversation,

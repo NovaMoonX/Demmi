@@ -15,6 +15,7 @@ import {
   setCurrentChat,
   createConversation,
   addMessage,
+  removeMessage,
   updateMessageContent,
   deleteConversation,
   togglePinConversation,
@@ -39,6 +40,11 @@ export function Chat() {
   const [showDetails, setShowDetails] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeStreamRef = useRef<AbortableAsyncIterator<ChatResponse> | null>(null);
+  const currentGenerationId = useRef<string | null>(null);
+  const cancelledRef = useRef(false);
+  const firstTokenReceivedRef = useRef(false);
+  const activeChatIdRef = useRef<string | null>(null);
+  const activeMessageIdRef = useRef<string | null>(null);
 
   const {
     availableModels,
@@ -65,10 +71,24 @@ export function Chat() {
   }, [currentChat?.messages, scrollToBottom]);
 
   const handleCancelStream = () => {
+    cancelledRef.current = true;
+    currentGenerationId.current = null;
+    
+    if (!firstTokenReceivedRef.current && activeChatIdRef.current && activeMessageIdRef.current) {
+      dispatch(removeMessage({
+        chatId: activeChatIdRef.current,
+        messageId: activeMessageIdRef.current,
+      }));
+    }
+    
     if (activeStreamRef.current) {
       activeStreamRef.current.abort();
       activeStreamRef.current = null;
     }
+    
+    firstTokenReceivedRef.current = false;
+    activeChatIdRef.current = null;
+    activeMessageIdRef.current = null;
     setIsSending(false);
   };
 
@@ -80,6 +100,11 @@ export function Chat() {
     const messageContent = inputValue.trim();
     setInputValue('');
     setIsSending(true);
+    
+    const generationId = generatedId('msg');
+    currentGenerationId.current = generationId;
+    cancelledRef.current = false;
+    firstTokenReceivedRef.current = false;
 
     const userMessage: ChatMessageType = {
       id: generatedId('msg'),
@@ -124,6 +149,9 @@ export function Chat() {
 
     const chatIdForStream = targetChatId;
     const modelUsed = selectedModel;
+    
+    activeChatIdRef.current = chatIdForStream;
+    activeMessageIdRef.current = assistantMessageId;
 
     try {
       const allMessages = store
@@ -132,11 +160,31 @@ export function Chat() {
         ?.messages.filter((m) => m.id !== assistantMessageId) ?? [];
 
       const stream = await startChatStream(modelUsed, allMessages);
+      
+      if (currentGenerationId.current !== generationId || cancelledRef.current) {
+        stream.abort();
+        if (!firstTokenReceivedRef.current) {
+          dispatch(removeMessage({
+            chatId: chatIdForStream,
+            messageId: assistantMessageId,
+          }));
+        }
+        return;
+      }
+      
       activeStreamRef.current = stream;
 
       let accumulatedContent = '';
 
       for await (const chunk of stream) {
+        if (currentGenerationId.current !== generationId || cancelledRef.current) {
+          break;
+        }
+        
+        if (!firstTokenReceivedRef.current) {
+          firstTokenReceivedRef.current = true;
+        }
+        
         accumulatedContent += chunk.message.content;
         dispatch(
           updateMessageContent({
@@ -167,8 +215,14 @@ export function Chat() {
         );
       }
     } finally {
-      activeStreamRef.current = null;
-      setIsSending(false);
+      if (currentGenerationId.current === generationId) {
+        activeStreamRef.current = null;
+        currentGenerationId.current = null;
+        firstTokenReceivedRef.current = false;
+        activeChatIdRef.current = null;
+        activeMessageIdRef.current = null;
+        setIsSending(false);
+      }
     }
   };
 
