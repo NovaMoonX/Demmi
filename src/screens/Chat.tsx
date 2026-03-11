@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Button } from '@moondreamsdev/dreamer-ui/components';
+import { Button, Label, Toggle } from '@moondreamsdev/dreamer-ui/components';
 import { Textarea } from '@moondreamsdev/dreamer-ui/components';
 import { ScrollArea } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
@@ -245,19 +245,17 @@ export function Chat() {
                 </p>
               )}
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowDetails((v) => !v)}
-                  className={join(
-                    'text-xs px-2 py-1 rounded border transition-colors',
-                    showDetails
-                      ? 'border-accent text-accent bg-accent/10'
-                      : 'border-border text-muted-foreground hover:text-foreground'
-                  )}
+                <Label htmlFor="toggle-details" className='text-muted-foreground text-sm'>
+                  Show message details
+                </Label>
+                <Toggle
+                  id="toggle-details"
+                  checked={showDetails}
+                  size='sm'
+                  onCheckedChange={() => setShowDetails((v) => !v)}
                   aria-label="Toggle message details"
-                  title="Toggle timestamps and model info"
-                >
-                  {showDetails ? 'Hide details' : 'Show details'}
-                </button>
+                />
+
                 <OllamaModelSelector
                   models={availableModels}
                   selectedModel={selectedModel}

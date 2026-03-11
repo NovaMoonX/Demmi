@@ -21,10 +21,10 @@ export function ChatMessage({ message, isStreaming = false, showDetails = false 
         isUser ? 'justify-end' : 'justify-start'
       )}
     >
-      <div className={join('flex flex-col gap-1', isUser ? 'items-end' : 'items-start')}>
+      <div className={join('flex flex-col gap-1 max-w-[80%] md:max-w-[70%] ', isUser ? 'items-end' : 'items-start')}>
         <div
           className={join(
-            'max-w-[80%] md:max-w-[70%] rounded-2xl px-4 py-3',
+            'rounded-2xl px-4 py-3 min-w-fit',
             isUser
               ? 'bg-accent text-accent-foreground'
               : 'bg-muted text-foreground'
@@ -37,7 +37,7 @@ export function ChatMessage({ message, isStreaming = false, showDetails = false 
               <span className="animate-bounce [animation-delay:0.4s]">●</span>
             </div>
           ) : (
-            <div className="whitespace-pre-wrap break-words">
+            <div className="whitespace-pre-wrap wrap-break-word">
               {message.content}
               {isStreaming && <span className="ml-0.5 inline-block w-0.5 h-4 bg-current animate-pulse align-middle" />}
             </div>
