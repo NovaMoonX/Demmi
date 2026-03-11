@@ -14,6 +14,7 @@ function formatTimestamp(ts: number): string {
 export function ChatMessage({ message, isStreaming = false, showDetails = false }: ChatMessageProps) {
   const isUser = message.role === 'user';
 
+  const messageContent = message.content.trim();
   return (
     <div
       className={join(
@@ -30,7 +31,7 @@ export function ChatMessage({ message, isStreaming = false, showDetails = false 
               : 'bg-muted text-foreground'
           )}
         >
-          {isStreaming && message.content === '' ? (
+          {isStreaming && messageContent === '' ? (
             <div className="flex gap-1 text-xs">
               <span className="animate-bounce">●</span>
               <span className="animate-bounce [animation-delay:0.2s]">●</span>
@@ -38,7 +39,7 @@ export function ChatMessage({ message, isStreaming = false, showDetails = false 
             </div>
           ) : (
             <div className="whitespace-pre-wrap wrap-break-word">
-              {message.content}
+              {messageContent}
               {isStreaming && <span className="ml-0.5 inline-block w-0.5 h-4 bg-current animate-pulse align-middle" />}
             </div>
           )}
