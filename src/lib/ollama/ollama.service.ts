@@ -196,7 +196,7 @@ export function parseOllamaResponse(json: string): ParsedOllamaResponse | null {
                 name: typeof i.name === 'string' ? i.name : 'Unknown',
                 type: coerceIngredientType(typeof i.type === 'string' ? i.type : ''),
                 unit: coerceMeasurementUnit(typeof i.unit === 'string' ? i.unit : ''),
-                servings: typeof i.servings === 'number' ? Math.max(0, i.servings) : 1,
+                servings: typeof i.servings === 'number' ? Math.max(1, i.servings) : 1,
               }))
           : [],
       }));
@@ -214,11 +214,11 @@ export function parseOllamaResponse(json: string): ParsedOllamaResponse | null {
 export function extractPartialResponse(partialJson: string): string {
   const match = partialJson.match(/"response"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
   if (!match) return '';
-  return match[1]
-    .replace(/\\n/g, '\n')
-    .replace(/\\t/g, '\t')
-    .replace(/\\"/g, '"')
-    .replace(/\\\\/g, '\\')
-    .replace(/\\r/g, '');
+  // Wrap in quotes and parse as a JSON string for correct single-pass unescaping
+  try {
+    return JSON.parse('"' + match[1] + '"') as string;
+  } catch {
+    return '';
+  }
 }
 

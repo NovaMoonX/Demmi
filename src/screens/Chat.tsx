@@ -27,7 +27,6 @@ import {
 import { createIngredient } from '@store/actions/ingredientActions';
 import { createMeal } from '@store/actions/mealActions';
 import { ChatMessage as ChatMessageType } from '@lib/chat';
-import type { AgentCreateMealAction } from '@lib/chat/agent-actions.types';
 import type { MealIngredient } from '@lib/meals';
 import type { AbortableAsyncIterator } from 'ollama';
 import type { ChatResponse } from 'ollama/browser';
@@ -151,70 +150,81 @@ export function Chat() {
     let mealsCreated = 0;
     let skipped = 0;
 
-    for (const mealProposal of (action as AgentCreateMealAction).meals) {
-      const duplicate = existingMeals.some(
-        (m) => m.title.toLowerCase() === mealProposal.title.toLowerCase(),
-      );
-      if (duplicate) {
-        skipped++;
-        continue;
-      }
-
-      const mealIngredients: MealIngredient[] = [];
-
-      for (const ingredientProposal of mealProposal.ingredients) {
-        const existing = existingIngredients.find(
-          (i) => i.name.toLowerCase() === ingredientProposal.name.toLowerCase(),
+    try {
+      for (const mealProposal of action.meals) {
+        const duplicate = existingMeals.some(
+          (m) => m.title.toLowerCase() === mealProposal.title.toLowerCase(),
         );
-
-        let ingredientId: string;
-
-        if (existing) {
-          ingredientId = existing.id;
-        } else {
-          const created = await dispatch(
-            createIngredient({
-              name: ingredientProposal.name,
-              type: ingredientProposal.type,
-              unit: ingredientProposal.unit,
-              imageUrl: '',
-              nutrients: {
-                protein: 0,
-                carbs: 0,
-                fat: 0,
-                fiber: 0,
-                sugar: 0,
-                sodium: 0,
-                calories: 0,
-              },
-              currentAmount: 0,
-              servingSize: 1,
-              otherUnit: null,
-              products: [],
-              defaultProductId: null,
-            }),
-          ).unwrap();
-          ingredientId = created.id;
+        if (duplicate) {
+          skipped++;
+          continue;
         }
 
-        mealIngredients.push({ ingredientId, servings: ingredientProposal.servings });
+        const mealIngredients: MealIngredient[] = [];
+
+        for (const ingredientProposal of mealProposal.ingredients) {
+          const existing = existingIngredients.find(
+            (i) => i.name.toLowerCase() === ingredientProposal.name.toLowerCase(),
+          );
+
+          let ingredientId: string;
+
+          if (existing) {
+            ingredientId = existing.id;
+          } else {
+            const created = await dispatch(
+              createIngredient({
+                name: ingredientProposal.name,
+                type: ingredientProposal.type,
+                unit: ingredientProposal.unit,
+                imageUrl: '',
+                nutrients: {
+                  protein: 0,
+                  carbs: 0,
+                  fat: 0,
+                  fiber: 0,
+                  sugar: 0,
+                  sodium: 0,
+                  calories: 0,
+                },
+                currentAmount: 0,
+                servingSize: 1,
+                otherUnit: null,
+                products: [],
+                defaultProductId: null,
+              }),
+            ).unwrap();
+            ingredientId = created.id;
+          }
+
+          mealIngredients.push({ ingredientId, servings: ingredientProposal.servings });
+        }
+
+        await dispatch(
+          createMeal({
+            title: mealProposal.title,
+            description: mealProposal.description,
+            category: mealProposal.category,
+            prepTime: mealProposal.prepTime,
+            cookTime: mealProposal.cookTime,
+            servingSize: mealProposal.servingSize,
+            instructions: mealProposal.instructions,
+            imageUrl: mealProposal.imageUrl,
+            ingredients: mealIngredients,
+          }),
+        ).unwrap();
+
+        mealsCreated++;
       }
-
-      await dispatch(
-        createMeal({
-          title: mealProposal.title,
-          description: mealProposal.description,
-          category: mealProposal.category,
-          prepTime: mealProposal.prepTime,
-          cookTime: mealProposal.cookTime,
-          servingSize: mealProposal.servingSize,
-          instructions: mealProposal.instructions,
-          imageUrl: mealProposal.imageUrl,
-          ingredients: mealIngredients,
-        }),
-      ).unwrap();
-
-      mealsCreated++;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      addToast({
+        title: 'Failed to save',
+        description: message,
+        type: 'error',
+      });
+      dispatch(updateAgentActionStatus({ chatId, messageId, status: 'pending' }));
+      return;
     }
 
     if (mealsCreated > 0) {
