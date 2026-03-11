@@ -6,23 +6,53 @@ import type { AgentMealProposal } from '@lib/chat/agent-actions.types';
 import type { MealCategory } from '@lib/meals';
 import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
 
-const SYSTEM_PROMPT =
-  'You are Demmi\'s AI assistant, specialized in helping users with cooking, recipes, meal planning, ingredients, and nutrition. ' +
-  'Help users discover new meals, plan their weekly menu, understand ingredient combinations, and make informed food choices. ' +
+/**
+ * Phase 1 — intent detection.
+ * The AI detects whether the user wants to create a recipe/meal/dish.
+ * It does NOT generate recipe details at this stage.
+ */
+const INTENT_SYSTEM_PROMPT =
+  "You are Demmi's AI assistant, specialized in cooking, recipes, meal planning, and nutrition. " +
   'Be concise, friendly, and practical.\n\n' +
-  'You always respond with a JSON object containing exactly two fields:\n' +
-  '  "response": your message to the user (always required, supports markdown)\n' +
-  '  "meals": an array of meal objects to create (empty [] by default)\n\n' +
-  'Only populate "meals" when the user explicitly asks you to create, add, or make a meal. ' +
+  'You always respond with a JSON object with exactly three fields:\n' +
+  '  "response": your message to the user (required, supports markdown)\n' +
+  '  "wantsToCreate": true if the user wants to CREATE / MAKE / ADD / GENERATE a recipe, meal, or dish — false otherwise\n' +
+  '  "proposedMealName": the name of the recipe or meal if wantsToCreate is true, empty string otherwise\n\n' +
+  'IMPORTANT rules:\n' +
+  '  - Set wantsToCreate: true when the user asks for things like "give me a pancake recipe", ' +
+  '"create a pasta dish", "I want a good stir fry recipe", "make me tacos", "add a lasagna recipe", etc.\n' +
+  '  - If wantsToCreate is true, your "response" must ONLY confirm intent, e.g. ' +
+  '"It sounds like you want to create a [name] recipe! Is that correct?" ' +
+  'Do NOT include ingredients, instructions, or recipe details in the response.\n' +
+  '  - For all other messages (questions, tips, discussions), answer normally and set wantsToCreate: false.';
+
+const INTENT_RESPONSE_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  required: ['response', 'wantsToCreate', 'proposedMealName'],
+  properties: {
+    response: { type: 'string' },
+    wantsToCreate: { type: 'boolean' },
+    proposedMealName: { type: 'string' },
+  },
+};
+
+/**
+ * Phase 2 — recipe generation.
+ * Called after the user has confirmed intent. Generates the full recipe details.
+ */
+const RECIPE_GENERATION_PROMPT =
+  "You are Demmi's AI assistant. Generate the complete recipe details for the requested meal.\n\n" +
+  'Respond with a JSON object with exactly two fields:\n' +
+  '  "response": a brief confirmation message (e.g. "Here\'s your Pancake recipe!")\n' +
+  '  "meals": an array containing exactly one fully detailed meal object\n\n' +
   'Each meal must have: title, description, category ("breakfast"|"lunch"|"dinner"|"snack"|"dessert"|"drink"), ' +
   'prepTime (minutes), cookTime (minutes), servingSize, instructions (array of steps), ' +
-  'and ingredients (array of {name, type, unit, servings}). ' +
-  'Ingredient type must be one of: "meat","produce","dairy","grains","legumes","oils","spices","nuts","seafood","other". ' +
-  'Ingredient unit must be one of: "lb","oz","kg","g","cup","tbsp","tsp","piece","ml","l","other". ' +
-  'Use "servings" to indicate how many units/portions of that ingredient the meal requires. ' +
-  'For all other requests set "meals" to [].';
+  'and ingredients (array of {name, type, unit, servings}).\n' +
+  'Ingredient type must be one of: "meat","produce","dairy","grains","legumes","oils","spices","nuts","seafood","other".\n' +
+  'Ingredient unit must be one of: "lb","oz","kg","g","cup","tbsp","tsp","piece","ml","l","other".\n' +
+  'Use "servings" to indicate how many units/portions of that ingredient the recipe requires.';
 
-const RESPONSE_SCHEMA: Record<string, unknown> = {
+const RECIPE_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: 'object',
   required: ['response', 'meals'],
   properties: {
@@ -116,15 +146,18 @@ export async function listLocalModels(): Promise<string[]> {
   return textModels;
 }
 
+/**
+ * Phase 1: Streaming chat for intent detection.
+ * Uses INTENT schema — produces { response, wantsToCreate, proposedMealName }.
+ */
 export async function startChatStream(
   model: string,
   messages: ChatMessage[],
 ): Promise<AbortableAsyncIterator<ChatResponse>> {
   const ollamaMessages = [
-    { role: 'system' as const, content: SYSTEM_PROMPT },
+    { role: 'system' as const, content: INTENT_SYSTEM_PROMPT },
     ...messages.map((m) => ({
       role: m.role as 'user' | 'assistant',
-      // For assistant messages use rawContent (the full JSON) so the AI retains context
       content: m.rawContent ?? m.content,
     })),
   ];
@@ -133,8 +166,29 @@ export async function startChatStream(
     model,
     messages: ollamaMessages,
     stream: true,
-    format: RESPONSE_SCHEMA,
+    format: INTENT_RESPONSE_SCHEMA,
   });
+}
+
+/**
+ * Phase 2: Non-streaming recipe generation after user confirms intent.
+ * Returns the parsed meal proposal, or null on failure.
+ */
+export async function generateRecipe(
+  model: string,
+  mealName: string,
+): Promise<ParsedOllamaResponse | null> {
+  const response = await ollamaClient.chat({
+    model,
+    messages: [
+      { role: 'system' as const, content: RECIPE_GENERATION_PROMPT },
+      { role: 'user' as const, content: `Create a recipe for: ${mealName}` },
+    ],
+    stream: false,
+    format: RECIPE_RESPONSE_SCHEMA,
+  });
+
+  return parseOllamaResponse(response.message.content);
 }
 
 export async function pullModelStream(
@@ -168,6 +222,33 @@ export interface ParsedOllamaResponse {
   meals: AgentMealProposal[];
 }
 
+export interface ParsedIntentResponse {
+  response: string;
+  wantsToCreate: boolean;
+  proposedMealName: string;
+}
+
+/**
+ * Parse the Phase 1 (intent detection) JSON response.
+ */
+export function parseIntentResponse(json: string): ParsedIntentResponse | null {
+  try {
+    const parsed = JSON.parse(json);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+
+    return {
+      response: typeof parsed.response === 'string' ? parsed.response : '',
+      wantsToCreate: parsed.wantsToCreate === true,
+      proposedMealName: typeof parsed.proposedMealName === 'string' ? parsed.proposedMealName : '',
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parse the Phase 2 (recipe generation) JSON response.
+ */
 export function parseOllamaResponse(json: string): ParsedOllamaResponse | null {
   try {
     const parsed = JSON.parse(json);
@@ -214,7 +295,6 @@ export function parseOllamaResponse(json: string): ParsedOllamaResponse | null {
 export function extractPartialResponse(partialJson: string): string {
   const match = partialJson.match(/"response"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
   if (!match) return '';
-  // Wrap in quotes and parse as a JSON string for correct single-pass unescaping
   try {
     return JSON.parse('"' + match[1] + '"') as string;
   } catch {

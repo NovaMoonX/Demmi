@@ -28,10 +28,9 @@ import { createIngredient } from '@store/actions/ingredientActions';
 import { createMeal } from '@store/actions/mealActions';
 import { ChatMessage as ChatMessageType } from '@lib/chat';
 import type { MealIngredient } from '@lib/meals';
-import { findSimilarMeals } from '@lib/meals/meals.utils';
 import type { AbortableAsyncIterator } from 'ollama';
 import type { ChatResponse } from 'ollama/browser';
-import { startChatStream, extractPartialResponse, parseOllamaResponse } from '@lib/ollama';
+import { startChatStream, generateRecipe, extractPartialResponse, parseIntentResponse } from '@lib/ollama';
 import { generatedId } from '@utils/generatedId';
 
 const SCROLL_DELAY_MS = 100;
@@ -133,7 +132,7 @@ export function Chat() {
 
   const handleConfirmIntent = async (messageId: string) => {
     const chatId = currentChatId;
-    if (!chatId) return;
+    if (!chatId || !selectedModel) return;
 
     const message = store
       .getState()
@@ -143,17 +142,39 @@ export function Chat() {
     const action = message?.agentAction;
     if (!action || action.type !== 'create_meal' || action.status !== 'pending_confirmation') return;
 
-    dispatch(updateAgentActionStatus({ chatId, messageId, status: 'searching' }));
+    if (!action.proposedName) {
+      addToast({
+        title: 'Unable to generate',
+        description: 'No meal name detected. Please try again.',
+        type: 'error',
+      });
+      return;
+    }
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 900));
+    dispatch(updateAgentActionStatus({ chatId, messageId, status: 'generating' }));
 
-    const existingMeals = store.getState().meals.items;
-    const similarMeals = findSimilarMeals(action.meals, existingMeals);
+    try {
+      const parsed = await generateRecipe(selectedModel, action.proposedName);
 
-    if (similarMeals.length > 0) {
-      dispatch(updateAgentActionStatus({ chatId, messageId, status: 'similar_found', similarMeals }));
-    } else {
-      dispatch(updateAgentActionStatus({ chatId, messageId, status: 'pending_approval', similarMeals: [] }));
+      if (!parsed || parsed.meals.length === 0) {
+        addToast({
+          title: 'Generation failed',
+          description: 'Could not generate the recipe. Please try again.',
+          type: 'error',
+        });
+        dispatch(updateAgentActionStatus({ chatId, messageId, status: 'pending_confirmation' }));
+        return;
+      }
+
+      dispatch(updateAgentActionStatus({ chatId, messageId, status: 'pending_approval', meals: parsed.meals }));
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      addToast({
+        title: 'Generation failed',
+        description: errMsg,
+        type: 'error',
+      });
+      dispatch(updateAgentActionStatus({ chatId, messageId, status: 'pending_confirmation' }));
     }
   };
 
@@ -176,8 +197,6 @@ export function Chat() {
 
     dispatch(updateAgentActionStatus({ chatId, messageId, status: 'approved' }));
 
-    const existingIngredients = store.getState().ingredients.items;
-
     let mealsCreated = 0;
 
     try {
@@ -185,41 +204,30 @@ export function Chat() {
         const mealIngredients: MealIngredient[] = [];
 
         for (const ingredientProposal of mealProposal.ingredients) {
-          const existing = existingIngredients.find(
-            (i) => i.name.toLowerCase() === ingredientProposal.name.toLowerCase(),
-          );
+          const created = await dispatch(
+            createIngredient({
+              name: ingredientProposal.name,
+              type: ingredientProposal.type,
+              unit: ingredientProposal.unit,
+              imageUrl: '',
+              nutrients: {
+                protein: 0,
+                carbs: 0,
+                fat: 0,
+                fiber: 0,
+                sugar: 0,
+                sodium: 0,
+                calories: 0,
+              },
+              currentAmount: 0,
+              servingSize: 1,
+              otherUnit: null,
+              products: [],
+              defaultProductId: null,
+            }),
+          ).unwrap();
 
-          let ingredientId: string;
-
-          if (existing) {
-            ingredientId = existing.id;
-          } else {
-            const created = await dispatch(
-              createIngredient({
-                name: ingredientProposal.name,
-                type: ingredientProposal.type,
-                unit: ingredientProposal.unit,
-                imageUrl: '',
-                nutrients: {
-                  protein: 0,
-                  carbs: 0,
-                  fat: 0,
-                  fiber: 0,
-                  sugar: 0,
-                  sodium: 0,
-                  calories: 0,
-                },
-                currentAmount: 0,
-                servingSize: 1,
-                otherUnit: null,
-                products: [],
-                defaultProductId: null,
-              }),
-            ).unwrap();
-            ingredientId = created.id;
-          }
-
-          mealIngredients.push({ ingredientId, servings: ingredientProposal.servings });
+          mealIngredients.push({ ingredientId: created.id, servings: ingredientProposal.servings });
         }
 
         await dispatch(
@@ -383,11 +391,16 @@ export function Chat() {
       }
 
       if (!cancelledRef.current && currentGenerationId.current === generationId && rawJsonContent) {
-        const parsed = parseOllamaResponse(rawJsonContent);
+        const parsed = parseIntentResponse(rawJsonContent);
         const displayContent = parsed?.response ?? rawJsonContent;
         const agentAction =
-          parsed && parsed.meals.length > 0
-            ? { type: 'create_meal' as const, status: 'pending_confirmation' as const, meals: parsed.meals, similarMeals: [] }
+          parsed?.wantsToCreate && parsed.proposedMealName
+            ? {
+                type: 'create_meal' as const,
+                status: 'pending_confirmation' as const,
+                proposedName: parsed.proposedMealName,
+                meals: [],
+              }
             : null;
 
         dispatch(

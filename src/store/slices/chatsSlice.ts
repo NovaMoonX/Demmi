@@ -3,7 +3,7 @@ import {
   ChatConversation,
   ChatMessage,
 } from '@lib/chat';
-import type { AgentAction, AgentActionStatus, AgentCreateMealAction, SimilarMealResult } from '@lib/chat/agent-actions.types';
+import type { AgentAction, AgentActionStatus, AgentCreateMealAction, AgentMealProposal } from '@lib/chat/agent-actions.types';
 import { generatedId } from '@utils/generatedId';
 import {
   fetchChats,
@@ -165,7 +165,7 @@ const chatsSlice = createSlice({
         chatId: string;
         messageId: string;
         status: AgentActionStatus;
-        similarMeals?: SimilarMealResult[];
+        meals?: AgentMealProposal[];
       }>
     ) => {
       const conversation = state.conversations.find(
@@ -178,11 +178,11 @@ const chatsSlice = createSlice({
         if (message?.agentAction) {
           message.agentAction.status = action.payload.status;
           if (
-            action.payload.similarMeals !== undefined &&
+            action.payload.meals !== undefined &&
             message.agentAction.type === 'create_meal'
           ) {
-            (message.agentAction as AgentCreateMealAction).similarMeals =
-              action.payload.similarMeals;
+            (message.agentAction as AgentCreateMealAction).meals =
+              action.payload.meals;
           }
         }
       }
