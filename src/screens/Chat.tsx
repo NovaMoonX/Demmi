@@ -3,6 +3,7 @@ import { Button, Label, Toggle } from '@moondreamsdev/dreamer-ui/components';
 import { Textarea } from '@moondreamsdev/dreamer-ui/components';
 import { ScrollArea } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
+import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
 import { ChatHistoryToggleIcon } from '@components/chat/ChatHistoryToggleIcon';
 import { ChatHistory } from '@components/chat/ChatHistory';
 import { ChatMessage } from '@components/chat/ChatMessage';
@@ -16,6 +17,7 @@ import {
   createConversation,
   addMessage,
   removeMessage,
+  trimMessagesFrom,
   updateMessageContent,
   deleteConversation,
   togglePinConversation,
@@ -34,6 +36,7 @@ export function Chat() {
   const currentChatId = useAppSelector((state) => state.chats.currentChatId);
   const authUser = useAppSelector((state) => state.user.user);
   const [inputValue, setInputValue] = useState('');
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const isMobileDevice = useIsMobileDevice();
   const [isHistoryOpen, setIsHistoryOpen] = useState(() => !isMobileDevice);
   const [isSending, setIsSending] = useState(false);
@@ -45,6 +48,7 @@ export function Chat() {
   const firstTokenReceivedRef = useRef(false);
   const activeChatIdRef = useRef<string | null>(null);
   const activeMessageIdRef = useRef<string | null>(null);
+  const { confirm } = useActionModal();
 
   const {
     availableModels,
@@ -69,6 +73,41 @@ export function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [currentChat?.messages, scrollToBottom]);
+
+  useEffect(() => {
+    setEditingMessageId(null);
+    setInputValue('');
+  }, [currentChatId]);
+
+  const handleCopyMessage = (messageId: string) => {
+    const message = currentChat?.messages.find((m) => m.id === messageId);
+    if (message) {
+      navigator.clipboard.writeText(message.content.trim());
+    }
+  };
+
+  const handleEditMessage = async (messageId: string) => {
+    const message = currentChat?.messages.find((m) => m.id === messageId);
+    if (!message) return;
+
+    if (inputValue.trim()) {
+      const confirmed = await confirm({
+        title: 'Replace unsent message',
+        message: "You have unsent text in the input. Do you want to replace it with the message you're editing?",
+        confirmText: 'Replace',
+        cancelText: 'Cancel',
+      });
+      if (!confirmed) return;
+    }
+
+    setInputValue(message.content.trim());
+    setEditingMessageId(messageId);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setInputValue('');
+  };
 
   const handleCancelStream = () => {
     cancelledRef.current = true;
@@ -100,6 +139,13 @@ export function Chat() {
     const messageContent = inputValue.trim();
     setInputValue('');
     setIsSending(true);
+
+    const editMessageId = editingMessageId;
+    setEditingMessageId(null);
+
+    if (editMessageId && currentChatId) {
+      dispatch(trimMessagesFrom({ chatId: currentChatId, messageId: editMessageId }));
+    }
     
     const generationId = generatedId('msg');
     currentGenerationId.current = generationId;
@@ -229,6 +275,7 @@ export function Chat() {
   const handleNewChat = () => {
     dispatch(setCurrentChat(null));
     setInputValue('');
+    setEditingMessageId(null);
   };
 
   const handleSelectChat = (chatId: string) => {
@@ -340,6 +387,8 @@ export function Chat() {
                     index === currentChat.messages.length - 1
                   }
                   showDetails={showDetails}
+                  onCopy={() => handleCopyMessage(message.id)}
+                  onEdit={() => handleEditMessage(message.id)}
                 />
               ))}
               <div ref={messagesEndRef} />
@@ -361,6 +410,18 @@ export function Chat() {
 
         <div className="border-t border-border p-4 bg-card">
           <div className="max-w-4xl mx-auto">
+            {editingMessageId && (
+              <div className={join('flex items-center justify-between mb-2 px-1 py-1.5 rounded-lg', 'bg-muted/60 border border-border text-xs text-muted-foreground')}>
+                <span>✏️ Editing message — the original and all following messages will be replaced</span>
+                <button
+                  onClick={handleCancelEdit}
+                  className="ml-2 hover:text-foreground transition-colors"
+                  aria-label="Cancel edit"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             <div className="relative">
               <Textarea
                 value={inputValue}
