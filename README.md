@@ -28,6 +28,9 @@ A cooking app powered with local LLM using Ollama.
 - **Seamless UX**: Automatic navigation after successful authentication
 
 ### 💬 Chat
+- **Copy Message**: A 📋 button appears on hover for any message (user or assistant) — clicking it copies the trimmed message content to the clipboard
+- **Edit & Re-send**: A ✏️ button appears on hover for user messages — clicking it loads the message into the input for editing; if there is already unsent text in the input a confirmation dialog prevents accidental loss; upon sending, the original message and all subsequent messages are replaced with the re-generated conversation
+- **Edit Mode Indicator**: A contextual banner above the input shows when a message is being edited and provides a one-click cancel to dismiss the edit without losing the chat history
 - **Local LLM via Ollama**: Connects to [Ollama](https://ollama.com) running on your machine (localhost:11434) for fully private, offline AI responses
 - **Model Selection**: Dropdown in the chat header lists all text models available in your local Ollama installation — pick any model on the fly; selector is disabled while a response is streaming
 - **Auto-download Mistral**: If no text models are installed, a "Download Mistral" button appears. Clicking it streams the pull progress (status text + animated progress bar with percentage) directly in the header until the model is ready

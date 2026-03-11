@@ -109,6 +109,23 @@ const chatsSlice = createSlice({
     setSelectedModel: (state, action: PayloadAction<string | null>) => {
       state.selectedModel = action.payload;
     },
+    trimMessagesFrom: (
+      state,
+      action: PayloadAction<{ chatId: string; messageId: string }>
+    ) => {
+      const conversation = state.conversations.find(
+        (c) => c.id === action.payload.chatId
+      );
+      if (conversation) {
+        const index = conversation.messages.findIndex(
+          (m) => m.id === action.payload.messageId
+        );
+        if (index !== -1) {
+          conversation.messages = conversation.messages.slice(0, index);
+          conversation.lastUpdated = Date.now();
+        }
+      }
+    },
     updateMessageContent: (
       state,
       action: PayloadAction<{ chatId: string; messageId: string; content: string; model?: string | null }>
@@ -188,6 +205,7 @@ export const {
   createConversation,
   addMessage,
   removeMessage,
+  trimMessagesFrom,
   updateConversation,
   deleteConversation,
   togglePinConversation,

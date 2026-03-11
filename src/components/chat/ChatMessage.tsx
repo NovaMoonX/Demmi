@@ -1,56 +1,106 @@
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { ChatMessage as ChatMessageType } from '@lib/chat';
+import { CopyButton } from '@moondreamsdev/dreamer-ui/components';
 
 interface ChatMessageProps {
   message: ChatMessageType;
   isStreaming?: boolean;
   showDetails?: boolean;
+  onEdit?: () => void;
 }
 
 function formatTimestamp(ts: number): string {
-  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date(ts).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
-export function ChatMessage({ message, isStreaming = false, showDetails = false }: ChatMessageProps) {
+export function ChatMessage({
+  message,
+  isStreaming = false,
+  showDetails = false,
+  onEdit,
+}: ChatMessageProps) {
   const isUser = message.role === 'user';
 
   const messageContent = message.content.trim();
+  const showActions = !isStreaming && messageContent !== '';
+
   return (
     <div
       className={join(
-        'flex w-full mb-4',
-        isUser ? 'justify-end' : 'justify-start'
+        'mb-4 flex w-full',
+        'group',
+        isUser ? 'justify-end' : 'justify-start',
       )}
     >
-      <div className={join('flex flex-col gap-1 max-w-[80%] md:max-w-[70%] ', isUser ? 'items-end' : 'items-start')}>
+      <div
+        className={join(
+          'flex max-w-[80%] flex-col gap-1 md:max-w-[70%]',
+          isUser ? 'items-end' : 'items-start',
+        )}
+      >
         <div
           className={join(
-            'rounded-2xl px-4 py-3 min-w-fit',
+            'min-w-fit rounded-2xl px-4 py-3',
             isUser
               ? 'bg-accent text-accent-foreground'
-              : 'bg-muted text-foreground'
+              : 'bg-muted text-foreground',
           )}
         >
           {isStreaming && messageContent === '' ? (
-            <div className="flex gap-1 text-xs">
-              <span className="animate-bounce">●</span>
-              <span className="animate-bounce [animation-delay:0.2s]">●</span>
-              <span className="animate-bounce [animation-delay:0.4s]">●</span>
+            <div className='flex gap-1 text-xs'>
+              <span className='animate-bounce'>●</span>
+              <span className='animate-bounce [animation-delay:0.2s]'>●</span>
+              <span className='animate-bounce [animation-delay:0.4s]'>●</span>
             </div>
           ) : (
-            <div className="whitespace-pre-wrap wrap-break-word">
+            <div className='wrap-break-word whitespace-pre-wrap'>
               {messageContent}
-              {isStreaming && <span className="ml-0.5 inline-block w-0.5 h-4 bg-current animate-pulse align-middle" />}
+              {isStreaming && (
+                <span className='ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-current align-middle' />
+              )}
             </div>
           )}
         </div>
+        {showActions && (
+          <div
+            className={join(
+              'flex items-center gap-0.5 px-1',
+              'opacity-0 transition-opacity group-hover:opacity-100',
+              isUser ? 'flex-row-reverse' : 'flex-row',
+            )}
+          >
+            <CopyButton
+              variant='base'
+              size='stripped'
+              textToCopy={messageContent}
+              className='text-muted-foreground focus:outline-transparent!'
+            />
+            {isUser && (
+              <button
+                onClick={onEdit}
+                className='text-muted-foreground hover:text-foreground rounded px-1.5 py-0.5 text-xs transition-colors'
+              >
+                edit
+              </button>
+            )}
+          </div>
+        )}
         {showDetails && (
-          <div className="flex items-center gap-2 px-1">
-            <span className="text-xs text-muted-foreground">
+          <div
+            className={join(
+              'flex items-center gap-2 px-1',
+              showActions &&
+                '-mt-6 transition-[margin] group-hover:mt-0',
+            )}
+          >
+            <span className='text-muted-foreground text-xs'>
               {formatTimestamp(message.timestamp)}
             </span>
             {!isUser && message.model && (
-              <span className="text-xs text-muted-foreground font-mono bg-muted/50 rounded px-1.5 py-0.5">
+              <span className='text-muted-foreground bg-muted/50 rounded px-1.5 py-0.5 font-mono text-xs'>
                 {message.model}
               </span>
             )}
