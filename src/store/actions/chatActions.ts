@@ -33,18 +33,11 @@ export const fetchChats = createAsyncThunk(
   async (_, { getState }) => {
     const state = getState() as RootState;
 
-    if (isDemoActive(getState)) {
-      return state.chats.conversations;
-    }
-
     try {
       const userId = state.user.user?.uid;
       if (!userId) throw new Error('You must be signed in to fetch chats.');
 
-      const q = query(
-        collection(db, 'chats'),
-        where('userId', '==', userId),
-      );
+      const q = query(collection(db, 'chats'), where('userId', '==', userId));
       const snapshot = await getDocs(q);
       const chats: ChatConversation[] = snapshot.docs.map(
         (d: QueryDocumentSnapshot) => d.data() as ChatConversation,
@@ -55,6 +48,7 @@ export const fetchChats = createAsyncThunk(
       throw err;
     }
   },
+  { condition: (_, { getState }) => !isDemoActive(getState) },
 );
 
 /**
@@ -68,7 +62,11 @@ export const createChat = createAsyncThunk(
     const chatId = generatedId('chat');
 
     if (isDemoActive(getState)) {
-      const newChat: ChatConversation = { ...params, id: chatId, userId: DEMO_USER_ID };
+      const newChat: ChatConversation = {
+        ...params,
+        id: chatId,
+        userId: DEMO_USER_ID,
+      };
       return newChat;
     }
 
@@ -114,7 +112,12 @@ export const updateChat = createAsyncThunk(
         if (existing.userId !== userId)
           throw new Error('You can only update your own chats.');
 
-        const { id: _id, userId: _userId, messages: _messages, ...updatableFields } = chat;
+        const {
+          id: _id,
+          userId: _userId,
+          messages: _messages,
+          ...updatableFields
+        } = chat;
         tx.update(chatDocRef, updatableFields);
       });
 
@@ -170,7 +173,10 @@ export const deleteChat = createAsyncThunk(
  */
 export const addChatMessage = createAsyncThunk(
   'chats/addChatMessage',
-  async ({ chatId, message }: { chatId: string; message: ChatMessage }, { getState }) => {
+  async (
+    { chatId, message }: { chatId: string; message: ChatMessage },
+    { getState },
+  ) => {
     const lastUpdated = Date.now();
 
     if (isDemoActive(getState)) {
@@ -203,7 +209,9 @@ export const fetchChatMessages = createAsyncThunk(
   async (chatId: string, { getState }) => {
     if (isDemoActive(getState)) {
       const state = getState() as RootState;
-      const conversation = state.chats.conversations.find((c) => c.id === chatId);
+      const conversation = state.chats.conversations.find(
+        (c) => c.id === chatId,
+      );
       return { chatId, messages: conversation?.messages ?? [] };
     }
 

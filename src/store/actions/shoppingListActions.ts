@@ -31,10 +31,6 @@ export const fetchShoppingList = createAsyncThunk(
   async (_, { getState }) => {
     const state = getState() as RootState;
 
-    if (isDemoActive(getState)) {
-      return state.shoppingList.items;
-    }
-
     try {
       const userId = state.user.user?.uid;
       if (!userId) throw new Error('You must be signed in to fetch your shopping list.');
@@ -53,6 +49,7 @@ export const fetchShoppingList = createAsyncThunk(
       throw err;
     }
   },
+    { condition: (_, { getState }) => !isDemoActive(getState) },
 );
 
 /**
