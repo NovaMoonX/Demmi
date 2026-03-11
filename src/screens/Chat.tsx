@@ -4,6 +4,7 @@ import { Textarea } from '@moondreamsdev/dreamer-ui/components';
 import { ScrollArea } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
+import { useToast } from '@moondreamsdev/dreamer-ui/hooks';
 import { ChatHistoryToggleIcon } from '@components/chat/ChatHistoryToggleIcon';
 import { ChatHistory } from '@components/chat/ChatHistory';
 import { ChatMessage } from '@components/chat/ChatMessage';
@@ -19,13 +20,18 @@ import {
   removeMessage,
   trimMessagesFrom,
   updateMessageContent,
+  updateAgentActionStatus,
   deleteConversation,
   togglePinConversation,
 } from '@store/slices/chatsSlice';
+import { createIngredient } from '@store/actions/ingredientActions';
+import { createMeal } from '@store/actions/mealActions';
 import { ChatMessage as ChatMessageType } from '@lib/chat';
+import type { AgentCreateMealAction } from '@lib/chat/agent-actions.types';
+import type { MealIngredient } from '@lib/meals';
 import type { AbortableAsyncIterator } from 'ollama';
 import type { ChatResponse } from 'ollama/browser';
-import { startChatStream } from '@lib/ollama';
+import { startChatStream, extractPartialResponse, parseOllamaResponse } from '@lib/ollama';
 import { generatedId } from '@utils/generatedId';
 
 const SCROLL_DELAY_MS = 100;
@@ -49,6 +55,7 @@ export function Chat() {
   const activeChatIdRef = useRef<string | null>(null);
   const activeMessageIdRef = useRef<string | null>(null);
   const { confirm } = useActionModal();
+  const { addToast } = useToast();
 
   const {
     availableModels,
@@ -124,6 +131,114 @@ export function Chat() {
     setIsSending(false);
   };
 
+  const handleApproveAction = async (messageId: string) => {
+    const chatId = currentChatId;
+    if (!chatId) return;
+
+    const message = store
+      .getState()
+      .chats.conversations.find((c) => c.id === chatId)
+      ?.messages.find((m) => m.id === messageId);
+
+    const action = message?.agentAction;
+    if (!action || action.type !== 'create_meal' || action.status !== 'pending') return;
+
+    dispatch(updateAgentActionStatus({ chatId, messageId, status: 'approved' }));
+
+    const existingMeals = store.getState().meals.items;
+    const existingIngredients = store.getState().ingredients.items;
+
+    let mealsCreated = 0;
+    let skipped = 0;
+
+    for (const mealProposal of (action as AgentCreateMealAction).meals) {
+      const duplicate = existingMeals.some(
+        (m) => m.title.toLowerCase() === mealProposal.title.toLowerCase(),
+      );
+      if (duplicate) {
+        skipped++;
+        continue;
+      }
+
+      const mealIngredients: MealIngredient[] = [];
+
+      for (const ingredientProposal of mealProposal.ingredients) {
+        const existing = existingIngredients.find(
+          (i) => i.name.toLowerCase() === ingredientProposal.name.toLowerCase(),
+        );
+
+        let ingredientId: string;
+
+        if (existing) {
+          ingredientId = existing.id;
+        } else {
+          const created = await dispatch(
+            createIngredient({
+              name: ingredientProposal.name,
+              type: ingredientProposal.type,
+              unit: ingredientProposal.unit,
+              imageUrl: '',
+              nutrients: {
+                protein: 0,
+                carbs: 0,
+                fat: 0,
+                fiber: 0,
+                sugar: 0,
+                sodium: 0,
+                calories: 0,
+              },
+              currentAmount: 0,
+              servingSize: 1,
+              otherUnit: null,
+              products: [],
+              defaultProductId: null,
+            }),
+          ).unwrap();
+          ingredientId = created.id;
+        }
+
+        mealIngredients.push({ ingredientId, servings: ingredientProposal.servings });
+      }
+
+      await dispatch(
+        createMeal({
+          title: mealProposal.title,
+          description: mealProposal.description,
+          category: mealProposal.category,
+          prepTime: mealProposal.prepTime,
+          cookTime: mealProposal.cookTime,
+          servingSize: mealProposal.servingSize,
+          instructions: mealProposal.instructions,
+          imageUrl: mealProposal.imageUrl,
+          ingredients: mealIngredients,
+        }),
+      ).unwrap();
+
+      mealsCreated++;
+    }
+
+    if (mealsCreated > 0) {
+      addToast({
+        title: 'Meals saved!',
+        description: `${mealsCreated} ${mealsCreated === 1 ? 'meal' : 'meals'} added to your collection.`,
+        type: 'success',
+      });
+    }
+
+    if (skipped > 0) {
+      addToast({
+        title: 'Some meals skipped',
+        description: `${skipped} ${skipped === 1 ? 'meal was' : 'meals were'} already in your collection.`,
+        type: 'warning',
+      });
+    }
+  };
+
+  const handleRejectAction = (messageId: string) => {
+    if (!currentChatId) return;
+    dispatch(updateAgentActionStatus({ chatId: currentChatId, messageId, status: 'rejected' }));
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isSending || !selectedModel) {
       return;
@@ -151,6 +266,8 @@ export function Chat() {
       content: messageContent,
       timestamp: Date.now(),
       model: null,
+      rawContent: null,
+      agentAction: null,
     };
 
     const assistantMessageId = generatedId('msg');
@@ -160,6 +277,8 @@ export function Chat() {
       content: '',
       timestamp: Date.now(),
       model: null,
+      rawContent: null,
+      agentAction: null,
     };
 
     let targetChatId: string | null;
@@ -213,7 +332,7 @@ export function Chat() {
       
       activeStreamRef.current = stream;
 
-      let accumulatedContent = '';
+      let rawJsonContent = '';
 
       for await (const chunk of stream) {
         if (currentGenerationId.current !== generationId || cancelledRef.current) {
@@ -224,13 +343,37 @@ export function Chat() {
           firstTokenReceivedRef.current = true;
         }
         
-        accumulatedContent += chunk.message.content;
+        rawJsonContent += chunk.message.content;
+
+        const partialDisplay = extractPartialResponse(rawJsonContent);
+        if (partialDisplay) {
+          dispatch(
+            updateMessageContent({
+              chatId: chatIdForStream,
+              messageId: assistantMessageId,
+              content: partialDisplay,
+              model: modelUsed,
+            }),
+          );
+        }
+      }
+
+      if (!cancelledRef.current && currentGenerationId.current === generationId && rawJsonContent) {
+        const parsed = parseOllamaResponse(rawJsonContent);
+        const displayContent = parsed?.response ?? rawJsonContent;
+        const agentAction =
+          parsed && parsed.meals.length > 0
+            ? { type: 'create_meal' as const, status: 'pending' as const, meals: parsed.meals }
+            : null;
+
         dispatch(
           updateMessageContent({
             chatId: chatIdForStream,
             messageId: assistantMessageId,
-            content: accumulatedContent,
+            content: displayContent,
             model: modelUsed,
+            rawContent: rawJsonContent,
+            agentAction,
           }),
         );
       }
@@ -381,6 +524,8 @@ export function Chat() {
                   }
                   showDetails={showDetails}
                   onEdit={() => handleEditMessage(message.id)}
+                  onApproveAction={handleApproveAction}
+                  onRejectAction={handleRejectAction}
                 />
               ))}
               <div ref={messagesEndRef} />

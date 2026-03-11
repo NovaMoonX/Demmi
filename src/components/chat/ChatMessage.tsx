@@ -2,12 +2,15 @@ import ReactMarkdown from 'react-markdown';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { ChatMessage as ChatMessageType } from '@lib/chat';
 import { CopyButton } from '@moondreamsdev/dreamer-ui/components';
+import { AgentActionCard } from './AgentActionCard';
 
 interface ChatMessageProps {
   message: ChatMessageType;
   isStreaming?: boolean;
   showDetails?: boolean;
   onEdit?: () => void;
+  onApproveAction?: (messageId: string) => void;
+  onRejectAction?: (messageId: string) => void;
 }
 
 function formatTimestamp(ts: number): string {
@@ -22,6 +25,8 @@ export function ChatMessage({
   isStreaming = false,
   showDetails = false,
   onEdit,
+  onApproveAction,
+  onRejectAction,
 }: ChatMessageProps) {
   const isUser = message.role === 'user';
 
@@ -38,8 +43,8 @@ export function ChatMessage({
     >
       <div
         className={join(
-          'flex max-w-[80%] flex-col gap-1 md:max-w-[70%]',
-          isUser ? 'items-end' : 'items-start',
+          'flex flex-col gap-1',
+          isUser ? 'items-end max-w-[80%] md:max-w-[70%]' : 'items-start w-full max-w-[85%] md:max-w-[75%]',
         )}
       >
         <div
@@ -69,6 +74,15 @@ export function ChatMessage({
             </div>
           )}
         </div>
+
+        {!isStreaming && message.agentAction?.type === 'create_meal' && onApproveAction && onRejectAction && (
+          <AgentActionCard
+            action={message.agentAction}
+            onApprove={() => onApproveAction(message.id)}
+            onReject={() => onRejectAction(message.id)}
+          />
+        )}
+
         {showActions && (
           <div
             className={join(
@@ -115,3 +129,4 @@ export function ChatMessage({
     </div>
   );
 }
+

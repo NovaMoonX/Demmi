@@ -1,3 +1,5 @@
+import type { AgentAction } from './agent-actions.types';
+
 export type MessageRole = 'user' | 'assistant';
 
 export interface ChatMessage {
@@ -6,6 +8,8 @@ export interface ChatMessage {
   content: string;
   timestamp: number; // milliseconds timestamp
   model: string | null; // model used to generate this message (null for user messages)
+  rawContent: string | null; // original JSON from the AI (used for conversation context)
+  agentAction: AgentAction | null; // structured action proposed by the AI, pending user approval
 }
 
 export interface ChatConversation {
