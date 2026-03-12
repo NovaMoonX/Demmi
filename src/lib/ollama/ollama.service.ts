@@ -1,10 +1,15 @@
-import { Ollama } from 'ollama/browser';
-import type { AbortableAsyncIterator } from 'ollama';
-import type { ChatResponse, ProgressResponse } from 'ollama/browser';
 import type { ChatMessage } from '@lib/chat';
 import type { AgentMealProposal } from '@lib/chat/agent-actions.types';
-import type { MealCategory } from '@lib/meals';
-import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
+import {
+  INGREDIENT_TYPES,
+  MEASUREMENT_UNITS,
+  type IngredientType,
+  type MeasurementUnit,
+} from '@lib/ingredients';
+import { MEAL_CATEGORIES, type MealCategory } from '@lib/meals';
+import type { AbortableAsyncIterator } from 'ollama';
+import type { ChatResponse, ProgressResponse } from 'ollama/browser';
+import { Ollama } from 'ollama/browser';
 
 /**
  * Phase 1a — action detection only.
@@ -97,7 +102,8 @@ const MEAL_NAME_PROPOSAL_SCHEMA: Record<string, unknown> = {
   properties: {
     proposedMealName: {
       type: 'string',
-      description: 'The name of the recipe or meal to create (be as specific as possible based on the user\'s request)',
+      description:
+        "The name of the recipe or meal to create (be as specific as possible based on the user's request)",
     },
   },
 };
@@ -140,7 +146,7 @@ const RECIPE_RESPONSE_SCHEMA: Record<string, unknown> = {
           description: { type: 'string' },
           category: {
             type: 'string',
-            enum: ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink'],
+            enum: MEAL_CATEGORIES,
           },
           prepTime: { type: 'integer', minimum: 0 },
           cookTime: { type: 'integer', minimum: 0 },
@@ -155,34 +161,11 @@ const RECIPE_RESPONSE_SCHEMA: Record<string, unknown> = {
                 name: { type: 'string' },
                 type: {
                   type: 'string',
-                  enum: [
-                    'meat',
-                    'produce',
-                    'dairy',
-                    'grains',
-                    'legumes',
-                    'oils',
-                    'spices',
-                    'nuts',
-                    'seafood',
-                    'other',
-                  ],
+                  enum: INGREDIENT_TYPES,
                 },
                 unit: {
                   type: 'string',
-                  enum: [
-                    'lb',
-                    'oz',
-                    'kg',
-                    'g',
-                    'cup',
-                    'tbsp',
-                    'tsp',
-                    'piece',
-                    'ml',
-                    'l',
-                    'other',
-                  ],
+                  enum: MEASUREMENT_UNITS,
                 },
                 servings: { type: 'number', minimum: 0 },
               },
@@ -238,11 +221,11 @@ export async function detectAction(
 
     const parsed = JSON.parse(response.message.content);
     const action = parsed?.action;
-    
+
     if (action === 'general' || action === 'wantsToCreateMeal') {
       return action;
     }
-    
+
     return null;
   } catch {
     return null;
@@ -262,7 +245,7 @@ export async function getGeneralResponse(
       role: m.role as 'user' | 'assistant',
       content: m.rawContent ?? m.content,
     })),
-        { role: 'system' as const, content: GENERAL_RESPONSE_PROMPT },
+    { role: 'system' as const, content: GENERAL_RESPONSE_PROMPT },
   ];
 
   return ollamaClient.chat({
@@ -286,7 +269,7 @@ export async function getMealNameProposal(
       role: m.role as 'user' | 'assistant',
       content: m.rawContent ?? m.content,
     })),
-        { role: 'system' as const, content: MEAL_NAME_PROPOSAL_PROMPT },
+    { role: 'system' as const, content: MEAL_NAME_PROPOSAL_PROMPT },
   ];
 
   try {
@@ -299,7 +282,7 @@ export async function getMealNameProposal(
 
     const parsed = JSON.parse(response.message.content);
     const proposedMealName = parsed?.proposedMealName;
-    
+
     return typeof proposedMealName === 'string' ? proposedMealName : null;
   } catch {
     return null;
@@ -334,53 +317,20 @@ export async function pullModelStream(
 }
 
 function coerceMealCategory(value: string): MealCategory {
-  const valid: MealCategory[] = [
-    'breakfast',
-    'lunch',
-    'dinner',
-    'snack',
-    'dessert',
-    'drink',
-  ];
   return (
-    valid.includes(value as MealCategory) ? value : 'dinner'
+    MEAL_CATEGORIES.includes(value as MealCategory) ? value : 'dinner'
   ) as MealCategory;
 }
 
 function coerceIngredientType(value: string): IngredientType {
-  const valid: IngredientType[] = [
-    'meat',
-    'produce',
-    'dairy',
-    'grains',
-    'legumes',
-    'oils',
-    'spices',
-    'nuts',
-    'seafood',
-    'other',
-  ];
   return (
-    valid.includes(value as IngredientType) ? value : 'other'
+    INGREDIENT_TYPES.includes(value as IngredientType) ? value : 'other'
   ) as IngredientType;
 }
 
 function coerceMeasurementUnit(value: string): MeasurementUnit {
-  const valid: MeasurementUnit[] = [
-    'lb',
-    'oz',
-    'kg',
-    'g',
-    'cup',
-    'tbsp',
-    'tsp',
-    'piece',
-    'ml',
-    'l',
-    'other',
-  ];
   return (
-    valid.includes(value as MeasurementUnit) ? value : 'other'
+    MEASUREMENT_UNITS.includes(value as MeasurementUnit) ? value : 'other'
   ) as MeasurementUnit;
 }
 
@@ -396,7 +346,9 @@ export interface ParsedGeneralResponse {
 /**
  * Parse the Phase 1b.1 (general response) JSON response.
  */
-export function parseGeneralResponse(json: string): ParsedGeneralResponse | null {
+export function parseGeneralResponse(
+  json: string,
+): ParsedGeneralResponse | null {
   try {
     const parsed = JSON.parse(json);
     if (typeof parsed !== 'object' || parsed === null) return null;
@@ -480,7 +432,7 @@ export function parseOllamaResponse(json: string): ParsedOllamaResponse | null {
 export function extractPartialResponse(partialJson: string): string {
   const match = partialJson.match(/"response"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
   if (!match) return '';
-  
+
   try {
     return JSON.parse('"' + match[1] + '"') as string;
   } catch {

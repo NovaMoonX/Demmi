@@ -13,6 +13,20 @@ export const INGREDIENT_TYPES: IngredientType[] = [
   'other',
 ];
 
+export const MEASUREMENT_UNITS: MeasurementUnit[] = [
+  'lb',
+  'oz',
+  'kg',
+  'g',
+  'ml',
+  'l',
+  'cup',
+  'tbsp',
+  'tsp',
+  'piece',
+  'other',
+];
+
 export const INGREDIENT_TYPE_COLORS: Record<IngredientType, string> = {
   meat: 'bg-red-500/20 text-red-700 dark:bg-red-500/10 dark:text-red-400',
   produce:
