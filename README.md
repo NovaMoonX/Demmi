@@ -34,7 +34,8 @@ A cooking app powered with local LLM using Ollama.
 - **Local LLM via Ollama**: Connects to [Ollama](https://ollama.com) running on your machine (localhost:11434) for fully private, offline AI responses
 - **Model Selection**: Dropdown in the chat header lists all text models available in your local Ollama installation — pick any model on the fly; selector is disabled while a response is streaming
 - **Auto-download Mistral**: If no text models are installed, a "Download Mistral" button appears. Clicking it streams the pull progress (status text + animated progress bar with percentage) directly in the header until the model is ready
-- **Streaming Responses**: Assistant replies stream token-by-token in real time, just like a native chat app — no waiting for the full response
+- **Streaming Responses**: Assistant replies stream token-by-token in real time — no waiting for the full response; partial response text is progressively displayed as the structured JSON arrives
+- **Structured JSON Format**: All AI responses use Ollama's `format` option with a JSON Schema so every reply is reliably machine-parseable, enabling action cards alongside conversational text
 - **Markdown Rendering**: Agent responses are rendered as rich Markdown — headings, bold/italic text, inline code, code blocks, lists, and more are all formatted for readability
 - **Streaming Cursor**: A blinking cursor shows while the assistant is typing; a bouncing dots indicator appears before the first token arrives
 - **Cancel Response**: A cancel button (✕) appears next to the send button while a response is streaming — clicking it immediately interrupts the generation and keeps the partial response visible
@@ -42,7 +43,7 @@ A cooking app powered with local LLM using Ollama.
 - **Per-message Model Tracking**: Each assistant message stores which Ollama model generated it, shown as a monospace badge when details are visible
 - **Meal-Focused System Prompt**: The assistant is instructed to focus on cooking, recipes, meal planning, ingredients, and nutrition
 - **Ollama Status Indicator**: The model selector shows "Connecting to Ollama..." on load, "⚠️ Ollama offline" if the service is unreachable, and falls back gracefully with an error message in chat
-- **Full Conversation Context**: Each request sends the full conversation history so the assistant can reference earlier messages
+- **Full Conversation Context**: Each request sends the full conversation history (including the original structured JSON for assistant messages) so the assistant can reference and iterate on previous proposals
 - **AI Chat Interface**: Modern ChatGPT-style interface for cooking assistance
 - **Message Bubbles**: User messages (orange) and assistant responses (gray) with distinct styling
 - **Chat History**: Collapsible sidebar showing all conversations
@@ -56,6 +57,17 @@ A cooking app powered with local LLM using Ollama.
 - **Message Count**: Shows number of messages in each conversation
 - **Delete Chats**: Remove conversations from history
 - **Responsive Design**: Works seamlessly on mobile and desktop
+
+#### 🍽️ AI Agent Meal & Ingredient Creation
+- **Create Meals via Chat**: Ask the AI to create a meal (e.g. *"Create a pasta carbonara recipe for me"*) and it responds with a structured preview card embedded in the chat
+- **User Approval Required**: The AI never modifies your collection without explicit approval — every creation proposal must be confirmed by clicking **Save to My Meals**
+- **Preview Card**: Proposed meals appear in a card below the AI's text response showing: title, description, category badge, prep/cook times, servings, instruction count, and a full ingredient list
+- **New vs. Existing Indicators**: Each ingredient in the proposal is marked as `+new` (highlighted, will be created) or shown normally if it already exists in your inventory — giving you full visibility before committing
+- **Duplicate Detection**: If a proposed meal title already exists in your collection a yellow "Already exists" badge appears and the **Save** button is disabled, preventing accidental duplicates
+- **Automatic Ingredient Creation**: Approving a proposal auto-creates any ingredients that don't yet exist in your inventory, with sensible defaults (nutrients at 0, amount at 0 — editable later)
+- **Decline**: Clicking **Decline** marks the proposal as dismissed — the card shows a "Declined" badge and the buttons are removed
+- **Iterate**: The proposal is a conversation — reply in the chat to refine it (e.g. *"Make it vegetarian"* or *"Change servings to 6"*) and the AI generates a fresh proposal
+- **Extensible Design**: The agent action system (`AgentAction` type + `AgentActionCard` component) is architected to support additional action types beyond meal creation in the future
 
 ### 🍳 Cooking-Themed Design
 - **Orange Accent Color**: Warm, cooking-inspired orange accent color throughout the app

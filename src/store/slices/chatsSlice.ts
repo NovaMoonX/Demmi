@@ -3,6 +3,7 @@ import {
   ChatConversation,
   ChatMessage,
 } from '@lib/chat';
+import type { AgentAction, AgentActionStatus, AgentCreateMealAction, AgentMealProposal } from '@lib/chat/agent-actions.types';
 import { generatedId } from '@utils/generatedId';
 import {
   fetchChats,
@@ -128,7 +129,14 @@ const chatsSlice = createSlice({
     },
     updateMessageContent: (
       state,
-      action: PayloadAction<{ chatId: string; messageId: string; content: string; model?: string | null }>
+      action: PayloadAction<{
+        chatId: string;
+        messageId: string;
+        content: string;
+        model?: string | null;
+        rawContent?: string | null;
+        agentAction?: AgentAction | null;
+      }>
     ) => {
       const conversation = state.conversations.find(
         (c) => c.id === action.payload.chatId
@@ -141,6 +149,40 @@ const chatsSlice = createSlice({
           message.content = action.payload.content;
           if (action.payload.model !== undefined) {
             message.model = action.payload.model;
+          }
+          if (action.payload.rawContent !== undefined) {
+            message.rawContent = action.payload.rawContent;
+          }
+          if (action.payload.agentAction !== undefined) {
+            message.agentAction = action.payload.agentAction;
+          }
+        }
+      }
+    },
+    updateAgentActionStatus: (
+      state,
+      action: PayloadAction<{
+        chatId: string;
+        messageId: string;
+        status: AgentActionStatus;
+        meals?: AgentMealProposal[];
+      }>
+    ) => {
+      const conversation = state.conversations.find(
+        (c) => c.id === action.payload.chatId
+      );
+      if (conversation) {
+        const message = conversation.messages.find(
+          (m) => m.id === action.payload.messageId
+        );
+        if (message?.agentAction) {
+          message.agentAction.status = action.payload.status;
+          if (
+            action.payload.meals !== undefined &&
+            message.agentAction.type === 'create_meal'
+          ) {
+            (message.agentAction as AgentCreateMealAction).meals =
+              action.payload.meals;
           }
         }
       }
@@ -212,6 +254,7 @@ export const {
   setConversations,
   setSelectedModel,
   updateMessageContent,
+  updateAgentActionStatus,
   resetChats,
 } = chatsSlice.actions;
 

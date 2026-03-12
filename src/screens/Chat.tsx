@@ -4,6 +4,7 @@ import { Textarea } from '@moondreamsdev/dreamer-ui/components';
 import { ScrollArea } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
+import { useToast } from '@moondreamsdev/dreamer-ui/hooks';
 import { ChatHistoryToggleIcon } from '@components/chat/ChatHistoryToggleIcon';
 import { ChatHistory } from '@components/chat/ChatHistory';
 import { ChatMessage } from '@components/chat/ChatMessage';
@@ -19,13 +20,17 @@ import {
   removeMessage,
   trimMessagesFrom,
   updateMessageContent,
+  updateAgentActionStatus,
   deleteConversation,
   togglePinConversation,
 } from '@store/slices/chatsSlice';
-import { ChatMessage as ChatMessageType } from '@lib/chat';
+import { createIngredient } from '@store/actions/ingredientActions';
+import { createMeal } from '@store/actions/mealActions';
+import { AgentCreateMealAction, ChatMessage as ChatMessageType } from '@lib/chat';
+import type { MealIngredient } from '@lib/meals';
 import type { AbortableAsyncIterator } from 'ollama';
 import type { ChatResponse } from 'ollama/browser';
-import { startChatStream } from '@lib/ollama';
+import { detectAction, getGeneralResponse, getMealNameProposal, generateRecipe, extractPartialResponse, parseGeneralResponse } from '@lib/ollama';
 import { generatedId } from '@utils/generatedId';
 
 const SCROLL_DELAY_MS = 100;
@@ -49,6 +54,7 @@ export function Chat() {
   const activeChatIdRef = useRef<string | null>(null);
   const activeMessageIdRef = useRef<string | null>(null);
   const { confirm } = useActionModal();
+  const { addToast } = useToast();
 
   const {
     availableModels,
@@ -124,6 +130,147 @@ export function Chat() {
     setIsSending(false);
   };
 
+  const handleConfirmIntent = async (messageId: string) => {
+    const chatId = currentChatId;
+    if (!chatId || !selectedModel) return;
+
+    const message = store
+      .getState()
+      .chats.conversations.find((c) => c.id === chatId)
+      ?.messages.find((m) => m.id === messageId);
+
+    const action = message?.agentAction;
+    if (!action || action.type !== 'create_meal' || action.status !== 'pending_confirmation') return;
+
+    if (!action.proposedName) {
+      addToast({
+        title: 'Unable to generate',
+        description: 'No meal name detected. Please try again.',
+        type: 'error',
+      });
+      return;
+    }
+
+    dispatch(updateAgentActionStatus({ chatId, messageId, status: 'generating' }));
+
+    try {
+      const parsed = await generateRecipe(selectedModel, action.proposedName);
+
+      if (!parsed || parsed.meals.length === 0) {
+        addToast({
+          title: 'Generation failed',
+          description: 'Could not generate the recipe. Please try again.',
+          type: 'error',
+        });
+        dispatch(updateAgentActionStatus({ chatId, messageId, status: 'pending_confirmation' }));
+        return;
+      }
+
+      dispatch(updateAgentActionStatus({ chatId, messageId, status: 'pending_approval', meals: parsed.meals }));
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      addToast({
+        title: 'Generation failed',
+        description: errMsg,
+        type: 'error',
+      });
+      dispatch(updateAgentActionStatus({ chatId, messageId, status: 'pending_confirmation' }));
+    }
+  };
+
+  const handleRejectIntent = (messageId: string) => {
+    if (!currentChatId) return;
+    dispatch(updateAgentActionStatus({ chatId: currentChatId, messageId, status: 'rejected' }));
+  };
+
+  const handleApproveAction = async (messageId: string) => {
+    const chatId = currentChatId;
+    if (!chatId) return;
+
+    const message = store
+      .getState()
+      .chats.conversations.find((c) => c.id === chatId)
+      ?.messages.find((m) => m.id === messageId);
+
+    const action = message?.agentAction;
+    if (!action || action.type !== 'create_meal' || action.status !== 'pending_approval') return;
+
+    dispatch(updateAgentActionStatus({ chatId, messageId, status: 'approved' }));
+
+    let mealsCreated = 0;
+
+    try {
+      for (const mealProposal of action.meals) {
+        const mealIngredients: MealIngredient[] = [];
+
+        for (const ingredientProposal of mealProposal.ingredients) {
+          const created = await dispatch(
+            createIngredient({
+              name: ingredientProposal.name,
+              type: ingredientProposal.type,
+              unit: ingredientProposal.unit,
+              imageUrl: '',
+              nutrients: {
+                protein: 0,
+                carbs: 0,
+                fat: 0,
+                fiber: 0,
+                sugar: 0,
+                sodium: 0,
+                calories: 0,
+              },
+              currentAmount: 0,
+              servingSize: 1,
+              otherUnit: null,
+              products: [],
+              defaultProductId: null,
+            }),
+          ).unwrap();
+
+          mealIngredients.push({ ingredientId: created.id, servings: ingredientProposal.servings });
+        }
+
+        await dispatch(
+          createMeal({
+            title: mealProposal.title,
+            description: mealProposal.description,
+            category: mealProposal.category,
+            prepTime: mealProposal.prepTime,
+            cookTime: mealProposal.cookTime,
+            servingSize: mealProposal.servingSize,
+            instructions: mealProposal.instructions,
+            imageUrl: mealProposal.imageUrl,
+            ingredients: mealIngredients,
+          }),
+        ).unwrap();
+
+        mealsCreated++;
+      }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      addToast({
+        title: 'Failed to save',
+        description: errMsg,
+        type: 'error',
+      });
+      dispatch(updateAgentActionStatus({ chatId, messageId, status: 'pending_approval' }));
+      return;
+    }
+
+    if (mealsCreated > 0) {
+      addToast({
+        title: 'Meals saved!',
+        description: `${mealsCreated} ${mealsCreated === 1 ? 'meal' : 'meals'} added to your collection.`,
+        type: 'success',
+      });
+    }
+  };
+
+  const handleRejectAction = (messageId: string) => {
+    if (!currentChatId) return;
+    dispatch(updateAgentActionStatus({ chatId: currentChatId, messageId, status: 'rejected' }));
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isSending || !selectedModel) {
       return;
@@ -151,6 +298,8 @@ export function Chat() {
       content: messageContent,
       timestamp: Date.now(),
       model: null,
+      rawContent: null,
+      agentAction: null,
     };
 
     const assistantMessageId = generatedId('msg');
@@ -160,6 +309,8 @@ export function Chat() {
       content: '',
       timestamp: Date.now(),
       model: null,
+      rawContent: null,
+      agentAction: null,
     };
 
     let targetChatId: string | null;
@@ -198,10 +349,9 @@ export function Chat() {
         .chats.conversations.find((c) => c.id === chatIdForStream)
         ?.messages.filter((m) => m.id !== assistantMessageId) ?? [];
 
-      const stream = await startChatStream(modelUsed, allMessages);
+      const action = await detectAction(modelUsed, allMessages);
       
       if (currentGenerationId.current !== generationId || cancelledRef.current) {
-        stream.abort();
         if (!firstTokenReceivedRef.current) {
           dispatch(removeMessage({
             chatId: chatIdForStream,
@@ -210,27 +360,110 @@ export function Chat() {
         }
         return;
       }
-      
-      activeStreamRef.current = stream;
 
-      let accumulatedContent = '';
-
-      for await (const chunk of stream) {
-        if (currentGenerationId.current !== generationId || cancelledRef.current) {
-          break;
-        }
-        
-        if (!firstTokenReceivedRef.current) {
-          firstTokenReceivedRef.current = true;
-        }
-        
-        accumulatedContent += chunk.message.content;
+      if (!action) {
         dispatch(
           updateMessageContent({
             chatId: chatIdForStream,
             messageId: assistantMessageId,
-            content: accumulatedContent,
+            content: '⚠️ Could not determine intent. Please try again.',
+          }),
+        );
+        return;
+      }
+
+      if (action === 'general') {
+        const stream = await getGeneralResponse(modelUsed, allMessages);
+        
+        if (currentGenerationId.current !== generationId || cancelledRef.current) {
+          stream.abort();
+          if (!firstTokenReceivedRef.current) {
+            dispatch(removeMessage({
+              chatId: chatIdForStream,
+              messageId: assistantMessageId,
+            }));
+          }
+          return;
+        }
+        
+        activeStreamRef.current = stream;
+        let rawJsonContent = '';
+
+        for await (const chunk of stream) {
+          if (currentGenerationId.current !== generationId || cancelledRef.current) {
+            break;
+          }
+          
+          if (!firstTokenReceivedRef.current) {
+            firstTokenReceivedRef.current = true;
+          }
+          
+          rawJsonContent += chunk.message.content;
+
+          const partialDisplay = extractPartialResponse(rawJsonContent);
+
+          if (partialDisplay) {
+            dispatch(
+              updateMessageContent({
+                chatId: chatIdForStream,
+                messageId: assistantMessageId,
+                content: partialDisplay,
+                model: modelUsed,
+              }),
+            );
+          }
+        }
+
+        if (!cancelledRef.current && currentGenerationId.current === generationId && rawJsonContent) {
+          const parsed = parseGeneralResponse(rawJsonContent);
+          const displayContent = parsed?.response ?? rawJsonContent;
+
+          dispatch(
+            updateMessageContent({
+              chatId: chatIdForStream,
+              messageId: assistantMessageId,
+              content: displayContent,
+              model: modelUsed,
+              rawContent: rawJsonContent,
+              agentAction: null,
+            }),
+          );
+        }
+      } else if (action === 'wantsToCreateMeal') {
+        firstTokenReceivedRef.current = true;
+        
+        const proposedMealName = await getMealNameProposal(modelUsed, allMessages);
+        
+        if (currentGenerationId.current !== generationId || cancelledRef.current) {
+          return;
+        }
+
+        if (!proposedMealName) {
+          dispatch(
+            updateMessageContent({
+              chatId: chatIdForStream,
+              messageId: assistantMessageId,
+              content: '⚠️ Could not determine meal name. Please try again.',
+            }),
+          );
+          return;
+        }
+
+        const agentAction: AgentCreateMealAction = {
+          type: 'create_meal',
+          status: 'pending_confirmation',
+          proposedName: proposedMealName,
+          meals: [],
+        };
+
+        dispatch(
+          updateMessageContent({
+            chatId: chatIdForStream,
+            messageId: assistantMessageId,
+            content: '',
             model: modelUsed,
+            rawContent: null,
+            agentAction,
           }),
         );
       }
@@ -381,6 +614,10 @@ export function Chat() {
                   }
                   showDetails={showDetails}
                   onEdit={() => handleEditMessage(message.id)}
+                  onConfirmIntent={handleConfirmIntent}
+                  onRejectIntent={handleRejectIntent}
+                  onApproveAction={handleApproveAction}
+                  onRejectAction={handleRejectAction}
                 />
               ))}
               <div ref={messagesEndRef} />
