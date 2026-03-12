@@ -26,11 +26,11 @@ import {
 } from '@store/slices/chatsSlice';
 import { createIngredient } from '@store/actions/ingredientActions';
 import { createMeal } from '@store/actions/mealActions';
-import { ChatMessage as ChatMessageType } from '@lib/chat';
+import { AgentCreateMealAction, ChatMessage as ChatMessageType } from '@lib/chat';
 import type { MealIngredient } from '@lib/meals';
 import type { AbortableAsyncIterator } from 'ollama';
 import type { ChatResponse } from 'ollama/browser';
-import { startChatStream, generateRecipe, extractPartialResponse, parseIntentResponse } from '@lib/ollama';
+import { detectAction, getGeneralResponse, getMealNameProposal, generateRecipe, extractPartialResponse, parseGeneralResponse } from '@lib/ollama';
 import { generatedId } from '@utils/generatedId';
 
 const SCROLL_DELAY_MS = 100;
@@ -349,10 +349,9 @@ export function Chat() {
         .chats.conversations.find((c) => c.id === chatIdForStream)
         ?.messages.filter((m) => m.id !== assistantMessageId) ?? [];
 
-      const stream = await startChatStream(modelUsed, allMessages);
+      const action = await detectAction(modelUsed, allMessages);
       
       if (currentGenerationId.current !== generationId || cancelledRef.current) {
-        stream.abort();
         if (!firstTokenReceivedRef.current) {
           dispatch(removeMessage({
             chatId: chatIdForStream,
@@ -361,56 +360,108 @@ export function Chat() {
         }
         return;
       }
-      
-      activeStreamRef.current = stream;
 
-      let rawJsonContent = '';
+      if (!action) {
+        dispatch(
+          updateMessageContent({
+            chatId: chatIdForStream,
+            messageId: assistantMessageId,
+            content: '⚠️ Could not determine intent. Please try again.',
+          }),
+        );
+        return;
+      }
 
-      for await (const chunk of stream) {
+      if (action === 'general') {
+        const stream = await getGeneralResponse(modelUsed, allMessages);
+        
         if (currentGenerationId.current !== generationId || cancelledRef.current) {
-          break;
+          stream.abort();
+          if (!firstTokenReceivedRef.current) {
+            dispatch(removeMessage({
+              chatId: chatIdForStream,
+              messageId: assistantMessageId,
+            }));
+          }
+          return;
         }
         
-        if (!firstTokenReceivedRef.current) {
-          firstTokenReceivedRef.current = true;
-        }
-        
-        rawJsonContent += chunk.message.content;
+        activeStreamRef.current = stream;
+        let rawJsonContent = '';
 
-        const partialDisplay = extractPartialResponse(rawJsonContent);
-        if (partialDisplay) {
+        for await (const chunk of stream) {
+          if (currentGenerationId.current !== generationId || cancelledRef.current) {
+            break;
+          }
+          
+          if (!firstTokenReceivedRef.current) {
+            firstTokenReceivedRef.current = true;
+          }
+          
+          rawJsonContent += chunk.message.content;
+
+          const partialDisplay = extractPartialResponse(rawJsonContent);
+          if (partialDisplay) {
+            dispatch(
+              updateMessageContent({
+                chatId: chatIdForStream,
+                messageId: assistantMessageId,
+                content: partialDisplay,
+                model: modelUsed,
+              }),
+            );
+          }
+        }
+
+        if (!cancelledRef.current && currentGenerationId.current === generationId && rawJsonContent) {
+          const parsed = parseGeneralResponse(rawJsonContent);
+          const displayContent = parsed?.response ?? rawJsonContent;
+
           dispatch(
             updateMessageContent({
               chatId: chatIdForStream,
               messageId: assistantMessageId,
-              content: partialDisplay,
+              content: displayContent,
               model: modelUsed,
+              rawContent: rawJsonContent,
+              agentAction: null,
             }),
           );
         }
-      }
-
-      if (!cancelledRef.current && currentGenerationId.current === generationId && rawJsonContent) {
-        const parsed = parseIntentResponse(rawJsonContent);
-        const agentAction =
-          parsed?.wantsToCreate && parsed.proposedMealName
-            ? {
-                type: 'create_meal' as const,
-                status: 'pending_confirmation' as const,
-                proposedName: parsed.proposedMealName,
-                meals: [],
-              }
-            : null;
+      } else if (action === 'wantsToCreateMeal') {
+        firstTokenReceivedRef.current = true;
         
-        const displayContent = parsed?.wantsToCreate ? '' : (parsed?.response ?? rawJsonContent);
+        const proposedMealName = await getMealNameProposal(modelUsed, allMessages);
+        
+        if (currentGenerationId.current !== generationId || cancelledRef.current) {
+          return;
+        }
+
+        if (!proposedMealName) {
+          dispatch(
+            updateMessageContent({
+              chatId: chatIdForStream,
+              messageId: assistantMessageId,
+              content: '⚠️ Could not determine meal name. Please try again.',
+            }),
+          );
+          return;
+        }
+
+        const agentAction: AgentCreateMealAction = {
+          type: 'create_meal',
+          status: 'pending_confirmation',
+          proposedName: proposedMealName,
+          meals: [],
+        };
 
         dispatch(
           updateMessageContent({
             chatId: chatIdForStream,
             messageId: assistantMessageId,
-            content: displayContent,
+            content: '',
             model: modelUsed,
-            rawContent: rawJsonContent,
+            rawContent: null,
             agentAction,
           }),
         );

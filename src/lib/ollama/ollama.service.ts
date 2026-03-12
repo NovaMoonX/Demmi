@@ -7,41 +7,98 @@ import type { MealCategory } from '@lib/meals';
 import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
 
 /**
- * Phase 1 — intent detection.
- * The AI detects whether the user wants to create a recipe/meal/dish.
- * It does NOT generate recipe details at this stage.
+ * Phase 1a — action detection only.
+ * The AI classifies the user's intent into one of the supported action types.
  */
-const INTENT_SYSTEM_PROMPT = `
-You are Demmi's AI assistant, specialized in cooking, recipes, meal planning, and nutrition. Be concise, friendly, and practical.
+const ACTION_DETECTION_PROMPT = `
+You are Demmi's AI assistant, specialized in cooking, recipes, meal planning, and nutrition.
 
-You always respond with a JSON object with exactly three fields:
-  "response": your message to the user (required, supports markdown)
-  "wantsToCreate": true if the user wants to CREATE / MAKE / ADD / GENERATE a recipe, meal, or dish — false otherwise
-  "proposedMealName": the name of the recipe or meal if wantsToCreate is true, empty string otherwise
+Your task: Classify the user's CURRENT message intent.
 
-IMPORTANT rules:
-  - For all other messages (questions, tips, discussions), answer normally and set wantsToCreate: false.
+Select ONE action that best matches what the user wants RIGHT NOW:
+- "general": User is asking questions, requesting tips, or having a discussion about cooking/nutrition
+- "wantsToCreateMeal": User explicitly wants to CREATE / MAKE / ADD / GENERATE a specific recipe, meal, or dish
+
+IMPORTANT CLASSIFICATION RULES:
+- Only use "wantsToCreateMeal" when the user EXPLICITLY requests creation (e.g., "create a recipe for...", "make me a meal...", "generate a dish...")
+- Use "general" for ALL other interactions: questions about cooking, ingredient advice, nutrition tips, technique discussions, recipe modifications, etc.
+- Re-evaluate intent with EVERY message — users can transition between action types at any time
+- Focus ONLY on the user's CURRENT request, ignoring previous conversation context
+
+TRANSITION EXAMPLES (users can switch at any time):
+- Previous: "What's a good protein for breakfast?" (general) → Current: "Create an egg benedict recipe" (wantsToCreateMeal)
+- Previous: "Make me a pasta dish" (wantsToCreateMeal) → Current: "What's the difference between penne and rigatoni?" (general)
+- Previous: "Generate a salad recipe" (wantsToCreateMeal) → Current: "How long do tomatoes last?" (general)
+- Previous: "Tell me about sourdough" (general) → Current: "Make me a sourdough bread recipe" (wantsToCreateMeal)
+
+Each message is independent — classify based on what the user wants NOW.
 `;
 
-const INTENT_RESPONSE_SCHEMA: Record<string, unknown> = {
+const ACTION_DETECTION_SCHEMA: Record<string, unknown> = {
   type: 'object',
-  required: ['wantsToCreate', 'proposedMealName'],
+  required: ['action'],
   properties: {
-    wantsToCreate: {
-      type: 'boolean',
+    action: {
+      type: 'string',
+      enum: ['general', 'wantsToCreateMeal'],
       description:
-        'True if the user wants to create a recipe/meal/dish, false otherwise. MUST be true if proposedMealName is non-empty.',
+        'The type of user intent: "general" for conversation or "wantsToCreateMeal" for meal creation',
     },
+  },
+};
+
+/**
+ * Phase 1b.1 — general response.
+ * Called after action is detected as "general". Returns a conversational response.
+ */
+const GENERAL_RESPONSE_PROMPT = `
+You are Demmi's AI assistant, specialized in cooking, recipes, meal planning, and nutrition.
+
+**CONTEXT**: The user's intent has been classified as 'general conversation' for THIS message — they are NOT requesting meal creation right now.
+
+Your task: Provide a helpful, conversational response to their current question or comment.
+- Be concise, friendly, and practical
+- Share cooking tips, techniques, ingredient information, nutrition advice, or answer their questions
+- If they ask about recipes, you can discuss them, but you're NOT creating/generating a new recipe in this response
+- Note: The user can ask you to create a meal in their next message — each message is evaluated independently
+`;
+
+const GENERAL_RESPONSE_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  required: ['response'],
+  properties: {
+    response: {
+      type: 'string',
+      description: 'Your message to the user (supports markdown)',
+    },
+  },
+};
+
+/**
+ * Phase 1b.2 — meal name proposal.
+ * Called after action is detected as "wantsToCreateMeal". Returns the proposed meal name.
+ */
+const MEAL_NAME_PROPOSAL_PROMPT = `
+You are Demmi's AI assistant.
+
+**CONTEXT**: The user's intent has been classified as 'wants to create a meal' for THIS message — they have explicitly requested recipe/meal creation right now.
+
+Your task: Extract or infer the specific name of the recipe/meal/dish the user wants to create in their current request.
+- Provide a clear, concise name (3 words or less preferred)
+- Be specific (e.g., "Chocolate Chip Cookies" not "Cookies")
+- Use the exact name they mentioned if provided, otherwise infer from context
+- Focus on what they're trying to CREATE in this specific message
+- Do not use generic names like "meal" or "dish" or "plan" — be as specific as possible based on their request
+`;
+
+const MEAL_NAME_PROPOSAL_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  required: ['proposedMealName'],
+  properties: {
     proposedMealName: {
       type: 'string',
-      description:
-        'The name of the recipe or meal if wantsToCreate is true, empty string otherwise.',
+      description: 'The name of the recipe or meal to create (be as specific as possible based on the user\'s request)',
     },
-    // response: {
-    //   type: 'string',
-    //   description:
-    //     'Optional. Your message to the user. MUST be excluded (empty string) if wantsToCreate is true.',
-    // },
   },
 };
 
@@ -50,16 +107,11 @@ const INTENT_RESPONSE_SCHEMA: Record<string, unknown> = {
  * Called after the user has confirmed intent. Generates the full recipe details.
  */
 const RECIPE_GENERATION_PROMPT = `
-You are Demmi's AI assistant. Generate the complete recipe details for the requested meal.
+You are Demmi's AI assistant.
 
-Respond with a JSON object with exactly two fields:
-  "response": a brief confirmation message (e.g. "Here's your Pancake recipe!")
-  "meals": an array containing exactly one fully detailed meal object
+**CONTEXT**: The user has confirmed they want to create a meal. You are now generating the complete recipe details.
 
-Each meal must have: title, description, category ("breakfast"|"lunch"|"dinner"|"snack"|"dessert"|"drink"), prepTime (minutes), cookTime (minutes), servingSize, instructions (array of steps), and ingredients (array of {name, type, unit, servings}).
-Ingredient type must be one of: "meat","produce","dairy","grains","legumes","oils","spices","nuts","seafood","other".
-Ingredient unit must be one of: "lb","oz","kg","g","cup","tbsp","tsp","piece","ml","l","other".
-Use "servings" to indicate how many units/portions of that ingredient the recipe requires.
+Your task: Generate a complete, detailed recipe for the requested meal.
 `;
 
 const RECIPE_RESPONSE_SCHEMA: Record<string, unknown> = {
@@ -161,27 +213,97 @@ export async function listLocalModels(): Promise<string[]> {
 }
 
 /**
- * Phase 1: Streaming chat for intent detection.
- * Uses INTENT schema — produces { response, wantsToCreate, proposedMealName }.
+ * Phase 1a: Detect the user's action type (non-streaming).
+ * Returns the action classification: 'general' or 'wantsToCreateMeal'.
  */
-export async function startChatStream(
+export async function detectAction(
   model: string,
   messages: ChatMessage[],
-): Promise<AbortableAsyncIterator<ChatResponse>> {
+): Promise<'general' | 'wantsToCreateMeal' | null> {
   const ollamaMessages = [
-    { role: 'system' as const, content: INTENT_SYSTEM_PROMPT },
+    { role: 'system' as const, content: ACTION_DETECTION_PROMPT },
     ...messages.map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.rawContent ?? m.content,
     })),
   ];
 
+  try {
+    const response = await ollamaClient.chat({
+      model,
+      messages: ollamaMessages,
+      stream: false,
+      format: ACTION_DETECTION_SCHEMA,
+    });
+
+    const parsed = JSON.parse(response.message.content);
+    const action = parsed?.action;
+    
+    if (action === 'general' || action === 'wantsToCreateMeal') {
+      return action;
+    }
+    
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Phase 1b.1: Streaming response for general conversation.
+ * Called after action is detected as "general".
+ */
+export async function getGeneralResponse(
+  model: string,
+  messages: ChatMessage[],
+): Promise<AbortableAsyncIterator<ChatResponse>> {
+  const ollamaMessages = [
+    ...messages.map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.rawContent ?? m.content,
+    })),
+        { role: 'system' as const, content: GENERAL_RESPONSE_PROMPT },
+  ];
+
   return ollamaClient.chat({
     model,
     messages: ollamaMessages,
     stream: true,
-    format: INTENT_RESPONSE_SCHEMA,
+    format: GENERAL_RESPONSE_SCHEMA,
   });
+}
+
+/**
+ * Phase 1b.2: Get proposed meal name (non-streaming).
+ * Called after action is detected as "wantsToCreateMeal".
+ */
+export async function getMealNameProposal(
+  model: string,
+  messages: ChatMessage[],
+): Promise<string | null> {
+  const ollamaMessages = [
+    ...messages.map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.rawContent ?? m.content,
+    })),
+        { role: 'system' as const, content: MEAL_NAME_PROPOSAL_PROMPT },
+  ];
+
+  try {
+    const response = await ollamaClient.chat({
+      model,
+      messages: ollamaMessages,
+      stream: false,
+      format: MEAL_NAME_PROPOSAL_SCHEMA,
+    });
+
+    const parsed = JSON.parse(response.message.content);
+    const proposedMealName = parsed?.proposedMealName;
+    
+    return typeof proposedMealName === 'string' ? proposedMealName : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -267,28 +389,20 @@ export interface ParsedOllamaResponse {
   meals: AgentMealProposal[];
 }
 
-export interface ParsedIntentResponse {
+export interface ParsedGeneralResponse {
   response: string;
-  wantsToCreate: boolean;
-  proposedMealName: string;
 }
 
 /**
- * Parse the Phase 1 (intent detection) JSON response.
+ * Parse the Phase 1b.1 (general response) JSON response.
  */
-export function parseIntentResponse(json: string): ParsedIntentResponse | null {
+export function parseGeneralResponse(json: string): ParsedGeneralResponse | null {
   try {
     const parsed = JSON.parse(json);
     if (typeof parsed !== 'object' || parsed === null) return null;
 
-    return {
-      response: typeof parsed.response === 'string' ? parsed.response : '',
-      wantsToCreate: parsed.wantsToCreate === true,
-      proposedMealName:
-        typeof parsed.proposedMealName === 'string'
-          ? parsed.proposedMealName
-          : '',
-    };
+    const response = typeof parsed.response === 'string' ? parsed.response : '';
+    return { response };
   } catch {
     return null;
   }
@@ -359,12 +473,14 @@ export function parseOllamaResponse(json: string): ParsedOllamaResponse | null {
 }
 
 /**
- * Extract the partial "response" text from an in-progress JSON stream.
- * Allows progressive display of the AI's message while the full JSON is still building.
+ * Extract partial "response" text from an in-progress JSON stream.
+ * Used for Phase 1b.1 (general response streaming).
+ * Allows progressive display while the full JSON is still building.
  */
 export function extractPartialResponse(partialJson: string): string {
   const match = partialJson.match(/"response"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
   if (!match) return '';
+  
   try {
     return JSON.parse('"' + match[1] + '"') as string;
   } catch {
