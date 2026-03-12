@@ -204,11 +204,11 @@ export async function detectAction(
   messages: ChatMessage[],
 ): Promise<'general' | 'wantsToCreateMeal' | null> {
   const ollamaMessages = [
-    { role: 'system' as const, content: ACTION_DETECTION_PROMPT },
     ...messages.map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.rawContent ?? m.content,
     })),
+        { role: 'system' as const, content: ACTION_DETECTION_PROMPT },
   ];
 
   try {
@@ -430,7 +430,7 @@ export function parseOllamaResponse(json: string): ParsedOllamaResponse | null {
  * Allows progressive display while the full JSON is still building.
  */
 export function extractPartialResponse(partialJson: string): string {
-  const match = partialJson.match(/"response"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
+  const match = partialJson.match(/"response"\s*:\s*"((?:[^"\\]|\\.)*)"?/s);
   if (!match) return '';
 
   try {

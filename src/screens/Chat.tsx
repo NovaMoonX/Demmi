@@ -401,6 +401,7 @@ export function Chat() {
           rawJsonContent += chunk.message.content;
 
           const partialDisplay = extractPartialResponse(rawJsonContent);
+
           if (partialDisplay) {
             dispatch(
               updateMessageContent({
