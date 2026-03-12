@@ -15,14 +15,20 @@ export interface StepRuntime {
   abortSignal?: AbortSignal;
 }
 
-export interface StepResult<ResultType extends Record<string, unknown>, Name extends string> {
+export interface StepResult<
+  ResultType extends Record<string, unknown>,
+  Name extends string,
+> {
   stepName: Name;
   data: Partial<ResultType>;
   error?: string;
   cancelled?: boolean;
 }
 
-export interface ActionStep<ResultType extends Record<string, unknown>, Name extends string> {
+export interface ActionStep<
+  ResultType extends Record<string, unknown>,
+  Name extends string,
+> {
   name: Name;
   prompt: string;
   schema: Record<string, unknown>;
@@ -31,7 +37,10 @@ export interface ActionStep<ResultType extends Record<string, unknown>, Name ext
     model: string,
     context: StepContext<ResultType>,
     runtime: StepRuntime,
-  ) => Promise<StepResult<ResultType, Name> | AsyncIterableIterator<StepResult<ResultType, Name>>>;
+  ) => Promise<
+    | StepResult<ResultType, Name>
+    | AsyncIterableIterator<StepResult<ResultType, Name>>
+  >;
   onCancel?: (context: StepContext<ResultType>, runtime: StepRuntime) => void;
 }
 
@@ -45,11 +54,6 @@ export interface ActionHandlerBase<ResultType extends Record<string, unknown>> {
     context: StepContext<ResultType>,
     runtime: StepRuntime,
     result: ResultType,
-  ) => void;
-  onCancel?: (
-    context: StepContext<ResultType>,
-    runtime: StepRuntime,
-    completedSteps: string[],
   ) => void;
 }
 
@@ -67,6 +71,8 @@ export interface SingleStepActionHandler<
   >;
 
   steps?: never;
+
+  onCancel?: (context: StepContext<ResultType>, runtime: StepRuntime) => void;
 }
 
 // This type ensures that if `isMultiStep` is true and steps are provided
@@ -86,6 +92,12 @@ export interface MultiStepActionHandler<
   execute?: never;
 
   steps: ActionStep<ResultType, RequireStepNames<ValidStepNames>>[];
+
+  onCancel?: (
+    context: StepContext<ResultType>,
+    runtime: StepRuntime,
+    completedSteps: RequireStepNames<ValidStepNames>[],
+  ) => void;
 }
 
 export type ActionHandler<
