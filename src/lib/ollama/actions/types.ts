@@ -3,11 +3,11 @@ import type { AppDispatch } from '@store/index';
 
 export type ActionType = 'general' | 'createMeal';
 
-export interface StepContext {
+export interface StepContext<ResultType extends Record<string, unknown>> {
   messages: ChatMessage[];
   chatId: string;
   messageId: string;
-  previousResults?: Record<string, unknown>;
+  previousResults?: Partial<ResultType>;
 }
 
 export interface StepRuntime {
@@ -15,76 +15,89 @@ export interface StepRuntime {
   abortSignal?: AbortSignal;
 }
 
-export interface StepResult<Name extends string> {
+export interface StepResult<ResultType extends Record<string, unknown>, Name extends string> {
   stepName: Name;
-  data: unknown;
+  data: Partial<ResultType>;
   error?: string;
   cancelled?: boolean;
 }
 
-export interface ActionStep<Name extends string> {
+export interface ActionStep<ResultType extends Record<string, unknown>, Name extends string> {
   name: Name;
   prompt: string;
   schema: Record<string, unknown>;
   isStreaming?: boolean;
   execute: (
     model: string,
-    context: StepContext,
+    context: StepContext<ResultType>,
     runtime: StepRuntime,
-  ) => Promise<StepResult<Name> | AsyncIterableIterator<StepResult<Name>>>;
-  onCancel?: (context: StepContext, runtime: StepRuntime) => void;
+  ) => Promise<StepResult<ResultType, Name> | AsyncIterableIterator<StepResult<ResultType, Name>>>;
+  onCancel?: (context: StepContext<ResultType>, runtime: StepRuntime) => void;
 }
 
-export interface ActionHandlerBase {
+// `ResultType` represents the shape of the data returned by the action handler upon completion.
+export interface ActionHandlerBase<ResultType extends Record<string, unknown>> {
   type: ActionType;
   description: string;
 
-  onStart?: (context: StepContext, runtime: StepRuntime) => void;
-  onComplete?: (context: StepContext, runtime: StepRuntime) => void;
+  onStart?: (context: StepContext<ResultType>, runtime: StepRuntime) => void;
+  onComplete?: (
+    context: StepContext<ResultType>,
+    runtime: StepRuntime,
+    result: ResultType,
+  ) => void;
   onCancel?: (
-    context: StepContext,
+    context: StepContext<ResultType>,
     runtime: StepRuntime,
     completedSteps: string[],
   ) => void;
 }
 
-export interface SingleStepActionHandler extends ActionHandlerBase {
+export interface SingleStepActionHandler<
+  ResultType extends Record<string, unknown>,
+> extends ActionHandlerBase<ResultType> {
   isMultiStep: false;
 
   execute: (
     model: string,
-    context: StepContext,
+    context: StepContext<ResultType>,
     runtime: StepRuntime,
-  ) => Promise<ActionResult | AsyncIterableIterator<ActionResult>>;
+  ) => Promise<
+    ActionResult<ResultType> | AsyncIterableIterator<ActionResult<ResultType>>
+  >;
 
   steps?: never;
 }
 
 // This type ensures that if `isMultiStep` is true and steps are provided
 // then `ValidStepNames` must be provided to the action handler,
-// where `ValidStepNames` is a union of string literals representing 
+// where `ValidStepNames` is a union of string literals representing
 // the valid step names for that handler.
 type RequireStepNames<T extends string> = [T] extends [never]
   ? 'MultiStepActionHandler requires ValidStepNames'
   : T;
 
 export interface MultiStepActionHandler<
+  ResultType extends Record<string, unknown>,
   ValidStepNames extends string,
-> extends ActionHandlerBase {
+> extends ActionHandlerBase<ResultType> {
   isMultiStep: true;
 
   execute?: never;
 
-  steps: ActionStep<RequireStepNames<ValidStepNames>>[];
+  steps: ActionStep<ResultType, RequireStepNames<ValidStepNames>>[];
 }
 
-export type ActionHandler<ValidStepNames extends string = never> =
-  | SingleStepActionHandler
+export type ActionHandler<
+  ResultType extends Record<string, unknown> = never,
+  ValidStepNames extends string = never,
+> =
+  | SingleStepActionHandler<ResultType>
   // `ValidStepNames` should always be provided for multi-step handlers
-  | MultiStepActionHandler<ValidStepNames>;
+  | MultiStepActionHandler<ResultType, ValidStepNames>;
 
-export interface ActionResult {
+export interface ActionResult<ResultType extends Record<string, unknown>> {
   type: ActionType;
-  data: unknown;
+  data: ResultType;
   error?: string;
 }
