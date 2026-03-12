@@ -48,46 +48,55 @@ export function ChatMessage({
       <div
         className={join(
           'flex flex-col gap-1',
-          isUser ? 'items-end max-w-[80%] md:max-w-[70%]' : 'items-start w-full max-w-[85%] md:max-w-[75%]',
+          isUser
+            ? 'max-w-[80%] items-end md:max-w-[70%]'
+            : 'w-full max-w-[85%] items-start md:max-w-[75%]',
         )}
       >
-        <div
-          className={join(
-            'min-w-fit rounded-2xl px-4 py-3',
-            isUser
-              ? 'bg-accent text-accent-foreground'
-              : 'bg-muted text-foreground',
-          )}
-        >
-          {isStreaming && messageContent === '' ? (
-            <div className='flex gap-1 text-xs'>
-              <span className='animate-bounce'>●</span>
-              <span className='animate-bounce [animation-delay:0.2s]'>●</span>
-              <span className='animate-bounce [animation-delay:0.4s]'>●</span>
-            </div>
-          ) : isUser ? (
-            <div className='wrap-break-word whitespace-pre-wrap'>
-              {messageContent}
-            </div>
-          ) : (
-            <div className='prose prose-sm dark:prose-invert max-w-none'>
-              <ReactMarkdown>{messageContent}</ReactMarkdown>
-              {isStreaming && (
-                <span className='ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-current align-middle' />
-              )}
-            </div>
-          )}
-        </div>
-
-        {!isStreaming && message.agentAction?.type === 'create_meal' && onConfirmIntent && onRejectIntent && onApproveAction && onRejectAction && (
-          <AgentActionCard
-            action={message.agentAction}
-            onConfirmIntent={() => onConfirmIntent(message.id)}
-            onRejectIntent={() => onRejectIntent(message.id)}
-            onApprove={() => onApproveAction(message.id)}
-            onReject={() => onRejectAction(message.id)}
-          />
+        {(isStreaming || messageContent !== '') && (
+          <div
+            className={join(
+              'min-w-fit rounded-2xl px-4 py-3',
+              isUser
+                ? 'bg-accent text-accent-foreground'
+                : 'bg-muted text-foreground',
+            )}
+          >
+            {isStreaming && messageContent === '' ? (
+              <div className='flex gap-1 text-xs'>
+                <span className='animate-bounce'>●</span>
+                <span className='animate-bounce [animation-delay:0.2s]'>●</span>
+                <span className='animate-bounce [animation-delay:0.4s]'>●</span>
+              </div>
+            ) : isUser ? (
+              <div className='wrap-break-word whitespace-pre-wrap'>
+                {messageContent}
+              </div>
+            ) : (
+              <div className='prose prose-sm dark:prose-invert max-w-none'>
+                <ReactMarkdown>{messageContent}</ReactMarkdown>
+                {isStreaming && (
+                  <span className='ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-current align-middle' />
+                )}
+              </div>
+            )}
+          </div>
         )}
+
+        {!isStreaming &&
+          message.agentAction?.type === 'create_meal' &&
+          onConfirmIntent &&
+          onRejectIntent &&
+          onApproveAction &&
+          onRejectAction && (
+            <AgentActionCard
+              action={message.agentAction}
+              onConfirmIntent={() => onConfirmIntent(message.id)}
+              onRejectIntent={() => onRejectIntent(message.id)}
+              onApprove={() => onApproveAction(message.id)}
+              onReject={() => onRejectAction(message.id)}
+            />
+          )}
 
         {showActions && (
           <div
@@ -117,8 +126,7 @@ export function ChatMessage({
           <div
             className={join(
               'flex items-center gap-2 px-1',
-              showActions &&
-                '-mt-6 transition-[margin] group-hover:mt-0',
+              showActions && '-mt-6 transition-[margin] group-hover:mt-0',
             )}
           >
             <span className='text-muted-foreground text-xs'>
@@ -135,4 +143,3 @@ export function ChatMessage({
     </div>
   );
 }
-

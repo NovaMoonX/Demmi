@@ -11,28 +11,37 @@ import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
  * The AI detects whether the user wants to create a recipe/meal/dish.
  * It does NOT generate recipe details at this stage.
  */
-const INTENT_SYSTEM_PROMPT =
-  "You are Demmi's AI assistant, specialized in cooking, recipes, meal planning, and nutrition. " +
-  'Be concise, friendly, and practical.\n\n' +
-  'You always respond with a JSON object with exactly three fields:\n' +
-  '  "response": your message to the user (required, supports markdown)\n' +
-  '  "wantsToCreate": true if the user wants to CREATE / MAKE / ADD / GENERATE a recipe, meal, or dish — false otherwise\n' +
-  '  "proposedMealName": the name of the recipe or meal if wantsToCreate is true, empty string otherwise\n\n' +
-  'IMPORTANT rules:\n' +
-  '  - Set wantsToCreate: true when the user asks for things like "give me a pancake recipe", ' +
-  '"create a pasta dish", "I want a good stir fry recipe", "make me tacos", "add a lasagna recipe", etc.\n' +
-  '  - If wantsToCreate is true, your "response" must ONLY confirm intent, e.g. ' +
-  '"It sounds like you want to create a [name] recipe! Is that correct?" ' +
-  'Do NOT include ingredients, instructions, or recipe details in the response.\n' +
-  '  - For all other messages (questions, tips, discussions), answer normally and set wantsToCreate: false.';
+const INTENT_SYSTEM_PROMPT = `
+You are Demmi's AI assistant, specialized in cooking, recipes, meal planning, and nutrition. Be concise, friendly, and practical.
+
+You always respond with a JSON object with exactly three fields:
+  "response": your message to the user (required, supports markdown)
+  "wantsToCreate": true if the user wants to CREATE / MAKE / ADD / GENERATE a recipe, meal, or dish — false otherwise
+  "proposedMealName": the name of the recipe or meal if wantsToCreate is true, empty string otherwise
+
+IMPORTANT rules:
+  - For all other messages (questions, tips, discussions), answer normally and set wantsToCreate: false.
+`;
 
 const INTENT_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: 'object',
-  required: ['response', 'wantsToCreate', 'proposedMealName'],
+  required: ['wantsToCreate', 'proposedMealName'],
   properties: {
-    response: { type: 'string' },
-    wantsToCreate: { type: 'boolean' },
-    proposedMealName: { type: 'string' },
+    wantsToCreate: {
+      type: 'boolean',
+      description:
+        'True if the user wants to create a recipe/meal/dish, false otherwise. MUST be true if proposedMealName is non-empty.',
+    },
+    proposedMealName: {
+      type: 'string',
+      description:
+        'The name of the recipe or meal if wantsToCreate is true, empty string otherwise.',
+    },
+    // response: {
+    //   type: 'string',
+    //   description:
+    //     'Optional. Your message to the user. MUST be excluded (empty string) if wantsToCreate is true.',
+    // },
   },
 };
 
@@ -40,17 +49,18 @@ const INTENT_RESPONSE_SCHEMA: Record<string, unknown> = {
  * Phase 2 — recipe generation.
  * Called after the user has confirmed intent. Generates the full recipe details.
  */
-const RECIPE_GENERATION_PROMPT =
-  "You are Demmi's AI assistant. Generate the complete recipe details for the requested meal.\n\n" +
-  'Respond with a JSON object with exactly two fields:\n' +
-  '  "response": a brief confirmation message (e.g. "Here\'s your Pancake recipe!")\n' +
-  '  "meals": an array containing exactly one fully detailed meal object\n\n' +
-  'Each meal must have: title, description, category ("breakfast"|"lunch"|"dinner"|"snack"|"dessert"|"drink"), ' +
-  'prepTime (minutes), cookTime (minutes), servingSize, instructions (array of steps), ' +
-  'and ingredients (array of {name, type, unit, servings}).\n' +
-  'Ingredient type must be one of: "meat","produce","dairy","grains","legumes","oils","spices","nuts","seafood","other".\n' +
-  'Ingredient unit must be one of: "lb","oz","kg","g","cup","tbsp","tsp","piece","ml","l","other".\n' +
-  'Use "servings" to indicate how many units/portions of that ingredient the recipe requires.';
+const RECIPE_GENERATION_PROMPT = `
+You are Demmi's AI assistant. Generate the complete recipe details for the requested meal.
+
+Respond with a JSON object with exactly two fields:
+  "response": a brief confirmation message (e.g. "Here's your Pancake recipe!")
+  "meals": an array containing exactly one fully detailed meal object
+
+Each meal must have: title, description, category ("breakfast"|"lunch"|"dinner"|"snack"|"dessert"|"drink"), prepTime (minutes), cookTime (minutes), servingSize, instructions (array of steps), and ingredients (array of {name, type, unit, servings}).
+Ingredient type must be one of: "meat","produce","dairy","grains","legumes","oils","spices","nuts","seafood","other".
+Ingredient unit must be one of: "lb","oz","kg","g","cup","tbsp","tsp","piece","ml","l","other".
+Use "servings" to indicate how many units/portions of that ingredient the recipe requires.
+`;
 
 const RECIPE_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: 'object',
@@ -140,7 +150,11 @@ export async function listLocalModels(): Promise<string[]> {
 
   const textModels = allModels.filter((name) => {
     const lowerName = name.toLowerCase();
-    return !lowerName.includes('embed') && !lowerName.includes('vision') && !lowerName.includes('multimodal');
+    return (
+      !lowerName.includes('embed') &&
+      !lowerName.includes('vision') &&
+      !lowerName.includes('multimodal')
+    );
   });
 
   return textModels;
@@ -198,23 +212,54 @@ export async function pullModelStream(
 }
 
 function coerceMealCategory(value: string): MealCategory {
-  const valid: MealCategory[] = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink'];
-  return (valid.includes(value as MealCategory) ? value : 'dinner') as MealCategory;
+  const valid: MealCategory[] = [
+    'breakfast',
+    'lunch',
+    'dinner',
+    'snack',
+    'dessert',
+    'drink',
+  ];
+  return (
+    valid.includes(value as MealCategory) ? value : 'dinner'
+  ) as MealCategory;
 }
 
 function coerceIngredientType(value: string): IngredientType {
   const valid: IngredientType[] = [
-    'meat', 'produce', 'dairy', 'grains', 'legumes',
-    'oils', 'spices', 'nuts', 'seafood', 'other',
+    'meat',
+    'produce',
+    'dairy',
+    'grains',
+    'legumes',
+    'oils',
+    'spices',
+    'nuts',
+    'seafood',
+    'other',
   ];
-  return (valid.includes(value as IngredientType) ? value : 'other') as IngredientType;
+  return (
+    valid.includes(value as IngredientType) ? value : 'other'
+  ) as IngredientType;
 }
 
 function coerceMeasurementUnit(value: string): MeasurementUnit {
   const valid: MeasurementUnit[] = [
-    'lb', 'oz', 'kg', 'g', 'cup', 'tbsp', 'tsp', 'piece', 'ml', 'l', 'other',
+    'lb',
+    'oz',
+    'kg',
+    'g',
+    'cup',
+    'tbsp',
+    'tsp',
+    'piece',
+    'ml',
+    'l',
+    'other',
   ];
-  return (valid.includes(value as MeasurementUnit) ? value : 'other') as MeasurementUnit;
+  return (
+    valid.includes(value as MeasurementUnit) ? value : 'other'
+  ) as MeasurementUnit;
 }
 
 export interface ParsedOllamaResponse {
@@ -239,7 +284,10 @@ export function parseIntentResponse(json: string): ParsedIntentResponse | null {
     return {
       response: typeof parsed.response === 'string' ? parsed.response : '',
       wantsToCreate: parsed.wantsToCreate === true,
-      proposedMealName: typeof parsed.proposedMealName === 'string' ? parsed.proposedMealName : '',
+      proposedMealName:
+        typeof parsed.proposedMealName === 'string'
+          ? parsed.proposedMealName
+          : '',
     };
   } catch {
     return null;
@@ -258,26 +306,48 @@ export function parseOllamaResponse(json: string): ParsedOllamaResponse | null {
 
     const rawMeals = Array.isArray(parsed.meals) ? parsed.meals : [];
     const meals: AgentMealProposal[] = rawMeals
-      .filter((m: unknown): m is Record<string, unknown> => typeof m === 'object' && m !== null)
+      .filter(
+        (m: unknown): m is Record<string, unknown> =>
+          typeof m === 'object' && m !== null,
+      )
       .map((m: Record<string, unknown>) => ({
         title: typeof m.title === 'string' ? m.title : 'Untitled Meal',
         description: typeof m.description === 'string' ? m.description : '',
-        category: coerceMealCategory(typeof m.category === 'string' ? m.category : ''),
-        prepTime: typeof m.prepTime === 'number' ? Math.max(0, Math.round(m.prepTime)) : 0,
-        cookTime: typeof m.cookTime === 'number' ? Math.max(0, Math.round(m.cookTime)) : 0,
-        servingSize: typeof m.servingSize === 'number' ? Math.max(1, Math.round(m.servingSize)) : 1,
+        category: coerceMealCategory(
+          typeof m.category === 'string' ? m.category : '',
+        ),
+        prepTime:
+          typeof m.prepTime === 'number'
+            ? Math.max(0, Math.round(m.prepTime))
+            : 0,
+        cookTime:
+          typeof m.cookTime === 'number'
+            ? Math.max(0, Math.round(m.cookTime))
+            : 0,
+        servingSize:
+          typeof m.servingSize === 'number'
+            ? Math.max(1, Math.round(m.servingSize))
+            : 1,
         instructions: Array.isArray(m.instructions)
           ? m.instructions.filter((i: unknown) => typeof i === 'string')
           : [],
         imageUrl: '',
         ingredients: Array.isArray(m.ingredients)
           ? m.ingredients
-              .filter((i: unknown): i is Record<string, unknown> => typeof i === 'object' && i !== null)
+              .filter(
+                (i: unknown): i is Record<string, unknown> =>
+                  typeof i === 'object' && i !== null,
+              )
               .map((i: Record<string, unknown>) => ({
                 name: typeof i.name === 'string' ? i.name : 'Unknown',
-                type: coerceIngredientType(typeof i.type === 'string' ? i.type : ''),
-                unit: coerceMeasurementUnit(typeof i.unit === 'string' ? i.unit : ''),
-                servings: typeof i.servings === 'number' ? Math.max(1, i.servings) : 1,
+                type: coerceIngredientType(
+                  typeof i.type === 'string' ? i.type : '',
+                ),
+                unit: coerceMeasurementUnit(
+                  typeof i.unit === 'string' ? i.unit : '',
+                ),
+                servings:
+                  typeof i.servings === 'number' ? Math.max(1, i.servings) : 1,
               }))
           : [],
       }));
@@ -301,4 +371,3 @@ export function extractPartialResponse(partialJson: string): string {
     return '';
   }
 }
-

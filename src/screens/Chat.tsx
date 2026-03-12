@@ -392,7 +392,6 @@ export function Chat() {
 
       if (!cancelledRef.current && currentGenerationId.current === generationId && rawJsonContent) {
         const parsed = parseIntentResponse(rawJsonContent);
-        const displayContent = parsed?.response ?? rawJsonContent;
         const agentAction =
           parsed?.wantsToCreate && parsed.proposedMealName
             ? {
@@ -402,6 +401,8 @@ export function Chat() {
                 meals: [],
               }
             : null;
+        
+        const displayContent = parsed?.wantsToCreate ? '' : (parsed?.response ?? rawJsonContent);
 
         dispatch(
           updateMessageContent({
