@@ -364,17 +364,24 @@ export function Chat() {
         abortSignal: abortController.signal,
       };
 
+      if (!handler) {
+        throw new Error(`No handler found for intent: ${intent}`);
+      }
+
+      handler?.onStart?.(context, runtime)
+
       if (handler.isMultiStep) {
         // Multi-step (Phase 3) — placeholder for now
-        handler.onStart?.(context, runtime);
       } else {
-        if (!handler.execute) return;
-
         firstTokenReceivedRef.current = true;
 
         const result = await handler.execute(modelUsed, context, runtime);
 
-        if (!abortController.signal.aborted && result && 'data' in result) {
+        if (!result || !('data' in result)) {
+          throw new Error('Invalid response received from agent');
+        }
+
+        if (!abortController.signal.aborted) {
           const content = String(result.data.content ?? '');
           const rawContent = typeof result.data.rawContent === 'string' ? result.data.rawContent : null;
 
