@@ -12,8 +12,7 @@ const MAX_CONTEXT_MESSAGES = 5;
 
 interface GeneralResult extends Record<string, unknown> {
   content: string;
-  rawContent: string;
-  rawContentUsed: boolean
+  rawContent: string | null;
 }
 
 export const generalAction: ActionHandler<GeneralResult> = {
@@ -59,6 +58,14 @@ export const generalAction: ActionHandler<GeneralResult> = {
     const content = parsed?.response ?? rawContent;
     const rawContentUsed = !!parsed?.response;
 
-    return { type: 'general', data: { content, rawContent, rawContentUsed } };
+    return { type: 'general', data: { content, rawContent: rawContentUsed ? null : rawContent } };
+  },
+
+  getUpdatedMessageContentFromResult(result) {
+    return {
+      content: result.content,
+      rawContent: result.rawContent,
+      agentAction: null,
+    };
   },
 } ;
