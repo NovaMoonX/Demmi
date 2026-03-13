@@ -451,7 +451,51 @@ export function Chat() {
       handler?.onStart?.(context, runtime);
 
       if (handler.isMultiStep) {
-        // Multi-step (Phase 3) — placeholder for now
+        firstTokenReceivedRef.current = true;
+
+        const completedStepNames: string[] = [];
+        const accumulatedResult: Record<string, unknown> = {};
+
+        for (const step of handler.steps) {
+          if (abortController.signal.aborted) break;
+
+          const stepContext = { ...context, previousResults: accumulatedResult };
+          const rawStepResult = await step.execute(modelUsed, stepContext, runtime);
+          const stepResult = rawStepResult as { data: Record<string, unknown>; cancelled?: boolean };
+
+          if (stepResult.cancelled) {
+            step.onCancel?.(stepContext, runtime);
+            break;
+          }
+
+          Object.assign(accumulatedResult, stepResult.data);
+          completedStepNames.push(step.name);
+        }
+
+        if (abortController.signal.aborted || completedStepNames.length < handler.steps.length) {
+          handler.onCancel?.(context, runtime, completedStepNames as never[]);
+        } else {
+          handler.onComplete?.(context, runtime, accumulatedResult as never);
+
+          const messageContentUpdates =
+            handler.getUpdatedMessageContentFromResult?.(accumulatedResult as never);
+
+          if (messageContentUpdates) {
+            generateSummary(modelUsed, messageContent, messageContentUpdates.content)
+              .then((summary) => {
+                if (summary) {
+                  dispatch(
+                    updateMessageSummary({
+                      chatId: chatIdForStream,
+                      messageId: assistantMessageId,
+                      summary,
+                    }),
+                  );
+                }
+              })
+              .catch((err) => console.warn('Summary generation failed', err));
+          }
+        }
       } else {
         firstTokenReceivedRef.current = true;
 
@@ -463,7 +507,7 @@ export function Chat() {
 
         if (!abortController.signal.aborted) {
           const messageContentUpdates =
-            handler.getUpdatedMessageContentFromResult(result.data);
+            handler.getUpdatedMessageContentFromResult(result.data as never);
 
           dispatch(
             updateMessageContent({

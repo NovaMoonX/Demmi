@@ -51,12 +51,6 @@ interface ActionHandlerBase<ResultType extends Record<string, unknown>> {
 
   onStart?: (context: StepContext<ResultType>, runtime: StepRuntime) => void;
 
-  getUpdatedMessageContentFromResult: (result: ResultType) => {
-    content: string;
-    rawContent?: string | null; // Optional rawContent to update the message with, if different from content
-    agentAction?: AgentAction | null;
-  };
-
   onComplete?: (
     context: StepContext<ResultType>,
     runtime: StepRuntime,
@@ -80,6 +74,12 @@ interface SingleStepActionHandler<
   steps?: never;
 
   onCancel?: (context: StepContext<ResultType>, runtime: StepRuntime) => void;
+
+  getUpdatedMessageContentFromResult: (result: ResultType) => {
+    content: string;
+    rawContent?: string | null;
+    agentAction?: AgentAction | null;
+  };
 }
 
 // This type ensures that if `isMultiStep` is true and steps are provided
@@ -105,6 +105,12 @@ interface MultiStepActionHandler<
     runtime: StepRuntime,
     completedSteps: RequireStepNames<ValidStepNames>[],
   ) => void;
+
+  // Optional: produce a text summary of the result (used for summary generation)
+  getUpdatedMessageContentFromResult?: (result: ResultType) => {
+    content: string;
+    rawContent?: string | null;
+  };
 }
 
 export type ActionHandler<
