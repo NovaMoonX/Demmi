@@ -4,9 +4,26 @@ import type {
   AgentCreateMealAction,
   AgentMealProposal,
   AgentIngredientProposal,
+  CreateMealAgentActionStatus,
 } from '@lib/chat/agent-actions.types';
 import { MEAL_CATEGORY_COLORS, MEAL_CATEGORY_EMOJIS } from '@lib/meals';
 import { INGREDIENT_TYPE_EMOJIS } from '@lib/ingredients';
+
+const GENERATING_STATUSES = new Set<CreateMealAgentActionStatus>([
+  'generating_name',
+  'generating_info',
+  'generating_description',
+  'generating_ingredients',
+  'generating_instructions',
+]);
+
+const STEP_LABELS: Partial<Record<CreateMealAgentActionStatus, string>> = {
+  generating_name: 'Generating name…',
+  generating_info: 'Generating basic info…',
+  generating_description: 'Generating description…',
+  generating_ingredients: 'Generating ingredients…',
+  generating_instructions: 'Generating instructions…',
+};
 
 interface AgentActionCardProps {
   action: AgentCreateMealAction;
@@ -118,8 +135,9 @@ export function AgentActionCard({
     );
   }
 
-  if (action.status === 'generating') {
-    const name = action.proposedName || 'your recipe';
+  if (GENERATING_STATUSES.has(action.status)) {
+    const name = (action.proposedName || action.recipe?.name) ?? 'your recipe';
+    const stepLabel = STEP_LABELS[action.status] ?? 'Generating recipe…';
 
     return (
       <div className="mt-3 flex flex-col gap-2 rounded-xl border border-border bg-card/50 p-4">
@@ -129,9 +147,12 @@ export function AgentActionCard({
             <span className="animate-bounce text-sm [animation-delay:0.15s]">●</span>
             <span className="animate-bounce text-sm [animation-delay:0.3s]">●</span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Generating recipe for <span className="font-medium text-foreground">{name}</span>…
-          </p>
+          <div className="flex flex-col gap-0.5">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{name}</span>
+            </p>
+            <p className="text-xs text-muted-foreground">{stepLabel}</p>
+          </div>
         </div>
       </div>
     );
@@ -183,6 +204,14 @@ export function AgentActionCard({
     return (
       <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-4 py-3">
         <span className="text-sm text-muted-foreground">Declined</span>
+      </div>
+    );
+  }
+
+  if (action.status === 'cancelled') {
+    return (
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-4 py-3">
+        <span className="text-sm text-muted-foreground">Recipe generation was cancelled</span>
       </div>
     );
   }

@@ -265,9 +265,11 @@ export const createMealAction = {
         content: '🍳 Generating recipe...',
         agentAction: {
           type: 'create_meal',
-          status: 'generating',
+          status: 'generating_name',
           proposedName: '',
           meals: [],
+          recipe: null,
+          completedSteps: null,
         },
       }),
     );
