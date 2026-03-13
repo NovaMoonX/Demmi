@@ -48,8 +48,8 @@ const proposeNameStep: ActionStep<MealResult, 'proposeName'> = {
     context: StepContext<MealResult>,
     runtime: StepRuntime,
   ): Promise<StepResult<MealResult, 'proposeName'>> {
-    const { messages, chatId, messageId } = context;
-    const { dispatch, abortSignal } = runtime;
+    const { messages } = context;
+    const { abortSignal } = runtime;
 
     if (abortSignal?.aborted) {
       return { stepName: 'proposeName', data: {}, cancelled: true };
@@ -74,20 +74,6 @@ const proposeNameStep: ActionStep<MealResult, 'proposeName'> = {
 
     const parsed = JSON.parse(response.message.content);
     const name: string = parsed.name ?? '';
-
-    dispatch(
-      updateMessageContent({
-        chatId,
-        messageId,
-        content: '🍳 Generating recipe...',
-        agentAction: {
-          type: 'create_meal',
-          status: 'generating',
-          proposedName: name,
-          meals: [],
-        },
-      }),
-    );
 
     return { stepName: 'proposeName', data: { name } };
   },
