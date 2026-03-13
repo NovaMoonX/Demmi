@@ -85,9 +85,9 @@ export function Auth() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        <div className="mb-4">
+        <div className="-translate-y-10 mb-10">
           <Button
-            variant="ghost"
+            variant="tertiary"
             size="sm"
             onClick={() => navigate('/')}
           >
