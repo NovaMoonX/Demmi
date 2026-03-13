@@ -6,7 +6,7 @@ import {
 } from '../ollama.service';
 import { GENERAL_PROMPT } from '../prompts';
 import { GENERAL_SCHEMA } from '../schemas';
-import type { ActionResult, SingleStepActionHandler } from './types';
+import type { ActionHandler, ActionResult } from './types';
 
 const MAX_CONTEXT_MESSAGES = 5;
 
@@ -14,7 +14,7 @@ interface GeneralResult extends Record<string, unknown> {
   content: string;
 }
 
-export const generalAction: SingleStepActionHandler<GeneralResult> = {
+export const generalAction = {
   type: 'general',
   description: 'General conversational response about cooking, nutrition, and meal planning',
   isMultiStep: false,
@@ -58,4 +58,4 @@ export const generalAction: SingleStepActionHandler<GeneralResult> = {
 
     return { type: 'general', data: { content } };
   },
-};
+} satisfies ActionHandler<GeneralResult>;

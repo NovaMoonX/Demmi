@@ -1,14 +1,17 @@
 import { generalAction } from './generalAction';
-import type { ActionHandler, ActionType } from './types';
+import type { ActionType } from './types';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const ACTION_REGISTRY: Partial<Record<ActionType, ActionHandler<any>>> = {
-  general: generalAction,
-  // Future: createMeal, addIngredient, planWeek, etc.
+type ActionHandlerMap = {
+  general: typeof generalAction;
+  createMeal: undefined; // Placeholder until implemented
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getActionHandler(actionType: ActionType): ActionHandler<any> {
+const ACTION_REGISTRY: ActionHandlerMap = {
+  general: generalAction,
+  createMeal: undefined, // Placeholder until implemented
+};
+
+export function getActionHandler<T extends ActionType>(actionType: T): ActionHandlerMap[T] {
   const handler = ACTION_REGISTRY[actionType];
   if (!handler) {
     throw new Error(`Unknown action type: ${actionType}`);

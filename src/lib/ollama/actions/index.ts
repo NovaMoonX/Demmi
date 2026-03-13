@@ -8,4 +8,4 @@ export type {
   ActionResult,
 } from './types';
 export { generalAction } from './generalAction';
-export { ACTION_REGISTRY, getActionHandler } from './registry';
+export { getActionHandler } from './registry';
