@@ -21,6 +21,7 @@ import {
   trimMessagesFrom,
   updateMessageContent,
   updateAgentActionStatus,
+  updateMessageSummary,
   deleteConversation,
   togglePinConversation,
 } from '@store/slices/chatsSlice';
@@ -30,7 +31,7 @@ import { AgentCreateMealAction, ChatMessage as ChatMessageType } from '@lib/chat
 import type { MealIngredient } from '@lib/meals';
 import type { AbortableAsyncIterator } from 'ollama';
 import type { ChatResponse } from 'ollama/browser';
-import { detectAction, getGeneralResponse, getMealNameProposal, generateRecipe, extractPartialResponse, parseGeneralResponse } from '@lib/ollama';
+import { detectIntent, generateSummary, getGeneralResponse, getMealNameProposal, generateRecipe, extractPartialResponse, parseGeneralResponse } from '@lib/ollama';
 import { generatedId } from '@utils/generatedId';
 
 const SCROLL_DELAY_MS = 100;
@@ -351,7 +352,7 @@ export function Chat() {
         .chats.conversations.find((c) => c.id === chatIdForStream)
         ?.messages.filter((m) => m.id !== assistantMessageId) ?? [];
 
-      const action = await detectAction(modelUsed, allMessages);
+      const action = await detectIntent(modelUsed, allMessages);
       
       if (currentGenerationId.current !== generationId || cancelledRef.current) {
         if (!firstTokenReceivedRef.current) {
@@ -360,17 +361,6 @@ export function Chat() {
             messageId: assistantMessageId,
           }));
         }
-        return;
-      }
-
-      if (!action) {
-        dispatch(
-          updateMessageContent({
-            chatId: chatIdForStream,
-            messageId: assistantMessageId,
-            content: '⚠️ Could not determine intent. Please try again.',
-          }),
-        );
         return;
       }
 
@@ -430,8 +420,18 @@ export function Chat() {
               agentAction: null,
             }),
           );
+
+          const summaryPromise = generateSummary(modelUsed, messageContent, displayContent)
+            .then((summary) => {
+              if (summary) {
+                dispatch(updateMessageSummary({ chatId: chatIdForStream, messageId: assistantMessageId, summary }));
+              }
+            })
+            .catch((err) => console.warn('Summary generation failed', err));
+
+          void summaryPromise;
         }
-      } else if (action === 'wantsToCreateMeal') {
+      } else if (action === 'createMeal') {
         firstTokenReceivedRef.current = true;
         
         const proposedMealName = await getMealNameProposal(modelUsed, allMessages);

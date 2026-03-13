@@ -56,7 +56,7 @@ export const mockChatConversations: ChatConversation[] = [
       {
         id: 'msg-004',
         role: 'assistant',
-        content: 'Great question! Here\'s a simple meal prep strategy:\n\n**Sunday Prep:**\n- Cook a large batch of grains (rice, quinoa)\n- Roast vegetables (broccoli, sweet potatoes, peppers)\n- Grill or bake proteins (chicken, tofu, fish)\n- Prepare 2-3 sauces or dressings\n\n**Storage Tips:**\n- Use glass containers for better reheating\n- Store proteins separately from veggies to maintain freshness\n- Label everything with dates\n\n**Mix & Match:**\nCombine different proteins, grains, and veggies throughout the week for variety!',
+        content: 'Great question! Here\'s a simple meal prep strategy:\n\n**Sunday Prep:**\n- Cook a large batch of grains (rice, quinoa)\n- Roast vegetables (broccoli, sweet potatoes, peppers)\n- Grill or bake proteins (chicken, tofu, fish)\n- Prepare 2-4 sauces or dressings\n\n**Storage Tips:**\n- Use glass containers for better reheating\n- Store proteins separately from veggies to maintain freshness\n- Label everything with dates\n\n**Mix & Match:**\nCombine different proteins, grains, and veggies throughout the week for variety!',
         timestamp: oneDayAgo,
         model: null,
         rawContent: null,
@@ -76,7 +76,7 @@ export const mockChatConversations: ChatConversation[] = [
       {
         id: 'msg-006',
         role: 'assistant',
-        content: 'Most meal prep foods will stay fresh for 3-4 days in the refrigerator. Here are some guidelines:\n\n- **Cooked grains**: 4-5 days\n- **Cooked chicken**: 3-4 days\n- **Roasted vegetables**: 3-4 days\n- **Raw cut vegetables**: 2-3 days\n- **Cooked fish**: 2-3 days\n\nFor longer storage, freeze portions in individual containers for up to 3 months!',
+        content: 'Most meal prep foods will stay fresh for 3-4 days in the refrigerator. Here are some guidelines:\n\n- **Cooked grains**: 4-5 days\n- **Cooked chicken**: 3-4 days\n- **Roasted vegetables**: 3-4 days\n- **Raw cut vegetables**: 2-4 days\n- **Cooked fish**: 2-4 days\n\nFor longer storage, freeze portions in individual containers for up to 3 months!',
         timestamp: oneDayAgo,
         model: null,
         rawContent: null,
