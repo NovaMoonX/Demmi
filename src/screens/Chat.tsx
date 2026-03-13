@@ -27,11 +27,9 @@ import {
 } from '@store/slices/chatsSlice';
 import { createIngredient } from '@store/actions/ingredientActions';
 import { createMeal } from '@store/actions/mealActions';
-import { AgentCreateMealAction, ChatMessage as ChatMessageType } from '@lib/chat';
+import { ChatMessage as ChatMessageType } from '@lib/chat';
 import type { MealIngredient } from '@lib/meals';
-import type { AbortableAsyncIterator } from 'ollama';
-import type { ChatResponse } from 'ollama/browser';
-import { detectIntent, generateSummary, getGeneralResponse, getMealNameProposal, generateRecipe, extractPartialResponse, parseGeneralResponse } from '@lib/ollama';
+import { detectIntent, generateSummary, generateRecipe, getActionHandler } from '@lib/ollama';
 import { generatedId } from '@utils/generatedId';
 
 const SCROLL_DELAY_MS = 100;
@@ -48,9 +46,7 @@ export function Chat() {
   const [isSending, setIsSending] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const activeStreamRef = useRef<AbortableAsyncIterator<ChatResponse> | null>(null);
-  const currentGenerationId = useRef<string | null>(null);
-  const cancelledRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const firstTokenReceivedRef = useRef(false);
   const activeChatIdRef = useRef<string | null>(null);
   const activeMessageIdRef = useRef<string | null>(null);
@@ -109,22 +105,15 @@ export function Chat() {
     setInputValue('');
   };
 
-  const handleCancelStream = () => {
-    cancelledRef.current = true;
-    currentGenerationId.current = null;
-    
+  const handleCancelGeneration = () => {
     if (!firstTokenReceivedRef.current && activeChatIdRef.current && activeMessageIdRef.current) {
       dispatch(removeMessage({
         chatId: activeChatIdRef.current,
         messageId: activeMessageIdRef.current,
       }));
     }
-    
-    if (activeStreamRef.current) {
-      activeStreamRef.current.abort();
-      activeStreamRef.current = null;
-    }
-    
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
     firstTokenReceivedRef.current = false;
     activeChatIdRef.current = null;
     activeMessageIdRef.current = null;
@@ -287,11 +276,11 @@ export function Chat() {
     if (editMessageId && currentChatId) {
       dispatch(trimMessagesFrom({ chatId: currentChatId, messageId: editMessageId }));
     }
-    
-    const generationId = generatedId('msg');
-    currentGenerationId.current = generationId;
-    cancelledRef.current = false;
+
     firstTokenReceivedRef.current = false;
+
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     const userMessage: ChatMessageType = {
       id: generatedId('msg'),
@@ -342,7 +331,7 @@ export function Chat() {
 
     const chatIdForStream = targetChatId;
     const modelUsed = selectedModel;
-    
+
     activeChatIdRef.current = chatIdForStream;
     activeMessageIdRef.current = assistantMessageId;
 
@@ -352,129 +341,65 @@ export function Chat() {
         .chats.conversations.find((c) => c.id === chatIdForStream)
         ?.messages.filter((m) => m.id !== assistantMessageId) ?? [];
 
-      const action = await detectIntent(modelUsed, allMessages);
-      
-      if (currentGenerationId.current !== generationId || cancelledRef.current) {
+      const intent = await detectIntent(modelUsed, allMessages);
+
+      if (abortController.signal.aborted) {
         if (!firstTokenReceivedRef.current) {
-          dispatch(removeMessage({
-            chatId: chatIdForStream,
-            messageId: assistantMessageId,
-          }));
+          dispatch(removeMessage({ chatId: chatIdForStream, messageId: assistantMessageId }));
         }
         return;
       }
 
-      if (action === 'general') {
-        const stream = await getGeneralResponse(modelUsed, allMessages);
-        
-        if (currentGenerationId.current !== generationId || cancelledRef.current) {
-          stream.abort();
-          if (!firstTokenReceivedRef.current) {
-            dispatch(removeMessage({
-              chatId: chatIdForStream,
-              messageId: assistantMessageId,
-            }));
-          }
-          return;
-        }
-        
-        activeStreamRef.current = stream;
-        let rawJsonContent = '';
+      const handler = getActionHandler(intent);
 
-        for await (const chunk of stream) {
-          if (currentGenerationId.current !== generationId || cancelledRef.current) {
-            break;
-          }
-          
-          if (!firstTokenReceivedRef.current) {
-            firstTokenReceivedRef.current = true;
-          }
-          
-          rawJsonContent += chunk.message.content;
+      const context = {
+        messages: allMessages,
+        chatId: chatIdForStream,
+        messageId: assistantMessageId,
+        previousResults: {},
+      };
 
-          const partialDisplay = extractPartialResponse(rawJsonContent);
+      const runtime = {
+        dispatch,
+        abortSignal: abortController.signal,
+      };
 
-          if (partialDisplay) {
-            dispatch(
-              updateMessageContent({
-                chatId: chatIdForStream,
-                messageId: assistantMessageId,
-                content: partialDisplay,
-                model: modelUsed,
-              }),
-            );
-          }
-        }
+      if (handler.isMultiStep) {
+        // Multi-step (Phase 3) — placeholder for now
+        handler.onStart?.(context, runtime);
+      } else {
+        if (!handler.execute) return;
 
-        if (!cancelledRef.current && currentGenerationId.current === generationId && rawJsonContent) {
-          const parsed = parseGeneralResponse(rawJsonContent);
-          const displayContent = parsed?.response ?? rawJsonContent;
+        firstTokenReceivedRef.current = true;
+
+        const result = await handler.execute(modelUsed, context, runtime);
+
+        if (!abortController.signal.aborted && result && 'data' in result) {
+          const content = String(result.data.content ?? '');
+          const rawContent = typeof result.data.rawContent === 'string' ? result.data.rawContent : null;
 
           dispatch(
             updateMessageContent({
               chatId: chatIdForStream,
               messageId: assistantMessageId,
-              content: displayContent,
+              content,
               model: modelUsed,
-              rawContent: rawJsonContent,
+              rawContent,
               agentAction: null,
             }),
           );
 
-          const summaryPromise = generateSummary(modelUsed, messageContent, displayContent)
+          generateSummary(modelUsed, messageContent, content)
             .then((summary) => {
               if (summary) {
                 dispatch(updateMessageSummary({ chatId: chatIdForStream, messageId: assistantMessageId, summary }));
               }
             })
             .catch((err) => console.warn('Summary generation failed', err));
-
-          void summaryPromise;
         }
-      } else if (action === 'createMeal') {
-        firstTokenReceivedRef.current = true;
-        
-        const proposedMealName = await getMealNameProposal(modelUsed, allMessages);
-        
-        if (currentGenerationId.current !== generationId || cancelledRef.current) {
-          return;
-        }
-
-        if (!proposedMealName) {
-          dispatch(
-            updateMessageContent({
-              chatId: chatIdForStream,
-              messageId: assistantMessageId,
-              content: '⚠️ Could not determine meal name. Please try again.',
-            }),
-          );
-          return;
-        }
-
-        const agentAction: AgentCreateMealAction = {
-          type: 'create_meal',
-          status: 'pending_confirmation',
-          proposedName: proposedMealName,
-          meals: [],
-        };
-
-        dispatch(
-          updateMessageContent({
-            chatId: chatIdForStream,
-            messageId: assistantMessageId,
-            content: '',
-            model: modelUsed,
-            rawContent: null,
-            agentAction,
-          }),
-        );
       }
     } catch (err) {
-      const isAbort =
-        err instanceof Error &&
-        (err.name === 'AbortError' || err.message.toLowerCase().includes('abort'));
-
-      if (!isAbort) {
+      if (!abortController.signal.aborted) {
         const errorContent =
           err instanceof Error
             ? `⚠️ Ollama error: ${err.message}`
@@ -489,9 +414,8 @@ export function Chat() {
         );
       }
     } finally {
-      if (currentGenerationId.current === generationId) {
-        activeStreamRef.current = null;
-        currentGenerationId.current = null;
+      if (abortControllerRef.current === abortController) {
+        abortControllerRef.current = null;
         firstTokenReceivedRef.current = false;
         activeChatIdRef.current = null;
         activeMessageIdRef.current = null;
@@ -665,7 +589,7 @@ export function Chat() {
               <div className="absolute bottom-2.5 right-1.5 flex gap-1">
                 {isSending && (
                   <Button
-                    onClick={handleCancelStream}
+                    onClick={handleCancelGeneration}
                     variant="secondary"
                     className="rounded-full!"
                     aria-label="Cancel response"

@@ -6,20 +6,20 @@ import {
 } from '../ollama.service';
 import { GENERAL_PROMPT } from '../prompts';
 import { GENERAL_SCHEMA } from '../schemas';
-import type { ActionHandler, ActionResult } from './types';
+import type { ActionHandler, ActionResult, StepContext, StepRuntime } from './types';
 
 const MAX_CONTEXT_MESSAGES = 5;
-
-interface GeneralResult extends Record<string, unknown> {
-  content: string;
-}
 
 export const generalAction = {
   type: 'general',
   description: 'General conversational response about cooking, nutrition, and meal planning',
   isMultiStep: false,
 
-  async execute(model, context, runtime): Promise<ActionResult<GeneralResult>> {
+  async execute(
+    model: string,
+    context: StepContext<Record<string, unknown>>,
+    runtime: StepRuntime,
+  ): Promise<ActionResult<Record<string, unknown>>> {
     const { messages, chatId, messageId } = context;
     const { dispatch, abortSignal } = runtime;
 
@@ -56,6 +56,6 @@ export const generalAction = {
     const parsed = parseGeneralResponse(rawContent);
     const content = parsed?.response ?? rawContent;
 
-    return { type: 'general', data: { content } };
+    return { type: 'general', data: { content, rawContent } };
   },
-} satisfies ActionHandler<GeneralResult>;
+} satisfies ActionHandler<Record<string, unknown>>;
