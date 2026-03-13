@@ -245,7 +245,7 @@ src/lib/ollama/
 // In ChatMessage type
 export interface ChatMessage {
   // ... existing fields
-  summary: string | null; // 2-3 sentence summary of this exchange
+  summary: string | null; // 2-4 sentence summary of this exchange
 }
 
 // Summary generation (async, non-blocking)
@@ -261,7 +261,7 @@ export async function generateSummary(
 
   const response = await ollamaClient.generate({
     model,
-    prompt: `Summarize this exchange in 2-3 sentences. Include key topics, requests, and important context:\n\nUser: ${userMessage}\n\nAssistant: ${assistantMessage}\n\nSummary:`,
+    prompt: `Summarize this exchange in 2-4 sentences. Include key topics, requests, and important context:\n\nUser: ${userMessage}\n\nAssistant: ${assistantMessage}\n\nSummary:`,
     stream: false,
   });
 
@@ -1559,7 +1559,7 @@ const proposeNameStep: ActionStep = {
    - [ ] Document prompt engineering best practices
 
 2. **Prepare for future actions**
-   - [ ] Identify next 2-3 actions to implement (addIngredient, planWeek, etc.)
+   - [ ] Identify next 2-4 actions to implement (addIngredient, planWeek, etc.)
    - [ ] Create templates for new actions
    - [ ] Set up action testing framework
 
@@ -1879,7 +1879,7 @@ Respond with JSON: { "action": "general" | "createMeal" }`;
 ### Summary Generation Prompt
 
 ```typescript
-export const SUMMARY_GENERATION_PROMPT = `Summarize this exchange in 2-3 sentences.
+export const SUMMARY_GENERATION_PROMPT = `Summarize this exchange in 2-4 sentences.
 
 Include:
 - Key topics discussed

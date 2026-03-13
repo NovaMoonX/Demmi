@@ -196,7 +196,7 @@ export async function listLocalModels(): Promise<string[]> {
 }
 
 /**
- * Generate a 2-3 sentence summary of a user/assistant exchange.
+ * Generate a 2-4 sentence summary of a user/assistant exchange.
  * Async and non-blocking — returns empty string for short exchanges or on error.
  */
 export async function generateSummary(
@@ -211,7 +211,7 @@ export async function generateSummary(
   try {
     const response = await ollamaClient.generate({
       model,
-      prompt: `Summarize this exchange in 2-3 sentences. Include key topics, requests, and important context:\n\nUser: ${userMessage}\n\nAssistant: ${assistantMessage}\n\nSummary:`,
+      prompt: `Summarize this exchange in 2-4 sentences. Include key topics, requests, and important context:\n\nUser: ${userMessage}\n\nAssistant: ${assistantMessage}\n\nSummary:`,
       stream: false,
     });
 
