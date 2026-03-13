@@ -10,7 +10,7 @@ A cooking app powered with local LLM using Ollama.
 - **Pre-loaded Mock Data**: Chats, meals, ingredients, calendar, and shopping list are populated with realistic demo content on launch
 - **Dynamic Calendar Data**: Calendar demo data is always generated relative to the current day — yesterday, today, tomorrow, and the day after are auto-populated with planned meals so it always looks accurate
 - **Persistent Demo Banner**: An amber banner is always visible at the top of the screen while in demo mode, clearly indicating preview status ("🎭 Demo Mode — changes won't be saved")
-- **Exit Demo**: Both the top banner and the sidebar provide an "Exit Demo" button that clears demo data and returns to the auth page
+- **Exit Demo**: Both the top banner and the sidebar provide an "Exit Demo" button that clears demo data and returns to the homepage
 - **Session-Scoped Persistence**: Demo mode is persisted in `sessionStorage`, so refreshing keeps demo mode active for the current browser session
 - **No Auth Flicker on Refresh**: Protected routes wait for demo session hydration before redirect checks, preventing auth-page flashes when demo mode is active
 - **Redux-Powered**: Demo state is managed via a dedicated `demoSlice` with async thunks (`initializeDemoSession`, `startDemoSession`, `endDemoSession`, `loadDemoData`, `clearDemoData`) for clean data loading and teardown. All CRUD async thunks (`mealActions`, `ingredientActions`, `calendarActions`, `shoppingListActions`, `chatActions`) handle demo mode internally — no component needs to branch on demo state for CRUD operations.
@@ -122,6 +122,7 @@ A cooking app powered with local LLM using Ollama.
   - **Account**: User settings and profile
 - **Theme Toggle**: Switch component for seamless light/dark mode switching
 - **Mobile Responsive**: Collapsible sidebar with hamburger menu on mobile devices
+- **Auth ↔ Home**: "Back to Home" button on the auth page allows users to return to the homepage without signing in
 
 ### 🍎 Ingredients
 - **Ingredient Cards**: Beautiful card-based layout displaying ingredient inventory

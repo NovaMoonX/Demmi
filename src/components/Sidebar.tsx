@@ -53,7 +53,7 @@ export function Sidebar() {
   const handleExitDemo = async () => {
     await dispatch(endDemoSession());
     handleClose();
-    navigate('/auth');
+    navigate('/');
   };
 
   const handleClose = () => {

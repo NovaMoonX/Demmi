@@ -12,7 +12,7 @@ function Layout() {
 
   const handleExitDemo = async () => {
     await dispatch(endDemoSession());
-    navigate('/auth');
+    navigate('/');
   };
 
   return (
