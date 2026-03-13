@@ -82,7 +82,8 @@ interface SingleStepActionHandler<
   };
 }
 
-export const MULTI_STEP_ACTION_HANDLER_ERROR = 'MultiStepActionHandler requires ValidStepNames';
+export const MULTI_STEP_ACTION_HANDLER_ERROR =
+  'MultiStepActionHandler requires ValidStepNames';
 
 // This type ensures that if `isMultiStep` is true and steps are provided
 // then `ValidStepNames` must be provided to the action handler,
@@ -91,6 +92,12 @@ export const MULTI_STEP_ACTION_HANDLER_ERROR = 'MultiStepActionHandler requires 
 type RequireStepNames<T extends string> = [T] extends [never]
   ? typeof MULTI_STEP_ACTION_HANDLER_ERROR
   : T;
+
+// This utility type is used to extract the `ResultType` and `ValidStepNames` from an `ActionHandler` type.
+export type ExtractActionHandler<T> =
+  T extends ActionHandler<infer ResultType, infer ValidStepNames>
+    ? { result: ResultType; stepNames: ValidStepNames }
+    : never;
 
 interface MultiStepActionHandler<
   ResultType extends Record<string, unknown>,

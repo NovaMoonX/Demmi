@@ -34,9 +34,9 @@ import {
   generateSummary,
   generateRecipe,
   getActionHandler,
-  ActionHandler,
 } from '@lib/ollama';
 import { generatedId } from '@utils/generatedId';
+import { ExtractActionHandler } from '@/lib/ollama/actions/types';
 
 const SCROLL_DELAY_MS = 100;
 
@@ -449,21 +449,12 @@ export function Chat() {
         throw new Error(`No handler found for intent: ${intent}`);
       }
 
-
       if (handler.isMultiStep) {
         handler.onStart(context, runtime);
-        type ExtractValidStepNames<T> =
-          T extends ActionHandler<infer _, infer ValidStepNames>
-            ? ValidStepNames
-            : never;
 
-        type ExtractResultType<T> =
-          T extends ActionHandler<infer ResultType, infer _>
-            ? ResultType
-            : never;
-
-        type ValidStepNames = ExtractValidStepNames<typeof handler>;
-        type ResultType = ExtractResultType<typeof handler>;
+        type HandlerTypes = ExtractActionHandler<typeof handler>;
+        type ResultType = HandlerTypes['result'];
+        type ValidStepNames = HandlerTypes['stepNames'];
 
         firstTokenReceivedRef.current = true;
 
@@ -471,11 +462,6 @@ export function Chat() {
         const accumulatedResult: Partial<ResultType> = {};
 
         for (const step of handler.steps) {
-          // if (step.name === MULTI_STEP_ACTION_HANDLER_ERROR) {
-          //   console.warn(`Multi-step action handler is missing ValidStepNames. Please provide a union of string literals representing the valid step names for this handler.`, step);
-          //   continue
-          // }
-
           if (abortController.signal.aborted) break;
 
           const stepContext = {
