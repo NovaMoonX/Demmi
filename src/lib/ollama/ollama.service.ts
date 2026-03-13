@@ -1,6 +1,5 @@
 import type { ChatMessage } from '@lib/chat';
 import type { AgentMealProposal } from '@lib/chat/agent-actions.types';
-import type { ActionType } from '@lib/ollama/actions/types';
 import {
   INGREDIENT_TYPES,
   MEASUREMENT_UNITS,
@@ -8,9 +7,11 @@ import {
   type MeasurementUnit,
 } from '@lib/ingredients';
 import { MEAL_CATEGORIES, type MealCategory } from '@lib/meals';
+import type { ActionType } from '@lib/ollama/actions/types';
 import type { AbortableAsyncIterator } from 'ollama';
 import type { ChatResponse, ProgressResponse } from 'ollama/browser';
 import { Ollama } from 'ollama/browser';
+import { INTENT_ACTION_PROMPT_DESCRIPTION, INTENT_ACTION_SHORT_DESCRIPTIONS, INTENT_ACTIONS } from './ollama.constants';
 
 const MIN_USER_MESSAGE_LENGTH = 100;
 const MIN_ASSISTANT_MESSAGE_LENGTH = 200;
@@ -25,20 +26,15 @@ You are Demmi's AI assistant, specialized in cooking, recipes, meal planning, an
 Your task: Classify the user's CURRENT message intent.
 
 Select ONE action that best matches what the user wants RIGHT NOW:
-- "general": User is asking questions, requesting tips, or having a discussion about cooking/nutrition
-- "createMeal": User explicitly wants to CREATE / MAKE / ADD / GENERATE a specific recipe, meal, or dish
+${INTENT_ACTIONS.map((a) => `- "${a}": ${INTENT_ACTION_PROMPT_DESCRIPTION[a]}`).join('\n')}
 
 IMPORTANT CLASSIFICATION RULES:
-- Only use "createMeal" when the user EXPLICITLY requests creation (e.g., "create a recipe for...", "make me a meal...", "generate a dish...")
-- Use "general" for ALL other interactions: questions about cooking, ingredient advice, nutrition tips, technique discussions, recipe modifications, etc.
 - Re-evaluate intent with EVERY message — users can transition between action types at any time
 - Focus ONLY on the user's CURRENT request, ignoring previous conversation context
 
 TRANSITION EXAMPLES (users can switch at any time):
 - Previous: "What's a good protein for breakfast?" (general) → Current: "Create an egg benedict recipe" (createMeal)
 - Previous: "Make me a pasta dish" (createMeal) → Current: "What's the difference between penne and rigatoni?" (general)
-- Previous: "Generate a salad recipe" (createMeal) → Current: "How long do tomatoes last?" (general)
-- Previous: "Tell me about sourdough" (general) → Current: "Make me a sourdough bread recipe" (createMeal)
 
 Each message is independent — classify based on what the user wants NOW.
 `;
@@ -49,9 +45,9 @@ const INTENT_DETECTION_SCHEMA: Record<string, unknown> = {
   properties: {
     action: {
       type: 'string',
-      enum: ['general', 'createMeal'],
+      enum: INTENT_ACTIONS,
       description:
-        'The type of user intent: "general" for conversation or "createMeal" for meal creation',
+        `The type of user intent:\n{${INTENT_ACTIONS.map((a) => `— "${a}": ${INTENT_ACTION_SHORT_DESCRIPTIONS[a]}`).join('\n')}}`,
     },
   },
 };
