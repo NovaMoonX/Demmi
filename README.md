@@ -43,6 +43,7 @@ A cooking app powered with local LLM using Ollama.
 - **Per-message Model Tracking**: Each assistant message stores which Ollama model generated it, shown as a monospace badge when details are visible
 - **Meal-Focused System Prompt**: The assistant is instructed to focus on cooking, recipes, meal planning, ingredients, and nutrition
 - **Ollama Status Indicator**: The model selector shows "Connecting to Ollama..." on load, "⚠️ Ollama offline" if the service is unreachable, and falls back gracefully with an error message in chat
+- **Summary-Based Intent Detection**: After each general response, a concise 2-3 sentence summary of the exchange is generated asynchronously (non-blocking). Intent detection uses the last 10 summaries as context — keeping token usage consistent (~200 tokens) regardless of conversation length and significantly improving performance. Falls back to full message history when no summaries are available.
 - **Full Conversation Context**: Each request sends the full conversation history (including the original structured JSON for assistant messages) so the assistant can reference and iterate on previous proposals
 - **AI Chat Interface**: Modern ChatGPT-style interface for cooking assistance
 - **Message Bubbles**: User messages (orange) and assistant responses (gray) with distinct styling

@@ -1,5 +1,6 @@
 import type { ChatMessage } from '@lib/chat';
 import type { AgentMealProposal } from '@lib/chat/agent-actions.types';
+import type { ActionType } from '@lib/ollama/actions/types';
 import {
   INGREDIENT_TYPES,
   MEASUREMENT_UNITS,
@@ -11,43 +12,46 @@ import type { AbortableAsyncIterator } from 'ollama';
 import type { ChatResponse, ProgressResponse } from 'ollama/browser';
 import { Ollama } from 'ollama/browser';
 
+const MIN_USER_MESSAGE_LENGTH = 100;
+const MIN_ASSISTANT_MESSAGE_LENGTH = 200;
+const MAX_RECENT_SUMMARIES = 10;
+
 /**
- * Phase 1a — action detection only.
- * The AI classifies the user's intent into one of the supported action types.
+ * Intent detection — classifies the user's current message into a supported action type.
  */
-const ACTION_DETECTION_PROMPT = `
+const INTENT_DETECTION_PROMPT = `
 You are Demmi's AI assistant, specialized in cooking, recipes, meal planning, and nutrition.
 
 Your task: Classify the user's CURRENT message intent.
 
 Select ONE action that best matches what the user wants RIGHT NOW:
 - "general": User is asking questions, requesting tips, or having a discussion about cooking/nutrition
-- "wantsToCreateMeal": User explicitly wants to CREATE / MAKE / ADD / GENERATE a specific recipe, meal, or dish
+- "createMeal": User explicitly wants to CREATE / MAKE / ADD / GENERATE a specific recipe, meal, or dish
 
 IMPORTANT CLASSIFICATION RULES:
-- Only use "wantsToCreateMeal" when the user EXPLICITLY requests creation (e.g., "create a recipe for...", "make me a meal...", "generate a dish...")
+- Only use "createMeal" when the user EXPLICITLY requests creation (e.g., "create a recipe for...", "make me a meal...", "generate a dish...")
 - Use "general" for ALL other interactions: questions about cooking, ingredient advice, nutrition tips, technique discussions, recipe modifications, etc.
 - Re-evaluate intent with EVERY message — users can transition between action types at any time
 - Focus ONLY on the user's CURRENT request, ignoring previous conversation context
 
 TRANSITION EXAMPLES (users can switch at any time):
-- Previous: "What's a good protein for breakfast?" (general) → Current: "Create an egg benedict recipe" (wantsToCreateMeal)
-- Previous: "Make me a pasta dish" (wantsToCreateMeal) → Current: "What's the difference between penne and rigatoni?" (general)
-- Previous: "Generate a salad recipe" (wantsToCreateMeal) → Current: "How long do tomatoes last?" (general)
-- Previous: "Tell me about sourdough" (general) → Current: "Make me a sourdough bread recipe" (wantsToCreateMeal)
+- Previous: "What's a good protein for breakfast?" (general) → Current: "Create an egg benedict recipe" (createMeal)
+- Previous: "Make me a pasta dish" (createMeal) → Current: "What's the difference between penne and rigatoni?" (general)
+- Previous: "Generate a salad recipe" (createMeal) → Current: "How long do tomatoes last?" (general)
+- Previous: "Tell me about sourdough" (general) → Current: "Make me a sourdough bread recipe" (createMeal)
 
 Each message is independent — classify based on what the user wants NOW.
 `;
 
-const ACTION_DETECTION_SCHEMA: Record<string, unknown> = {
+const INTENT_DETECTION_SCHEMA: Record<string, unknown> = {
   type: 'object',
   required: ['action'],
   properties: {
     action: {
       type: 'string',
-      enum: ['general', 'wantsToCreateMeal'],
+      enum: ['general', 'createMeal'],
       description:
-        'The type of user intent: "general" for conversation or "wantsToCreateMeal" for meal creation',
+        'The type of user intent: "general" for conversation or "createMeal" for meal creation',
     },
   },
 };
@@ -196,39 +200,89 @@ export async function listLocalModels(): Promise<string[]> {
 }
 
 /**
- * Phase 1a: Detect the user's action type (non-streaming).
- * Returns the action classification: 'general' or 'wantsToCreateMeal'.
+ * Generate a 2-3 sentence summary of a user/assistant exchange.
+ * Async and non-blocking — returns empty string for short exchanges or on error.
  */
-export async function detectAction(
+export async function generateSummary(
   model: string,
-  messages: ChatMessage[],
-): Promise<'general' | 'wantsToCreateMeal' | null> {
-  const ollamaMessages = [
-    ...messages.map((m) => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.rawContent ?? m.content,
-    })),
-        { role: 'system' as const, content: ACTION_DETECTION_PROMPT },
-  ];
+  userMessage: string,
+  assistantMessage: string,
+): Promise<string> {
+  if (userMessage.length < MIN_USER_MESSAGE_LENGTH && assistantMessage.length < MIN_ASSISTANT_MESSAGE_LENGTH) {
+    return '';
+  }
 
   try {
-    const response = await ollamaClient.chat({
+    const response = await ollamaClient.generate({
       model,
-      messages: ollamaMessages,
+      prompt: `Summarize this exchange in 2-3 sentences. Include key topics, requests, and important context:\n\nUser: ${userMessage}\n\nAssistant: ${assistantMessage}\n\nSummary:`,
       stream: false,
-      format: ACTION_DETECTION_SCHEMA,
     });
 
-    const parsed = JSON.parse(response.message.content);
+    return response.response.trim();
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Detect the user's action type using summaries for context when available.
+ * Uses generate() API for classification. Falls back to full messages if no summaries exist.
+ * Returns the ActionType: 'general' | 'createMeal'.
+ */
+export async function detectIntent(
+  model: string,
+  messages: ChatMessage[],
+): Promise<ActionType> {
+  const recentSummaries = messages
+    .slice(-MAX_RECENT_SUMMARIES)
+    .filter((m) => m.summary)
+    .map((m) => m.summary)
+    .join('\n');
+
+  const lastMessage = messages[messages.length - 1];
+  const currentMessage = lastMessage?.rawContent ?? lastMessage?.content ?? '';
+
+  let prompt: string;
+
+  if (recentSummaries) {
+    prompt = `${INTENT_DETECTION_PROMPT}
+Recent context:
+${recentSummaries}
+
+Current user message:
+${currentMessage}
+
+Classify the current message intent.`;
+  } else {
+    const conversationText = messages
+      .map((m) => `${m.role}: ${m.rawContent ?? m.content}`)
+      .join('\n');
+    prompt = `${INTENT_DETECTION_PROMPT}
+Conversation:
+${conversationText}
+
+Classify the current message intent.`;
+  }
+
+  try {
+    const response = await ollamaClient.generate({
+      model,
+      prompt,
+      format: INTENT_DETECTION_SCHEMA,
+      stream: false,
+    });
+
+    const parsed = JSON.parse(response.response);
     const action = parsed?.action;
 
-    if (action === 'general' || action === 'wantsToCreateMeal') {
+    if (action === 'general' || action === 'createMeal') {
       return action;
     }
 
-    return null;
+    return 'general';
   } catch {
-    return null;
+    return 'general';
   }
 }
 
