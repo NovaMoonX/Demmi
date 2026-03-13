@@ -243,7 +243,7 @@ const generateInstructionsStep: ActionStep<MealResult, 'generateInstructions'> =
   },
 };
 
-export const createMealAction: ActionHandler<MealResult, MealStepName> = {
+export const createMealAction = {
   type: 'createMeal',
   description: 'Create a new meal recipe with ingredients and instructions',
   isMultiStep: true,
@@ -323,4 +323,4 @@ export const createMealAction: ActionHandler<MealResult, MealStepName> = {
     const content = `I've generated a recipe for **${name}**. Review it below and save it to your collection!`;
     return { content };
   },
-};
+} satisfies ActionHandler<MealResult, MealStepName>;

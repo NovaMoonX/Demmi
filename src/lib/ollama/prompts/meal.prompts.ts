@@ -1,10 +1,13 @@
+import { INGREDIENT_TYPES, MEASUREMENT_UNITS } from '@/lib/ingredients';
+import { MEAL_CATEGORIES } from '@/lib/meals';
+
 export const MEAL_NAME_PROMPT = `You are Demmi's AI assistant specialized in cooking and recipes.
 
 Extract or infer the meal name from the user's request.
 
 Rules:
 - Be specific (e.g. "Spaghetti Carbonara" not "pasta")
-- 1–4 words maximum
+- 1-4 words maximum
 - Use proper capitalization
 - If the name is not explicitly provided, infer it from context
 
@@ -15,8 +18,8 @@ export const MEAL_INFO_PROMPT = `You are Demmi's AI assistant specialized in coo
 Given the meal name, provide basic recipe metadata.
 
 Rules:
-- category: one of breakfast | lunch | dinner | snack | dessert | drink
-- servings: realistic serving count (integer, 1–12)
+- category: one of ${MEAL_CATEGORIES.join(' | ')}
+- servings: realistic serving count (integer, 1-12)
 - totalTime: total cooking + prep time in minutes (integer)
 
 Respond with JSON: { "category": "dinner", "servings": 4, "totalTime": 35 }`;
@@ -26,7 +29,7 @@ export const MEAL_DESCRIPTION_PROMPT = `You are Demmi's AI assistant specialized
 Write a short, appetizing description for the meal.
 
 Rules:
-- 1–2 sentences only
+- 1-2 sentences only
 - Highlight key flavors, textures, or what makes it special
 - Friendly and enticing tone
 
@@ -38,8 +41,8 @@ List all ingredients needed for the meal based on the name and servings.
 
 Rules:
 - Include every ingredient with a realistic amount (e.g. "2 cloves", "200g", "1 cup")
-- Use the most appropriate type: meat | produce | dairy | grains | legumes | oils | spices | nuts | seafood | other
-- Use the most appropriate unit: lb | oz | kg | g | cup | tbsp | tsp | piece | ml | l | other
+- Use the most appropriate type: ${INGREDIENT_TYPES.join(' | ')}
+- Use the most appropriate unit: ${MEASUREMENT_UNITS.join(' | ')}
 - servings: numeric quantity in the chosen unit (e.g. 2.0, 0.5, 200.0)
 - Scale amounts to match the servings count
 

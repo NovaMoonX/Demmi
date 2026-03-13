@@ -54,7 +54,7 @@ interface ActionHandlerBase<ResultType extends Record<string, unknown>> {
   onComplete?: (
     context: StepContext<ResultType>,
     runtime: StepRuntime,
-    result: ResultType,
+    result: Partial<ResultType>,
   ) => void;
 }
 
@@ -82,12 +82,14 @@ interface SingleStepActionHandler<
   };
 }
 
+export const MULTI_STEP_ACTION_HANDLER_ERROR = 'MultiStepActionHandler requires ValidStepNames';
+
 // This type ensures that if `isMultiStep` is true and steps are provided
 // then `ValidStepNames` must be provided to the action handler,
 // where `ValidStepNames` is a union of string literals representing
 // the valid step names for that handler.
 type RequireStepNames<T extends string> = [T] extends [never]
-  ? 'MultiStepActionHandler requires ValidStepNames'
+  ? typeof MULTI_STEP_ACTION_HANDLER_ERROR
   : T;
 
 interface MultiStepActionHandler<

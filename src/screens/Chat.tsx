@@ -34,6 +34,7 @@ import {
   generateSummary,
   generateRecipe,
   getActionHandler,
+  ActionHandler,
 } from '@lib/ollama';
 import { generatedId } from '@utils/generatedId';
 
@@ -448,20 +449,48 @@ export function Chat() {
         throw new Error(`No handler found for intent: ${intent}`);
       }
 
-      handler?.onStart?.(context, runtime);
 
       if (handler.isMultiStep) {
+        handler.onStart(context, runtime);
+        type ExtractValidStepNames<T> =
+          T extends ActionHandler<infer _, infer ValidStepNames>
+            ? ValidStepNames
+            : never;
+
+        type ExtractResultType<T> =
+          T extends ActionHandler<infer ResultType, infer _>
+            ? ResultType
+            : never;
+
+        type ValidStepNames = ExtractValidStepNames<typeof handler>;
+        type ResultType = ExtractResultType<typeof handler>;
+
         firstTokenReceivedRef.current = true;
 
-        const completedStepNames: string[] = [];
-        const accumulatedResult: Record<string, unknown> = {};
+        const completedStepNames: ValidStepNames[] = [];
+        const accumulatedResult: Partial<ResultType> = {};
 
         for (const step of handler.steps) {
+          // if (step.name === MULTI_STEP_ACTION_HANDLER_ERROR) {
+          //   console.warn(`Multi-step action handler is missing ValidStepNames. Please provide a union of string literals representing the valid step names for this handler.`, step);
+          //   continue
+          // }
+
           if (abortController.signal.aborted) break;
 
-          const stepContext = { ...context, previousResults: accumulatedResult };
-          const rawStepResult = await step.execute(modelUsed, stepContext, runtime);
-          const stepResult = rawStepResult as { data: Record<string, unknown>; cancelled?: boolean };
+          const stepContext = {
+            ...context,
+            previousResults: accumulatedResult,
+          };
+          const rawStepResult = await step.execute(
+            modelUsed,
+            stepContext,
+            runtime,
+          );
+          const stepResult = rawStepResult as {
+            data: Record<string, unknown>;
+            cancelled?: boolean;
+          };
 
           if (stepResult.cancelled) {
             step.onCancel?.(stepContext, runtime);
@@ -472,16 +501,25 @@ export function Chat() {
           completedStepNames.push(step.name);
         }
 
-        if (abortController.signal.aborted || completedStepNames.length < handler.steps.length) {
-          handler.onCancel?.(context, runtime, completedStepNames as never[]);
+        if (
+          abortController.signal.aborted ||
+          completedStepNames.length < handler.steps.length
+        ) {
+          handler.onCancel?.(context, runtime, completedStepNames);
         } else {
-          handler.onComplete?.(context, runtime, accumulatedResult as never);
+          handler.onComplete?.(context, runtime, accumulatedResult);
 
           const messageContentUpdates =
-            handler.getUpdatedMessageContentFromResult?.(accumulatedResult as never);
+            handler.getUpdatedMessageContentFromResult?.(
+              accumulatedResult as never,
+            );
 
           if (messageContentUpdates) {
-            generateSummary(modelUsed, messageContent, messageContentUpdates.content)
+            generateSummary(
+              modelUsed,
+              messageContent,
+              messageContentUpdates.content,
+            )
               .then((summary) => {
                 if (summary) {
                   dispatch(
@@ -518,7 +556,11 @@ export function Chat() {
             }),
           );
 
-          generateSummary(modelUsed, messageContent, messageContentUpdates.content)
+          generateSummary(
+            modelUsed,
+            messageContent,
+            messageContentUpdates.content,
+          )
             .then((summary) => {
               if (summary) {
                 dispatch(
