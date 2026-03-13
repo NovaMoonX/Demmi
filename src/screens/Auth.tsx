@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthForm } from '@moondreamsdev/dreamer-ui/components';
+import { AuthForm, Button } from '@moondreamsdev/dreamer-ui/components';
 import { useAuth } from '@hooks/useAuth';
 import { useAppDispatch, useAppSelector } from '@store/hooks';
 import { startDemoSession } from '@store/slices/demoSlice';
@@ -85,6 +85,15 @@ export function Auth() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/')}
+          >
+            ← Back to Home
+          </Button>
+        </div>
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-3xl font-bold text-foreground">
             Welcome to Demmi
