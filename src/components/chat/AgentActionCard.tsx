@@ -4,9 +4,11 @@ import type {
   AgentCreateMealAction,
   AgentMealProposal,
   AgentIngredientProposal,
+  AgentPartialRecipe,
   CreateMealAgentActionStatus,
 } from '@lib/ollama/action-types/createMealAction.types';
 import { MEAL_CATEGORY_COLORS, MEAL_CATEGORY_EMOJIS } from '@lib/meals';
+import type { MealCategory } from '@lib/meals';
 import { INGREDIENT_TYPE_EMOJIS } from '@lib/ingredients';
 
 const GENERATING_STATUSES = new Set<CreateMealAgentActionStatus>([
@@ -97,6 +99,78 @@ function IngredientList({ ingredients }: { ingredients: AgentIngredientProposal[
   );
 }
 
+function PartialIngredientList({ ingredients }: { ingredients: Array<{ name: string; amount: string }> }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        Ingredients
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {ingredients.map((ing, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs bg-muted text-muted-foreground"
+          >
+            <span className="font-medium">{ing.name}</span>
+            <span className="opacity-70">{ing.amount}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PartialRecipeCard({ recipe }: { recipe: AgentPartialRecipe }) {
+  const showCategory = recipe.category != null;
+  const showDescription = recipe.description != null && recipe.description !== '';
+  const showIngredients = recipe.ingredients != null && recipe.ingredients.length > 0;
+  const showInstructions = recipe.instructions != null && recipe.instructions.length > 0;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          {recipe.name && (
+            <h4 className="font-semibold text-foreground text-base">{recipe.name}</h4>
+          )}
+          {showDescription && (
+            <p className="text-sm text-muted-foreground mt-0.5 line-clamp-3">{recipe.description}</p>
+          )}
+        </div>
+        {showCategory && (
+          <span className="text-2xl shrink-0">{MEAL_CATEGORY_EMOJIS[recipe.category as MealCategory]}</span>
+        )}
+      </div>
+
+      {showCategory && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="base" className={join('capitalize', MEAL_CATEGORY_COLORS[recipe.category as MealCategory])}>
+            {recipe.category}
+          </Badge>
+          {recipe.totalTime != null && (
+            <span className="text-xs text-muted-foreground">{recipe.totalTime}m total</span>
+          )}
+          {recipe.servings != null && (
+            <span className="text-xs text-muted-foreground">
+              {recipe.servings} {recipe.servings === 1 ? 'serving' : 'servings'}
+            </span>
+          )}
+        </div>
+      )}
+
+      {showIngredients && (
+        <PartialIngredientList ingredients={recipe.ingredients ?? []} />
+      )}
+
+      {showInstructions && (
+        <div className="text-xs text-muted-foreground">
+          {(recipe.instructions?.length ?? 0)} instruction {(recipe.instructions?.length ?? 0) === 1 ? 'step' : 'steps'}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AgentActionCard({
   action,
   onConfirmIntent,
@@ -138,9 +212,15 @@ export function AgentActionCard({
   if (GENERATING_STATUSES.has(action.status)) {
     const name = (action.proposedName || action.recipe?.name) ?? 'your recipe';
     const stepLabel = STEP_LABELS[action.status] ?? 'Generating recipe…';
+    const recipe = action.recipe;
+    const hasPartialData = recipe?.name != null && recipe.name !== '';
 
     return (
-      <div className="mt-3 flex flex-col gap-2 rounded-xl border border-border bg-card/50 p-4">
+      <div className="mt-3 flex flex-col gap-3 rounded-xl border border-border bg-card/50 p-4">
+        {hasPartialData && recipe && (
+          <PartialRecipeCard recipe={recipe} />
+        )}
+
         <div className="flex items-center gap-3">
           <div className="flex gap-1 text-muted-foreground">
             <span className="animate-bounce text-sm">●</span>
@@ -148,9 +228,11 @@ export function AgentActionCard({
             <span className="animate-bounce text-sm [animation-delay:0.3s]">●</span>
           </div>
           <div className="flex flex-col gap-0.5">
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{name}</span>
-            </p>
+            {!hasPartialData && (
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{name}</span>
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">{stepLabel}</p>
           </div>
         </div>
@@ -209,6 +291,21 @@ export function AgentActionCard({
   }
 
   if (action.status === 'cancelled') {
+    const recipe = action.recipe;
+    const hasPartialData = recipe?.name != null && recipe.name !== '';
+
+    if (hasPartialData && recipe) {
+      return (
+        <div className="mt-3 flex flex-col gap-3 rounded-xl border border-border bg-muted/30 p-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">✕</span>
+            <span className="text-sm text-muted-foreground">Generation cancelled — partial recipe below</span>
+          </div>
+          <PartialRecipeCard recipe={recipe} />
+        </div>
+      );
+    }
+
     return (
       <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-4 py-3">
         <span className="text-sm text-muted-foreground">Recipe generation was cancelled</span>
@@ -218,3 +315,4 @@ export function AgentActionCard({
 
   return null;
 }
+

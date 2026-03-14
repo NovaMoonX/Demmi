@@ -1,4 +1,4 @@
-import { updateMessageContent, updateAgentActionStatus } from '@store/slices/chatsSlice';
+import { updateMessageContent, updateAgentActionStatus, updateRecipeStep, cancelRecipeGeneration } from '@store/slices/chatsSlice';
 import type { MealCategory } from '@lib/meals';
 import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
 import { ollamaClient } from '../ollama.service';
@@ -75,6 +75,15 @@ const proposeNameStep: ActionStep<MealResult, 'proposeName'> = {
     const parsed = JSON.parse(response.message.content);
     const name: string = parsed.name ?? '';
 
+    runtime.dispatch(
+      updateRecipeStep({
+        chatId: context.chatId,
+        messageId: context.messageId,
+        step: 'name',
+        data: { name },
+      }),
+    );
+
     return { stepName: 'proposeName', data: { name } };
   },
 };
@@ -117,6 +126,19 @@ const generateBasicInfoStep: ActionStep<MealResult, 'generateBasicInfo'> = {
       totalTime: Number(parsed.totalTime) || 30,
     };
 
+    runtime.dispatch(
+      updateRecipeStep({
+        chatId: context.chatId,
+        messageId: context.messageId,
+        step: 'info',
+        data: {
+          category: result.category,
+          servings: result.servings,
+          totalTime: result.totalTime,
+        },
+      }),
+    );
+
     return { stepName: 'generateBasicInfo', data: result };
   },
 };
@@ -154,6 +176,15 @@ const generateDescriptionStep: ActionStep<MealResult, 'generateDescription'> = {
 
     const parsed = JSON.parse(response.message.content);
     const description: string = parsed.description ?? '';
+
+    runtime.dispatch(
+      updateRecipeStep({
+        chatId: context.chatId,
+        messageId: context.messageId,
+        step: 'description',
+        data: { description },
+      }),
+    );
 
     return { stepName: 'generateDescription', data: { description } };
   },
@@ -193,6 +224,20 @@ const generateIngredientsStep: ActionStep<MealResult, 'generateIngredients'> = {
 
     const parsed = JSON.parse(response.message.content);
     const ingredients = Array.isArray(parsed.ingredients) ? parsed.ingredients : [];
+
+    runtime.dispatch(
+      updateRecipeStep({
+        chatId: context.chatId,
+        messageId: context.messageId,
+        step: 'ingredients',
+        data: {
+          ingredients: ingredients.map((i: { name: string; servings: number; unit: string }) => ({
+            name: i.name,
+            amount: `${i.servings} ${i.unit}`,
+          })),
+        },
+      }),
+    );
 
     return { stepName: 'generateIngredients', data: { ingredients } };
   },
@@ -238,6 +283,15 @@ const generateInstructionsStep: ActionStep<MealResult, 'generateInstructions'> =
 
     const parsed = JSON.parse(response.message.content);
     const instructions: string[] = Array.isArray(parsed.steps) ? parsed.steps : [];
+
+    runtime.dispatch(
+      updateRecipeStep({
+        chatId: context.chatId,
+        messageId: context.messageId,
+        step: 'instructions',
+        data: { instructions },
+      }),
+    );
 
     return { stepName: 'generateInstructions', data: { instructions } };
   },
@@ -311,13 +365,7 @@ export const createMealAction = {
   onCancel(context, runtime, completedSteps) {
     const { chatId, messageId } = context;
     console.log(`Recipe generation cancelled after: ${completedSteps.join(', ')}`);
-    runtime.dispatch(
-      updateMessageContent({
-        chatId,
-        messageId,
-        content: '❌ Recipe generation was cancelled.',
-      }),
-    );
+    runtime.dispatch(cancelRecipeGeneration({ chatId, messageId }));
   },
 
   getUpdatedMessageContentFromResult(result) {
