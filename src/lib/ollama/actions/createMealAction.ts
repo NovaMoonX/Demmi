@@ -1,7 +1,6 @@
 import { updateMessageContent, updateAgentActionStatus } from '@store/slices/chatsSlice';
 import type { MealCategory } from '@lib/meals';
 import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
-import type { AgentMealProposal } from '@lib/chat/agent-actions.types';
 import { ollamaClient } from '../ollama.service';
 import {
   MEAL_NAME_PROMPT,
@@ -18,6 +17,7 @@ import {
   MEAL_INSTRUCTIONS_SCHEMA,
 } from '../schemas/meal.schemas';
 import type { ActionHandler, ActionStep, StepContext, StepResult, StepRuntime } from './types';
+import { AgentMealProposal } from '../action-types/createMealAction.types';
 
 const MAX_CONTEXT_MESSAGES = 3;
 
@@ -265,9 +265,11 @@ export const createMealAction = {
         content: '🍳 Generating recipe...',
         agentAction: {
           type: 'create_meal',
-          status: 'generating',
+          status: 'generating_name',
           proposedName: '',
           meals: [],
+          recipe: null,
+          completedSteps: null,
         },
       }),
     );

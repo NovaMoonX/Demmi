@@ -2,10 +2,11 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ChatConversation, ChatMessage } from '@lib/chat';
 import type {
   AgentAction,
-  AgentActionStatus,
   AgentCreateMealAction,
   AgentMealProposal,
-} from '@lib/chat/agent-actions.types';
+  AgentPartialRecipe,
+  RecipeStep,
+} from '@lib/ollama/action-types/createMealAction.types';
 import { generatedId } from '@utils/generatedId';
 import {
   fetchChats,
@@ -15,6 +16,7 @@ import {
   addChatMessage,
   fetchChatMessages,
 } from '@store/actions/chatActions';
+import { AgentActionStatus } from '@/lib/ollama/action-types';
 
 interface ChatsState {
   conversations: ChatConversation[];
@@ -26,6 +28,16 @@ const initialState: ChatsState = {
   conversations: [],
   currentChatId: null,
   selectedModel: null,
+};
+
+const EMPTY_PARTIAL_RECIPE: AgentPartialRecipe = {
+  name: null,
+  category: null,
+  servings: null,
+  totalTime: null,
+  description: null,
+  ingredients: null,
+  instructions: null,
 };
 
 const chatsSlice = createSlice({
@@ -212,6 +224,62 @@ const chatsSlice = createSlice({
         }
       }
     },
+    startRecipeGeneration: (
+      state,
+      action: PayloadAction<{ chatId: string; messageId: string }>,
+    ) => {
+      const chat = state.conversations.find((c) => c.id === action.payload.chatId);
+      const message = chat?.messages.find((m) => m.id === action.payload.messageId);
+      if (message?.agentAction) {
+        (message.agentAction as AgentCreateMealAction).status = 'generating_name';
+        (message.agentAction as AgentCreateMealAction).recipe = { ...EMPTY_PARTIAL_RECIPE };
+        (message.agentAction as AgentCreateMealAction).completedSteps = [];
+      }
+    },
+    updateRecipeStep: (
+      state,
+      action: PayloadAction<{
+        chatId: string;
+        messageId: string;
+        step: RecipeStep;
+        data: Partial<AgentPartialRecipe>;
+      }>,
+    ) => {
+      // Maps each completed step to the next generation status.
+      // 'instructions' is the final step — status stays at 'generating_instructions'
+      // until createMealAction.onComplete transitions to 'pending_approval'.
+      const stepStatusMap: Partial<Record<RecipeStep, AgentActionStatus>> = {
+        name: 'generating_info',
+        info: 'generating_description',
+        description: 'generating_ingredients',
+        ingredients: 'generating_instructions',
+      };
+
+      const chat = state.conversations.find((c) => c.id === action.payload.chatId);
+      const message = chat?.messages.find((m) => m.id === action.payload.messageId);
+      const agentAction = message?.agentAction as AgentCreateMealAction | undefined;
+      if (agentAction) {
+        agentAction.recipe = { ...(agentAction.recipe ?? { ...EMPTY_PARTIAL_RECIPE }), ...action.payload.data };
+        agentAction.completedSteps = [
+          ...(agentAction.completedSteps ?? []),
+          action.payload.step,
+        ];
+        const nextStatus = stepStatusMap[action.payload.step];
+        if (nextStatus !== undefined) {
+          agentAction.status = nextStatus;
+        }
+      }
+    },
+    cancelRecipeGeneration: (
+      state,
+      action: PayloadAction<{ chatId: string; messageId: string }>,
+    ) => {
+      const chat = state.conversations.find((c) => c.id === action.payload.chatId);
+      const message = chat?.messages.find((m) => m.id === action.payload.messageId);
+      if (message?.agentAction) {
+        (message.agentAction as AgentCreateMealAction).status = 'cancelled';
+      }
+    },
     resetChats: (state) => {
       state.conversations = [];
       state.currentChatId = null;
@@ -281,6 +349,9 @@ export const {
   updateMessageContent,
   updateAgentActionStatus,
   updateMessageSummary,
+  startRecipeGeneration,
+  updateRecipeStep,
+  cancelRecipeGeneration,
   resetChats,
 } = chatsSlice.actions;
 

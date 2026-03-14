@@ -160,7 +160,7 @@ export function Chat() {
     }
 
     dispatch(
-      updateAgentActionStatus({ chatId, messageId, status: 'generating' }),
+      updateAgentActionStatus({ chatId, messageId, status: 'generating_name' }),
     );
 
     try {
