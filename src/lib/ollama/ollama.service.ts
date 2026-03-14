@@ -1,5 +1,4 @@
 import type { ChatMessage } from '@lib/chat';
-import type { AgentMealProposal } from '@lib/chat/agent-actions.types';
 import {
   INGREDIENT_TYPES,
   MEASUREMENT_UNITS,
@@ -12,6 +11,7 @@ import type { AbortableAsyncIterator } from 'ollama';
 import type { ChatResponse, ProgressResponse } from 'ollama/browser';
 import { Ollama } from 'ollama/browser';
 import { INTENT_ACTION_PROMPT_DESCRIPTION, INTENT_ACTION_SHORT_DESCRIPTIONS, INTENT_ACTIONS } from './ollama.constants';
+import { AgentMealProposal } from './action-types/createMealAction.types';
 
 const MIN_USER_MESSAGE_LENGTH = 100;
 const MIN_ASSISTANT_MESSAGE_LENGTH = 200;

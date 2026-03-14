@@ -7,7 +7,7 @@ import type {
   AgentMealProposal,
   AgentPartialRecipe,
   RecipeStep,
-} from '@lib/chat/agent-actions.types';
+} from '@lib/ollama/action-types/createMealAction.types';
 import { generatedId } from '@utils/generatedId';
 import {
   fetchChats,

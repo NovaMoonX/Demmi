@@ -5,7 +5,7 @@ import type {
   AgentMealProposal,
   AgentIngredientProposal,
   CreateMealAgentActionStatus,
-} from '@lib/chat/agent-actions.types';
+} from '@lib/ollama/action-types/createMealAction.types';
 import { MEAL_CATEGORY_COLORS, MEAL_CATEGORY_EMOJIS } from '@lib/meals';
 import { INGREDIENT_TYPE_EMOJIS } from '@lib/ingredients';
 
