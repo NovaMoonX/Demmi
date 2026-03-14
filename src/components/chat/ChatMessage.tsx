@@ -1,8 +1,8 @@
-import ReactMarkdown from 'react-markdown';
-import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { ChatMessage as ChatMessageType } from '@lib/chat';
 import { CopyButton } from '@moondreamsdev/dreamer-ui/components';
-import { AgentActionCard } from './AgentActionCard';
+import { join } from '@moondreamsdev/dreamer-ui/utils';
+import ReactMarkdown from 'react-markdown';
+import { CreateMealAgentActionCard } from './agent-action-cards/CreateMealAgentActionCard';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -37,6 +37,7 @@ export function ChatMessage({
   const messageContent = message.content.trim();
   const showActions = !isStreaming && messageContent !== '';
 
+  const displayAgentAction = message.agentAction && !isUser;
   return (
     <div
       className={join(
@@ -75,7 +76,7 @@ export function ChatMessage({
             ) : (
               <div className='prose prose-sm dark:prose-invert max-w-none'>
                 <ReactMarkdown>{messageContent}</ReactMarkdown>
-                {isStreaming && (
+                {isStreaming && !displayAgentAction && (
                   <span className='ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-current align-middle' />
                 )}
               </div>
@@ -83,13 +84,12 @@ export function ChatMessage({
           </div>
         )}
 
-        {!isStreaming &&
-          message.agentAction?.type === 'create_meal' &&
+        {message.agentAction?.type === 'create_meal' &&
           onConfirmIntent &&
           onRejectIntent &&
           onApproveAction &&
           onRejectAction && (
-            <AgentActionCard
+            <CreateMealAgentActionCard
               action={message.agentAction}
               onConfirmIntent={() => onConfirmIntent(message.id)}
               onRejectIntent={() => onRejectIntent(message.id)}
