@@ -30,8 +30,6 @@ export type CreateMealAgentActionStatus =
   | 'rejected'
   | 'cancelled';
 
-export type AgentActionStatus = CreateMealAgentActionStatus;
-
 export type RecipeStep = 'name' | 'info' | 'description' | 'ingredients' | 'instructions';
 
 export interface AgentIngredientProposal {
