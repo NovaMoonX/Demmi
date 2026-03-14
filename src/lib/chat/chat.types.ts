@@ -1,4 +1,4 @@
-import { AgentAction } from '../ollama/action-types/createMealAction.types';
+import { AgentAction } from '../ollama/action-types';
 
 export type MessageRole = 'user' | 'assistant';
 

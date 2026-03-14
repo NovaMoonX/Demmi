@@ -1,7 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ChatConversation, ChatMessage } from '@lib/chat';
 import type {
-  AgentAction,
   AgentCreateMealAction,
   AgentMealProposal,
   AgentPartialRecipe,
@@ -16,7 +15,7 @@ import {
   addChatMessage,
   fetchChatMessages,
 } from '@store/actions/chatActions';
-import { AgentActionStatus } from '@/lib/ollama/action-types';
+import { AgentAction, AgentActionStatus } from '@/lib/ollama/action-types';
 
 interface ChatsState {
   conversations: ChatConversation[];

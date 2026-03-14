@@ -69,7 +69,7 @@ A cooking app powered with local LLM using Ollama.
 - **Automatic Ingredient Creation**: Approving a proposal auto-creates any ingredients that don't yet exist in your inventory, with sensible defaults (nutrients at 0, amount at 0 — editable later)
 - **Decline**: Clicking **Decline** marks the proposal as dismissed — the card shows a "Declined" badge and the buttons are removed
 - **Iterate**: The proposal is a conversation — reply in the chat to refine it (e.g. *"Make it vegetarian"* or *"Change servings to 6"*) and the AI generates a fresh proposal
-- **Extensible Design**: The agent action system (`AgentAction` type + `AgentActionCard` component) is architected to support additional action types beyond meal creation in the future
+- **Extensible Design**: The agent action system (`AgentAction` type + `CreateMealAgentActionCard` component) is architected to support additional action types beyond meal creation in the future
 
 ### 🍳 Cooking-Themed Design
 - **Orange Accent Color**: Warm, cooking-inspired orange accent color throughout the app

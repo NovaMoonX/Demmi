@@ -1,8 +1,8 @@
-import ReactMarkdown from 'react-markdown';
-import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { ChatMessage as ChatMessageType } from '@lib/chat';
 import { CopyButton } from '@moondreamsdev/dreamer-ui/components';
-import { AgentActionCard } from './AgentActionCard';
+import { join } from '@moondreamsdev/dreamer-ui/utils';
+import ReactMarkdown from 'react-markdown';
+import { CreateMealAgentActionCard } from './agent-action-cards/CreateMealAgentActionCard';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -89,7 +89,7 @@ export function ChatMessage({
           onRejectIntent &&
           onApproveAction &&
           onRejectAction && (
-            <AgentActionCard
+            <CreateMealAgentActionCard
               action={message.agentAction}
               onConfirmIntent={() => onConfirmIntent(message.id)}
               onRejectIntent={() => onRejectIntent(message.id)}

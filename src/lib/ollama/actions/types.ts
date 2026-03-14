@@ -1,6 +1,6 @@
 import type { ChatMessage } from '@lib/chat';
 import type { AppDispatch } from '@store/index';
-import { AgentAction } from '../action-types/createMealAction.types';
+import { AgentAction } from '../action-types';
 
 export type ActionType = 'general' | 'createMeal';
 

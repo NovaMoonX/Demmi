@@ -69,5 +69,3 @@ export interface AgentCreateMealAction {
   recipe: AgentPartialRecipe | null;
   completedSteps: RecipeStep[] | null;
 }
-
-export type AgentAction = AgentCreateMealAction;

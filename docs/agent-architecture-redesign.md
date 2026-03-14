@@ -1009,7 +1009,7 @@ export const MEAL_INSTRUCTIONS_SCHEMA = {
 };
 ```
 
-#### UI Updates (AgentActionCard)
+#### UI Updates (CreateMealAgentActionCard)
 
 ```typescript
 // New status states for multi-step progress
@@ -1025,8 +1025,8 @@ export type AgentActionStatus =
   | 'rejected'
   | 'cancelled'; // New: for interrupted generation
 
-// AgentActionCard shows progressive updates
-export function AgentActionCard({ action }: Props) {
+// CreateMealAgentActionCard shows progressive updates
+export function CreateMealAgentActionCard({ action }: Props) {
   if (action.status === 'generating_name') {
     return <LoadingState message="Thinking of a name..." />;
   }
@@ -1525,7 +1525,7 @@ const proposeNameStep: ActionStep = {
    - [ ] Add `cancelled` status
    - [ ] Handle partial recipe state
 
-5. **Update AgentActionCard for progressive UI**
+5. **Update CreateMealAgentActionCard for progressive UI**
    - [ ] Add UI for each generation state
    - [ ] Show loading indicators for current step
    - [ ] Display completed steps while generating next
