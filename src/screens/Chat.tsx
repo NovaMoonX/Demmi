@@ -34,7 +34,6 @@ import type { MealIngredient } from '@lib/meals';
 import {
   detectIntent,
   generateSummary,
-  getMealNameProposal,
   getActionHandler,
 } from '@lib/ollama';
 import type { RecipeStep } from '@lib/ollama/action-types/createMealAction.types';
@@ -555,7 +554,24 @@ export function Chat() {
       if (handler.isMultiStep) {
         firstTokenReceivedRef.current = true;
 
-        const proposedName = await getMealNameProposal(modelUsed, allMessages);
+        const stepResult = await handler.executeStep(
+          modelUsed,
+          'proposeName',
+          { messages: allMessages },
+          {
+            abortSignal: abortController.signal,
+            reduxSelector: (selector) => selector(store.getState()),
+          },
+        );
+
+        if (stepResult.cancelled) return;
+
+        const proposedNameFromStep = stepResult.data.name;
+        const proposedName =
+          typeof proposedNameFromStep === 'string' &&
+          proposedNameFromStep.trim().length > 0
+            ? proposedNameFromStep
+            : null;
 
         if (abortController.signal.aborted) return;
 

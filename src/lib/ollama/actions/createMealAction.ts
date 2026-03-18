@@ -276,6 +276,28 @@ export const createMealAction = {
 
   steps,
 
+  async executeStep(
+    model: string,
+    stepName: MealStepName,
+    context: ActionContext<MealResult>,
+    runtime: ActionRuntime,
+  ): Promise<StepResult<MealResult, MealStepName>> {
+    const step = steps.find((candidateStep) => candidateStep.name === stepName);
+
+    if (!step) {
+      throw new Error(`Unknown meal action step: ${stepName}`);
+    }
+
+    const stepResult = await step.execute(model, context, runtime);
+    const result: StepResult<MealResult, MealStepName> = {
+      stepName: stepResult.stepName,
+      data: stepResult.data,
+      cancelled: stepResult.cancelled,
+    };
+
+    return result;
+  },
+
   async execute(
     model: string,
     context: ActionContext<MealResult>,
