@@ -1,4 +1,5 @@
 import type { ChatMessage } from '@lib/chat';
+import type { RootState } from '@store/index';
 import { AgentAction } from '../action-types';
 
 export type ActionType = 'general' | 'createMeal';
@@ -14,9 +15,9 @@ export interface ActionRuntime {
   abortSignal?: AbortSignal;
   // For streaming single-step handlers: called with partial display content as it arrives.
   onProgress?: (content: string) => void;
-  // Selector that returns the current user's ingredient list so handlers can distinguish
-  // new ingredients from existing ones without importing the Redux store directly.
-  getExistingIngredients?: () => Array<{ id: string; name: string }>;
+  // Generic selector bridge to Redux state so any action/step can read store data
+  // without importing the Redux store directly.
+  reduxSelector?: <Selected>(selector: (state: RootState) => Selected) => Selected;
 }
 
 // Extended runtime for multi-step handlers — adds a per-step completion callback.

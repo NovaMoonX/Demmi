@@ -323,7 +323,9 @@ export const createMealAction = {
       const prepTime = Math.floor((accumulatedResult.totalTime ?? 30) * 0.4);
       const cookTime = Math.ceil((accumulatedResult.totalTime ?? 30) * 0.6);
 
-      const existingIngredients = runtime.getExistingIngredients?.() ?? [];
+      const existingIngredients = runtime.reduxSelector?.(
+        (state) => state.ingredients.items,
+      ) ?? [];
 
       const proposal: AgentMealProposal = {
         title: accumulatedResult.name ?? '',

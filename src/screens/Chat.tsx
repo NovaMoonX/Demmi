@@ -47,7 +47,6 @@ export function Chat() {
   const conversations = useAppSelector((state) => state.chats.conversations);
   const currentChatId = useAppSelector((state) => state.chats.currentChatId);
   const authUser = useAppSelector((state) => state.user.user);
-  const ingredients = useAppSelector((state) => state.ingredients.items);
   const [inputValue, setInputValue] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const isMobileDevice = useIsMobileDevice();
@@ -206,9 +205,8 @@ export function Chat() {
               }),
             );
           },
-          // Provide the current ingredient list so the action can mark each ingredient
-          // as new or existing without importing the Redux store into the action handler.
-          getExistingIngredients: () => ingredients,
+          // Provide generic read-only access to Redux state for action handlers.
+          reduxSelector: (selector) => selector(store.getState()),
         },
       );
 
@@ -586,6 +584,7 @@ export function Chat() {
           { messages: allMessages },
           {
             abortSignal: abortController.signal,
+            reduxSelector: (selector) => selector(store.getState()),
             // The handler streams partial content via this callback; the consumer owns the dispatch.
             onProgress: (content) => {
               dispatch(
