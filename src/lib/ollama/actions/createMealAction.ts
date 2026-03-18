@@ -1,5 +1,6 @@
 import type { MealCategory } from '@lib/meals';
 import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
+import { store } from '@store/index';
 import { ollamaClient } from '../ollama.service';
 import {
   MEAL_NAME_PROMPT,
@@ -345,9 +346,7 @@ export const createMealAction = {
       const prepTime = Math.floor((accumulatedResult.totalTime ?? 30) * 0.4);
       const cookTime = Math.ceil((accumulatedResult.totalTime ?? 30) * 0.6);
 
-      const existingIngredients = runtime.reduxSelector?.(
-        (state) => state.ingredients.items,
-      ) ?? [];
+      const existingIngredients = store.getState().ingredients.items;
 
       const proposal: AgentMealProposal = {
         title: accumulatedResult.name ?? '',

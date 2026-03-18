@@ -204,8 +204,6 @@ export function Chat() {
               }),
             );
           },
-          // Provide generic read-only access to Redux state for action handlers.
-          reduxSelector: (selector) => selector(store.getState()),
         },
       );
 
@@ -560,7 +558,6 @@ export function Chat() {
           { messages: allMessages },
           {
             abortSignal: abortController.signal,
-            reduxSelector: (selector) => selector(store.getState()),
           },
         );
 
@@ -600,7 +597,6 @@ export function Chat() {
           { messages: allMessages },
           {
             abortSignal: abortController.signal,
-            reduxSelector: (selector) => selector(store.getState()),
             // The handler streams partial content via this callback; the consumer owns the dispatch.
             onProgress: (content) => {
               dispatch(
