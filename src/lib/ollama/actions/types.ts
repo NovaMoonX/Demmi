@@ -14,6 +14,9 @@ export interface ActionRuntime {
   abortSignal?: AbortSignal;
   // For streaming single-step handlers: called with partial display content as it arrives.
   onProgress?: (content: string) => void;
+  // Selector that returns the current user's ingredient list so handlers can distinguish
+  // new ingredients from existing ones without importing the Redux store directly.
+  getExistingIngredients?: () => Array<{ id: string; name: string }>;
 }
 
 // Extended runtime for multi-step handlers — adds a per-step completion callback.
@@ -21,8 +24,6 @@ export interface MultiStepActionRuntime extends ActionRuntime {
   // Called after each step completes. `key` identifies the step (defined by the handler),
   // `data` is the partial result data for that step. The consumer uses this to update state.
   onStepComplete?: (key: string, data: Record<string, unknown>) => void;
-  // Returns the current user's ingredient list so the handler can distinguish new from existing.
-  getExistingIngredients?: () => Array<{ id: string; name: string }>;
 }
 
 export interface StepResult<
