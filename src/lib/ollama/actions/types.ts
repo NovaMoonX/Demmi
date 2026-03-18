@@ -21,6 +21,8 @@ export interface MultiStepActionRuntime extends ActionRuntime {
   // Called after each step completes. `key` identifies the step (defined by the handler),
   // `data` is the partial result data for that step. The consumer uses this to update state.
   onStepComplete?: (key: string, data: Record<string, unknown>) => void;
+  // Returns the current user's ingredient list so the handler can distinguish new from existing.
+  getExistingIngredients?: () => Array<{ id: string; name: string }>;
 }
 
 export interface StepResult<

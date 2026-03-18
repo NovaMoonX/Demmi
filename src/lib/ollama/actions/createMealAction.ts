@@ -323,6 +323,8 @@ export const createMealAction = {
       const prepTime = Math.floor((accumulatedResult.totalTime ?? 30) * 0.4);
       const cookTime = Math.ceil((accumulatedResult.totalTime ?? 30) * 0.6);
 
+      const existingIngredients = runtime.getExistingIngredients?.() ?? [];
+
       const proposal: AgentMealProposal = {
         title: accumulatedResult.name ?? '',
         description: accumulatedResult.description ?? '',
@@ -331,12 +333,19 @@ export const createMealAction = {
         cookTime,
         servingSize: accumulatedResult.servings ?? 4,
         imageUrl: '',
-        ingredients: (accumulatedResult.ingredients ?? []).map((ing) => ({
-          name: ing.name,
-          type: ing.type,
-          unit: ing.unit,
-          servings: ing.servings,
-        })),
+        ingredients: (accumulatedResult.ingredients ?? []).map((ing) => {
+          const match = existingIngredients.find(
+            (e) => e.name.toLowerCase() === ing.name.toLowerCase(),
+          );
+          return {
+            name: ing.name,
+            type: ing.type,
+            unit: ing.unit,
+            servings: ing.servings,
+            isNew: match === undefined,
+            existingIngredientId: match?.id ?? null,
+          };
+        }),
         instructions: accumulatedResult.instructions ?? [],
       };
 

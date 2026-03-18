@@ -205,6 +205,9 @@ export function Chat() {
               }),
             );
           },
+          // Provide the current ingredient list so the action can mark each ingredient
+          // as new or existing without importing the Redux store into the action handler.
+          getExistingIngredients: () => store.getState().ingredients.items,
         },
       );
 
@@ -338,33 +341,40 @@ export function Chat() {
         const mealIngredients: MealIngredient[] = [];
 
         for (const ingredientProposal of mealProposal.ingredients) {
-          const created = await dispatch(
-            createIngredient({
-              name: ingredientProposal.name,
-              type: ingredientProposal.type,
-              unit: ingredientProposal.unit,
-              imageUrl: '',
-              nutrients: {
-                protein: 0,
-                carbs: 0,
-                fat: 0,
-                fiber: 0,
-                sugar: 0,
-                sodium: 0,
-                calories: 0,
-              },
-              currentAmount: 0,
-              servingSize: 1,
-              otherUnit: null,
-              products: [],
-              defaultProductId: null,
-            }),
-          ).unwrap();
+          if (!ingredientProposal.isNew && ingredientProposal.existingIngredientId) {
+            mealIngredients.push({
+              ingredientId: ingredientProposal.existingIngredientId,
+              servings: ingredientProposal.servings,
+            });
+          } else {
+            const created = await dispatch(
+              createIngredient({
+                name: ingredientProposal.name,
+                type: ingredientProposal.type,
+                unit: ingredientProposal.unit,
+                imageUrl: '',
+                nutrients: {
+                  protein: 0,
+                  carbs: 0,
+                  fat: 0,
+                  fiber: 0,
+                  sugar: 0,
+                  sodium: 0,
+                  calories: 0,
+                },
+                currentAmount: 0,
+                servingSize: 1,
+                otherUnit: null,
+                products: [],
+                defaultProductId: null,
+              }),
+            ).unwrap();
 
-          mealIngredients.push({
-            ingredientId: created.id,
-            servings: ingredientProposal.servings,
-          });
+            mealIngredients.push({
+              ingredientId: created.id,
+              servings: ingredientProposal.servings,
+            });
+          }
         }
 
         await dispatch(
