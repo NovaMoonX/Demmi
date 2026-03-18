@@ -47,6 +47,7 @@ Rules:
 - Use the most appropriate unit: ${MEASUREMENT_UNITS.join(' | ')}
 - servings: numeric quantity in the chosen unit (e.g. 2.0, 0.5, 200.0)
 - Scale amounts to match the servings count
+- If existing ingredients are listed in the user message, reuse their exact names (same capitalization) wherever applicable to avoid creating duplicates
 
 Respond with JSON: { "ingredients": [{ "name": "...", "type": "...", "unit": "...", "servings": 1.0 }] }`;
 

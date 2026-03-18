@@ -14,6 +14,9 @@ export interface ActionRuntime {
   abortSignal?: AbortSignal;
   // For streaming single-step handlers: called with partial display content as it arrives.
   onProgress?: (content: string) => void;
+  // General-purpose selector for reading from the Redux store. Pass (state) => state.whatever.
+  // The consumer provides this as: select: (fn) => fn(store.getState())
+  select?: <T>(selectorFn: (state: unknown) => T) => T;
 }
 
 // Extended runtime for multi-step handlers — adds a per-step completion callback.

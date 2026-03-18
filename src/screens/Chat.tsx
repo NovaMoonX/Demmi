@@ -193,6 +193,8 @@ export function Chat() {
         { messages: allMessages, previousResults: { name: action.proposedName } },
         {
           abortSignal: abortController.signal,
+          // General-purpose Redux store reader available to any step or action handler.
+          select: (fn) => fn(store.getState()),
           // Each completed step notifies the consumer to update the partial recipe UI.
           // The key is always a valid RecipeStep — guaranteed by STEP_RECIPE_KEY's type in createMealAction.
           onStepComplete: (key, data) => {

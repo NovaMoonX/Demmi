@@ -1,5 +1,5 @@
 import type { MealCategory } from '@lib/meals';
-import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
+import type { IngredientType, MeasurementUnit, Ingredient } from '@lib/ingredients';
 import { ollamaClient } from '../ollama.service';
 import {
   MEAL_NAME_PROMPT,
@@ -181,6 +181,10 @@ export const generateDescriptionStep: ActionStep<MealResult, 'generateDescriptio
   },
 };
 
+interface StoreStateWithIngredients {
+  ingredients: { items: Ingredient[] };
+}
+
 export const generateIngredientsStep: ActionStep<MealResult, 'generateIngredients'> = {
   name: 'generateIngredients',
 
@@ -193,15 +197,26 @@ export const generateIngredientsStep: ActionStep<MealResult, 'generateIngredient
     const name = context.previousResults?.name ?? '';
     const servings = context.previousResults?.servings ?? 4;
 
+    // Read the current ingredient inventory from the store so the LLM can reuse
+    // existing ingredient names instead of generating duplicates.
+    const existingIngredients =
+      runtime.select?.((state) => (state as StoreStateWithIngredients).ingredients.items) ?? [];
+    const existingNames = existingIngredients.map((i) => i.name);
+
     if (abortSignal?.aborted) {
       return { stepName: 'generateIngredients', data: {}, cancelled: true };
     }
+
+    const existingContext =
+      existingNames.length > 0
+        ? `\nExisting ingredients (reuse exact names where applicable): ${existingNames.join(', ')}`
+        : '';
 
     const response = await ollamaClient.chat({
       model,
       messages: [
         { role: 'system', content: MEAL_INGREDIENTS_PROMPT },
-        { role: 'user', content: `Meal name: ${name}\nServings: ${servings}` },
+        { role: 'user', content: `Meal name: ${name}\nServings: ${servings}${existingContext}` },
       ],
       stream: false,
       format: MEAL_INGREDIENTS_SCHEMA,
