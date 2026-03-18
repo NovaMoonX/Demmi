@@ -88,6 +88,22 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                path: 'meals/new/from-text',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { default: MealFromText } = await import('@screens/MealFromText');
+                  return { Component: MealFromText };
+                },
+              },
+              {
+                path: 'meals/new/from-url',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { default: MealFromUrl } = await import('@screens/MealFromUrl');
+                  return { Component: MealFromUrl };
+                },
+              },
+              {
                 path: 'calendar',
                 HydrateFallback: Loading,
                 lazy: async () => {
