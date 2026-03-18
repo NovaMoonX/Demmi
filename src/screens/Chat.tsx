@@ -22,6 +22,8 @@ import {
   updateMessageContent,
   updateAgentActionStatus,
   updateMessageSummary,
+  updateRecipeStep,
+  cancelRecipeGeneration,
   deleteConversation,
   togglePinConversation,
 } from '@store/slices/chatsSlice';
@@ -35,8 +37,8 @@ import {
   getMealNameProposal,
   getActionHandler,
 } from '@lib/ollama';
+import type { RecipeStep } from '@lib/ollama/action-types/createMealAction.types';
 import { generatedId } from '@utils/generatedId';
-import { ExtractActionHandler } from '@/lib/ollama/actions/types';
 
 const SCROLL_DELAY_MS = 100;
 
@@ -166,66 +168,62 @@ export function Chat() {
 
     const handler = getActionHandler('createMeal');
 
-    const context = {
-      messages: allMessages,
-      chatId,
-      messageId,
-      previousResults: {},
-    };
-
-    const runtime = {
-      dispatch,
-      abortSignal: abortController.signal,
-    };
-
     try {
-      handler.onStart(context, runtime);
+      // Set the initial generating state before the pipeline starts.
+      dispatch(
+        updateMessageContent({
+          chatId,
+          messageId,
+          content: '🍳 Generating recipe...',
+          agentAction: {
+            type: 'create_meal',
+            status: 'generating_name',
+            proposedName: action.proposedName,
+            meals: [],
+            recipe: null,
+            completedSteps: null,
+          },
+        }),
+      );
 
-      type HandlerTypes = ExtractActionHandler<typeof handler>;
-      type ResultType = HandlerTypes['result'];
-      type ValidStepNames = HandlerTypes['stepNames'];
+      const result = await handler.execute(
+        selectedModel,
+        { messages: allMessages },
+        {
+          abortSignal: abortController.signal,
+          // Each completed step notifies the consumer to update the partial recipe UI.
+          // The key is always a valid RecipeStep — guaranteed by STEP_RECIPE_KEY's type in createMealAction.
+          onStepComplete: (key, data) => {
+            dispatch(
+              updateRecipeStep({
+                chatId,
+                messageId,
+                step: key as RecipeStep,
+                data,
+              }),
+            );
+          },
+        },
+      );
 
-      const completedStepNames: ValidStepNames[] = [];
-      const accumulatedResult: Partial<ResultType> = {};
-
-      for (const step of handler.steps) {
-        if (abortController.signal.aborted) break;
-
-        const stepContext = {
-          ...context,
-          previousResults: accumulatedResult,
-        };
-        const rawStepResult = await step.execute(
-          selectedModel,
-          stepContext,
-          runtime,
-        );
-        const stepResult = rawStepResult as {
-          data: Record<string, unknown>;
-          cancelled?: boolean;
-        };
-
-        if (stepResult.cancelled) {
-          step.onCancel?.(stepContext, runtime);
-          break;
+      if (result.cancelled) {
+        dispatch(cancelRecipeGeneration({ chatId, messageId }));
+      } else {
+        // Build the meal proposal and transition to pending_approval.
+        const proposal = result.data.proposal;
+        if (proposal) {
+          dispatch(
+            updateAgentActionStatus({
+              chatId,
+              messageId,
+              status: 'pending_approval',
+              meals: [proposal],
+            }),
+          );
         }
 
-        Object.assign(accumulatedResult, stepResult.data);
-        completedStepNames.push(step.name);
-      }
-
-      if (
-        abortController.signal.aborted ||
-        completedStepNames.length < handler.steps.length
-      ) {
-        handler.onCancel?.(context, runtime, completedStepNames);
-      } else {
-        handler.onComplete?.(context, runtime, accumulatedResult);
-
         const messageContentUpdates =
-          handler.getUpdatedMessageContentFromResult?.(
-            accumulatedResult as never,
-          );
+          handler.getUpdatedMessageContentFromResult?.(result.data);
 
         if (messageContentUpdates) {
           dispatch(
@@ -543,22 +541,6 @@ export function Chat() {
 
       const handler = getActionHandler(intent);
 
-      const context = {
-        messages: allMessages,
-        chatId: chatIdForStream,
-        messageId: assistantMessageId,
-        previousResults: {},
-      };
-
-      const runtime = {
-        dispatch,
-        abortSignal: abortController.signal,
-      };
-
-      if (!handler) {
-        throw new Error(`No handler found for intent: ${intent}`);
-      }
-
       if (handler.isMultiStep) {
         firstTokenReceivedRef.current = true;
 
@@ -586,15 +568,27 @@ export function Chat() {
       } else {
         firstTokenReceivedRef.current = true;
 
-        const result = await handler.execute(modelUsed, context, runtime);
+        const result = await handler.execute(
+          modelUsed,
+          { messages: allMessages },
+          {
+            abortSignal: abortController.signal,
+            // The handler streams partial content via this callback; the consumer owns the dispatch.
+            onProgress: (content) => {
+              dispatch(
+                updateMessageContent({
+                  chatId: chatIdForStream,
+                  messageId: assistantMessageId,
+                  content,
+                }),
+              );
+            },
+          },
+        );
 
-        if (!result || !('data' in result)) {
-          throw new Error('Invalid response received from agent');
-        }
-
-        if (!abortController.signal.aborted) {
+        if (!abortController.signal.aborted && !result.cancelled) {
           const messageContentUpdates =
-            handler.getUpdatedMessageContentFromResult(result.data as never);
+            handler.getUpdatedMessageContentFromResult(result.data);
 
           dispatch(
             updateMessageContent({
