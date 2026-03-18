@@ -61,8 +61,6 @@ const STEP_RECIPE_KEY: Record<MealStepName, RecipeStep> = {
 
 export const proposeNameStep: ActionStep<MealResult, 'proposeName'> = {
   name: 'proposeName',
-  prompt: MEAL_NAME_PROMPT,
-  schema: MEAL_NAME_SCHEMA,
 
   async execute(
     model: string,
@@ -102,8 +100,6 @@ export const proposeNameStep: ActionStep<MealResult, 'proposeName'> = {
 
 export const generateBasicInfoStep: ActionStep<MealResult, 'generateBasicInfo'> = {
   name: 'generateBasicInfo',
-  prompt: MEAL_INFO_PROMPT,
-  schema: MEAL_INFO_SCHEMA,
 
   async execute(
     model: string,
@@ -144,8 +140,6 @@ export const generateBasicInfoStep: ActionStep<MealResult, 'generateBasicInfo'> 
 
 export const generateDescriptionStep: ActionStep<MealResult, 'generateDescription'> = {
   name: 'generateDescription',
-  prompt: MEAL_DESCRIPTION_PROMPT,
-  schema: MEAL_DESCRIPTION_SCHEMA,
 
   async execute(
     model: string,
@@ -182,8 +176,6 @@ export const generateDescriptionStep: ActionStep<MealResult, 'generateDescriptio
 
 export const generateIngredientsStep: ActionStep<MealResult, 'generateIngredients'> = {
   name: 'generateIngredients',
-  prompt: MEAL_INGREDIENTS_PROMPT,
-  schema: MEAL_INGREDIENTS_SCHEMA,
 
   async execute(
     model: string,
@@ -221,8 +213,6 @@ export const generateIngredientsStep: ActionStep<MealResult, 'generateIngredient
 
 export const generateInstructionsStep: ActionStep<MealResult, 'generateInstructions'> = {
   name: 'generateInstructions',
-  prompt: MEAL_INSTRUCTIONS_PROMPT,
-  schema: MEAL_INSTRUCTIONS_SCHEMA,
 
   async execute(
     model: string,

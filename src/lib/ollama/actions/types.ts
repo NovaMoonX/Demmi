@@ -39,8 +39,6 @@ export interface ActionStep<
   Name extends string,
 > {
   name: Name;
-  prompt: string;
-  schema: Record<string, unknown>;
   execute: (
     model: string,
     context: ActionContext<ResultType>,

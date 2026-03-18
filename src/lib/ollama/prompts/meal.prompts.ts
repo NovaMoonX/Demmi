@@ -6,7 +6,7 @@ export const MEAL_NAME_PROMPT = `You are Demmi's AI assistant specialized in coo
 Extract or infer the meal name from the user's request.
 
 Rules:
-- Be specific (e.g. "Spaghetti Carbonara" not "pasta")
+- Be specific, but not verbose (e.g. "Spaghetti Carbonara" not "pasta")
 - 1-4 words maximum
 - Use proper capitalization
 - If the name is not explicitly provided, infer it from context
