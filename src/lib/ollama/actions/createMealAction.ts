@@ -70,6 +70,13 @@ export const proposeNameStep: ActionStep<MealResult, 'proposeName'> = {
     const { messages } = context;
     const { abortSignal } = runtime;
 
+    // If a name was already agreed upon (e.g. from the confirmation step), reuse it directly
+    // so we don't regenerate a different — potentially longer — name during the pipeline.
+    const existingName = context.previousResults?.name;
+    if (existingName) {
+      return { stepName: 'proposeName', data: { name: existingName } };
+    }
+
     if (abortSignal?.aborted) {
       return { stepName: 'proposeName', data: {}, cancelled: true };
     }

@@ -188,7 +188,9 @@ export function Chat() {
 
       const result = await handler.execute(
         selectedModel,
-        { messages: allMessages },
+        // Pass the previously agreed name as initial context so proposeNameStep
+        // reuses it directly instead of generating a new (potentially different) name.
+        { messages: allMessages, previousResults: { name: action.proposedName } },
         {
           abortSignal: abortController.signal,
           // Each completed step notifies the consumer to update the partial recipe UI.
