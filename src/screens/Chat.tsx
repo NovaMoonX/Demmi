@@ -528,7 +528,10 @@ export function Chat() {
               abortSignal: abortController.signal,
               onStepComplete: (key, data) => {
                 if (key === 'detectFieldsToUpdate') {
-                  const fields = (data.fieldsToUpdate as MealIterableField[]) ?? [];
+                  const rawFields = data.fieldsToUpdate;
+                  const fields: MealIterableField[] = Array.isArray(rawFields)
+                    ? (rawFields as MealIterableField[])
+                    : [];
                   if (fields.length > 0) {
                     dispatch(
                       updateAgentActionStatus({

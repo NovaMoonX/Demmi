@@ -75,11 +75,11 @@ export const detectFieldsToUpdateStep: ActionStep<MealIterationResult, 'detectFi
     const existingProposal = context.previousResults?.existingProposal;
 
     if (!existingProposal) {
-      return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate: [] as MealIterableField[] } };
+      return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate: [] } };
     }
 
     if (abortSignal?.aborted) {
-      return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate: [] as MealIterableField[] }, cancelled: true };
+      return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate: [] }, cancelled: true };
     }
 
     const proposalSummary = formatProposalForPrompt(existingProposal);
@@ -101,7 +101,7 @@ export const detectFieldsToUpdateStep: ActionStep<MealIterationResult, 'detectFi
     });
 
     if (abortSignal?.aborted) {
-      return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate: [] as MealIterableField[] }, cancelled: true };
+      return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate: [] }, cancelled: true };
     }
 
     const parsed = JSON.parse(response.message.content);

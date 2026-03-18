@@ -120,8 +120,8 @@ function IteratingMealCard({
               Ingredients
             </p>
             <div className='flex flex-wrap gap-1.5'>
-              {[80, 60, 96, 72, 56].map((w) => (
-                <SkeletonLine key={w} className={`h-6 w-${w / 4} rounded-md`} />
+              {(['w-16', 'w-12', 'w-20', 'w-14', 'w-10'] as const).map((wClass, i) => (
+                <SkeletonLine key={i} className={join('h-6 rounded-md', wClass)} />
               ))}
             </div>
           </div>
