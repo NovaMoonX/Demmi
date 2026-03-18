@@ -6,6 +6,7 @@ import type {
   AgentMealProposal,
   AgentPartialRecipe,
   CreateMealAgentActionStatus,
+  MealIterableField,
 } from '@lib/ollama/action-types/createMealAction.types';
 import { Badge, Button, Card } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
@@ -26,6 +27,111 @@ const STEP_LABELS: Partial<Record<CreateMealAgentActionStatus, string>> = {
   generating_ingredients: 'Generating ingredients…',
   generating_instructions: 'Generating instructions…',
 };
+
+const FIELD_LABELS: Record<MealIterableField, string> = {
+  name: 'name',
+  info: 'basic info',
+  description: 'description',
+  ingredients: 'ingredients',
+  instructions: 'instructions',
+};
+
+function SkeletonLine({ className }: { className?: string }) {
+  return <div className={join('animate-pulse rounded bg-muted', className ?? 'h-4 w-32')} />;
+}
+
+function IteratingMealCard({
+  meal,
+  updatingFields,
+}: {
+  meal: AgentMealProposal;
+  updatingFields: MealIterableField[];
+}) {
+  const totalTime = meal.prepTime + meal.cookTime;
+  const updatingName = updatingFields.includes('name');
+  const updatingInfo = updatingFields.includes('info');
+  const updatingDescription = updatingFields.includes('description');
+  const updatingIngredients = updatingFields.includes('ingredients');
+  const updatingInstructions = updatingFields.includes('instructions');
+
+  return (
+    <Card className='overflow-hidden'>
+      <div className='flex flex-col gap-3 p-4'>
+        <div className='flex items-start justify-between gap-2'>
+          <div className='min-w-0 flex-1'>
+            {updatingName ? (
+              <SkeletonLine className='h-5 w-40' />
+            ) : (
+              <h4 className='text-foreground text-base font-semibold'>{meal.title}</h4>
+            )}
+            {updatingDescription ? (
+              <div className='mt-1.5 flex flex-col gap-1'>
+                <SkeletonLine className='h-3.5 w-full' />
+                <SkeletonLine className='h-3.5 w-3/4' />
+              </div>
+            ) : (
+              <p className='text-muted-foreground mt-0.5 line-clamp-2 text-sm'>
+                {meal.description}
+              </p>
+            )}
+          </div>
+          <span className='shrink-0 text-2xl'>
+            {updatingInfo ? '…' : MEAL_CATEGORY_EMOJIS[meal.category]}
+          </span>
+        </div>
+
+        {updatingInfo ? (
+          <div className='flex flex-wrap gap-2'>
+            <SkeletonLine className='h-5 w-16' />
+            <SkeletonLine className='h-5 w-28' />
+            <SkeletonLine className='h-5 w-20' />
+          </div>
+        ) : (
+          <div className='flex flex-wrap items-center gap-2'>
+            <Badge
+              variant='base'
+              className={join('capitalize', MEAL_CATEGORY_COLORS[meal.category])}
+            >
+              {meal.category}
+            </Badge>
+            <span className='text-muted-foreground text-xs'>
+              Prep {meal.prepTime}m · Cook {meal.cookTime}m · {totalTime}m total
+            </span>
+            <span className='text-muted-foreground text-xs'>
+              {meal.servingSize} {meal.servingSize === 1 ? 'serving' : 'servings'}
+            </span>
+          </div>
+        )}
+
+        {updatingInstructions ? (
+          <SkeletonLine className='h-3.5 w-36' />
+        ) : (
+          meal.instructions.length > 0 && (
+            <div className='text-muted-foreground text-xs'>
+              {meal.instructions.length} instruction{' '}
+              {meal.instructions.length === 1 ? 'step' : 'steps'}
+            </div>
+          )
+        )}
+
+        {updatingIngredients ? (
+          <div className='flex flex-col gap-1.5'>
+            <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
+              Ingredients
+            </p>
+            <div className='flex flex-wrap gap-1.5'>
+              {[80, 60, 96, 72, 56].map((w) => (
+                <SkeletonLine key={w} className={`h-6 w-${w / 4} rounded-md`} />
+              ))}
+            </div>
+          </div>
+        ) : (
+          meal.ingredients.length > 0 && <IngredientList ingredients={meal.ingredients} />
+        )}
+      </div>
+    </Card>
+  );
+}
 
 function MealPreviewCard({ meal }: { meal: AgentMealProposal }) {
   const totalTime = meal.prepTime + meal.cookTime;
@@ -278,6 +384,33 @@ export function CreateMealAgentActionCard({
             <p className='text-muted-foreground text-xs'>{stepLabel}</p>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (action.status === 'iterating') {
+    const meal = action.meals[0];
+    const updatingFields = action.updatingFields ?? [];
+
+    const fieldNames = updatingFields.map((f) => FIELD_LABELS[f]).join(', ');
+    const statusText = updatingFields.length > 0
+      ? `Updating ${fieldNames}…`
+      : 'Analysing your request…';
+
+    return (
+      <div className='border-border bg-card/50 mt-3 flex flex-col gap-3 rounded-xl border p-3'>
+        <div className='flex items-center gap-2'>
+          <div className='text-muted-foreground flex gap-1'>
+            <span className='animate-bounce text-sm'>●</span>
+            <span className='animate-bounce text-sm [animation-delay:0.15s]'>●</span>
+            <span className='animate-bounce text-sm [animation-delay:0.3s]'>●</span>
+          </div>
+          <span className='text-muted-foreground text-xs'>{statusText}</span>
+        </div>
+
+        {meal && (
+          <IteratingMealCard meal={meal} updatingFields={updatingFields} />
+        )}
       </div>
     );
   }

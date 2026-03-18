@@ -60,3 +60,25 @@ Rules:
 - Be concise and practical; avoid unnecessary filler
 
 Respond with JSON: { "steps": ["Step 1...", "Step 2...", "Step 3..."] }`;
+
+export const MEAL_FIELDS_DETECTION_PROMPT = `You are Demmi's AI assistant specialized in cooking and recipes.
+
+A user wants to refine an existing meal recipe. Based on their latest message and the current recipe shown below, determine which recipe fields need to be regenerated.
+
+Fields you can update:
+- "name": The recipe title/name
+- "info": Category, serving count, and total cooking time
+- "description": The short appetizing description text
+- "ingredients": The complete ingredients list (add, remove, or substitute)
+- "instructions": The step-by-step cooking instructions
+
+Rules:
+- MINIMAL UPDATES: only include fields that genuinely need to change based on the user's request
+- Removing or substituting ingredients → include "ingredients"; if the removed ingredient is explicitly mentioned in cooking steps, also include "instructions"
+- Allergy/dietary restriction → include "ingredients" (and "instructions" if needed)
+- Different serving count → include "info" and "ingredients"
+- Rename the dish → include "name" and possibly "description"
+- Style change (e.g. "make it spicy") → include "ingredients" and possibly "description"
+- Never include fields that do not need to change
+
+Respond with JSON: { "fields": ["ingredients"] }`;

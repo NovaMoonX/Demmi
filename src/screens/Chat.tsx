@@ -35,7 +35,9 @@ import {
   detectIntent,
   generateSummary,
   getActionHandler,
+  iterateMealAction,
 } from '@lib/ollama';
+import type { MealIterableField } from '@lib/ollama/action-types/createMealAction.types';
 import type { RecipeStep } from '@lib/ollama/action-types/createMealAction.types';
 import { generatedId } from '@utils/generatedId';
 
@@ -181,6 +183,7 @@ export function Chat() {
             meals: [],
             recipe: null,
             completedSteps: null,
+            updatingFields: null,
           },
         }),
       );
@@ -480,6 +483,119 @@ export function Chat() {
       summary: null,
     };
 
+    // Before creating a new assistant message, check whether the user is refining an
+    // existing pending_approval proposal. If so, iterate in-place on that message.
+    if (currentChatId) {
+      const existingMessages =
+        store
+          .getState()
+          .chats.conversations.find((c) => c.id === currentChatId)
+          ?.messages ?? [];
+
+      const pendingApprovalMsg = existingMessages
+        .slice()
+        .reverse()
+        .find(
+          (m) =>
+            m.role === 'assistant' &&
+            m.agentAction?.type === 'create_meal' &&
+            m.agentAction?.status === 'pending_approval',
+        );
+
+      if (
+        pendingApprovalMsg?.agentAction?.type === 'create_meal' &&
+        pendingApprovalMsg.agentAction.meals.length > 0
+      ) {
+        dispatch(addMessage({ chatId: currentChatId, message: userMessage }));
+
+        firstTokenReceivedRef.current = true;
+        activeChatIdRef.current = currentChatId;
+        activeMessageIdRef.current = pendingApprovalMsg.id;
+
+        const allMessages =
+          store
+            .getState()
+            .chats.conversations.find((c) => c.id === currentChatId)
+            ?.messages ?? [];
+
+        const existingProposal = pendingApprovalMsg.agentAction.meals[0];
+
+        try {
+          const result = await iterateMealAction.execute(
+            selectedModel,
+            { messages: allMessages, previousResults: { existingProposal } },
+            {
+              abortSignal: abortController.signal,
+              onStepComplete: (key, data) => {
+                if (key === 'detectFieldsToUpdate') {
+                  const fields = (data.fieldsToUpdate as MealIterableField[]) ?? [];
+                  if (fields.length > 0) {
+                    dispatch(
+                      updateAgentActionStatus({
+                        chatId: currentChatId,
+                        messageId: pendingApprovalMsg.id,
+                        status: 'iterating',
+                        updatingFields: fields,
+                      }),
+                    );
+                  }
+                }
+              },
+            },
+          );
+
+          if (result.cancelled) {
+            dispatch(
+              updateAgentActionStatus({
+                chatId: currentChatId,
+                messageId: pendingApprovalMsg.id,
+                status: 'pending_approval',
+                updatingFields: null,
+              }),
+            );
+          } else {
+            const newProposal = result.data.proposal;
+            dispatch(
+              updateAgentActionStatus({
+                chatId: currentChatId,
+                messageId: pendingApprovalMsg.id,
+                status: 'pending_approval',
+                meals: newProposal ? [newProposal] : undefined,
+                updatingFields: null,
+              }),
+            );
+          }
+        } catch (err) {
+          if (!abortController.signal.aborted) {
+            addToast({
+              title: 'Refinement failed',
+              description:
+                err instanceof Error ? err.message : 'An unexpected error occurred.',
+              type: 'error',
+            });
+          }
+          dispatch(
+            updateAgentActionStatus({
+              chatId: currentChatId,
+              messageId: pendingApprovalMsg.id,
+              status: 'pending_approval',
+              updatingFields: null,
+            }),
+          );
+        } finally {
+          if (abortControllerRef.current === abortController) {
+            abortControllerRef.current = null;
+            firstTokenReceivedRef.current = false;
+            activeChatIdRef.current = null;
+            activeMessageIdRef.current = null;
+            setIsSending(false);
+          }
+        }
+
+        return;
+      }
+    }
+
     const assistantMessageId = generatedId('msg');
     const assistantMessage: ChatMessageType = {
       id: assistantMessageId,
@@ -586,6 +702,7 @@ export function Chat() {
               meals: [],
               recipe: null,
               completedSteps: null,
+              updatingFields: null,
             },
           }),
         );

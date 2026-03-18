@@ -78,7 +78,7 @@ export interface MultiStepActionResult<
 }
 
 interface SingleStepActionHandler<ResultType extends Record<string, unknown>> {
-  type: ActionType;
+  type: string;
   description: string;
   isMultiStep: false;
 
@@ -99,7 +99,7 @@ interface MultiStepActionHandler<
   ResultType extends Record<string, unknown>,
   ValidStepNames extends string,
 > {
-  type: ActionType;
+  type: string;
   description: string;
   isMultiStep: true;
 

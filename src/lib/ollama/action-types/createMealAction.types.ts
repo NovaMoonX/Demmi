@@ -15,6 +15,10 @@ import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
  *  generating_instructions→Step 5: generating instructions
  *       ↓
  *  pending_approval      → recipe ready; user reviews & saves (or declines)
+ *       ↓ user replies to refine
+ *  iterating             → AI is detecting & updating only the changed fields
+ *       ↓
+ *  pending_approval      → updated proposal; user reviews again
  *       ↓
  *  approved / rejected / cancelled → terminal states
  */
@@ -25,12 +29,16 @@ export type CreateMealAgentActionStatus =
   | 'generating_description'
   | 'generating_ingredients'
   | 'generating_instructions'
+  | 'iterating'
   | 'pending_approval'
   | 'approved'
   | 'rejected'
   | 'cancelled';
 
 export type RecipeStep = 'name' | 'info' | 'description' | 'ingredients' | 'instructions';
+
+/** Fields of a meal proposal that can be selectively regenerated during iteration. */
+export type MealIterableField = 'name' | 'info' | 'description' | 'ingredients' | 'instructions';
 
 export interface AgentIngredientProposal {
   name: string;
@@ -70,4 +78,6 @@ export interface AgentCreateMealAction {
   meals: AgentMealProposal[];
   recipe: AgentPartialRecipe | null;
   completedSteps: RecipeStep[] | null;
+  /** Fields being regenerated during an iteration pass. Null when not iterating. */
+  updatingFields: MealIterableField[] | null;
 }

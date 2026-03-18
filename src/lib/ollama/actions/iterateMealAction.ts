@@ -1,0 +1,288 @@
+import type { MealCategory } from '@lib/meals';
+import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
+import { store } from '@store/index';
+import { ollamaClient } from '../ollama.service';
+import { MEAL_FIELDS_DETECTION_PROMPT } from '../prompts/meal.prompts';
+import { MEAL_FIELDS_DETECTION_SCHEMA } from '../schemas/meal.schemas';
+import type {
+  ActionHandler,
+  ActionStep,
+  ActionContext,
+  ActionRuntime,
+  MultiStepActionResult,
+  MultiStepActionRuntime,
+  StepResult,
+} from './types';
+import type {
+  AgentMealProposal,
+  AgentIngredientProposal,
+  MealIterableField,
+} from '../action-types/createMealAction.types';
+import {
+  proposeNameStep,
+  generateBasicInfoStep,
+  generateDescriptionStep,
+  generateIngredientsStep,
+  generateInstructionsStep,
+} from './createMealAction';
+import type { MealResult, MealStepName } from './createMealAction';
+
+const MAX_CONTEXT_MESSAGES = 5;
+
+export type MealIterationStepName =
+  | 'detectFieldsToUpdate'
+  | MealStepName;
+
+export interface MealIterationResult extends Record<string, unknown> {
+  fieldsToUpdate: MealIterableField[];
+  existingProposal: AgentMealProposal;
+  name: string;
+  category: MealCategory;
+  servings: number;
+  totalTime: number;
+  description: string;
+  ingredients: Array<{ name: string; type: IngredientType; unit: MeasurementUnit; servings: number }>;
+  instructions: string[];
+  proposal: AgentMealProposal;
+}
+
+function formatProposalForPrompt(proposal: AgentMealProposal): string {
+  const ingredientsList = proposal.ingredients
+    .map((i) => `  - ${i.name} (${i.servings} ${i.unit})`)
+    .join('\n');
+  const totalTime = proposal.prepTime + proposal.cookTime;
+
+  return [
+    `Title: ${proposal.title}`,
+    `Category: ${proposal.category}`,
+    `Servings: ${proposal.servingSize}`,
+    `Total time: ${totalTime} min (prep ${proposal.prepTime}m, cook ${proposal.cookTime}m)`,
+    `Description: ${proposal.description}`,
+    `Ingredients:\n${ingredientsList}`,
+    `Instructions: ${proposal.instructions.length} steps`,
+  ].join('\n');
+}
+
+export const detectFieldsToUpdateStep: ActionStep<MealIterationResult, 'detectFieldsToUpdate'> = {
+  name: 'detectFieldsToUpdate',
+
+  async execute(
+    model: string,
+    context: ActionContext<MealIterationResult>,
+    runtime: ActionRuntime,
+  ): Promise<StepResult<MealIterationResult, 'detectFieldsToUpdate'>> {
+    const { abortSignal } = runtime;
+    const existingProposal = context.previousResults?.existingProposal;
+
+    if (!existingProposal) {
+      return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate: [] as MealIterableField[] } };
+    }
+
+    if (abortSignal?.aborted) {
+      return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate: [] as MealIterableField[] }, cancelled: true };
+    }
+
+    const proposalSummary = formatProposalForPrompt(existingProposal);
+
+    const response = await ollamaClient.chat({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: `${MEAL_FIELDS_DETECTION_PROMPT}\n\nCurrent recipe:\n${proposalSummary}`,
+        },
+        ...context.messages.slice(-MAX_CONTEXT_MESSAGES).map((m) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.rawContent ?? m.content,
+        })),
+      ],
+      stream: false,
+      format: MEAL_FIELDS_DETECTION_SCHEMA,
+    });
+
+    if (abortSignal?.aborted) {
+      return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate: [] as MealIterableField[] }, cancelled: true };
+    }
+
+    const parsed = JSON.parse(response.message.content);
+    const fieldsToUpdate: MealIterableField[] = Array.isArray(parsed.fields) ? parsed.fields : [];
+
+    return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate } };
+  },
+};
+
+const FIELD_TO_STEP: Array<{ field: MealIterableField; step: ActionStep<MealResult, MealStepName> }> = [
+  { field: 'name', step: proposeNameStep },
+  { field: 'info', step: generateBasicInfoStep },
+  { field: 'description', step: generateDescriptionStep },
+  { field: 'ingredients', step: generateIngredientsStep },
+  { field: 'instructions', step: generateInstructionsStep },
+];
+
+export const iterateMealAction = {
+  type: 'iterateMeal' as const,
+  description: 'Refine an existing meal proposal by regenerating only the fields that need to change',
+  isMultiStep: true,
+
+  steps: [detectFieldsToUpdateStep],
+
+  async executeStep(
+    model: string,
+    stepName: MealIterationStepName,
+    context: ActionContext<MealIterationResult>,
+    runtime: ActionRuntime,
+  ): Promise<StepResult<MealIterationResult, MealIterationStepName>> {
+    if (stepName === 'detectFieldsToUpdate') {
+      return detectFieldsToUpdateStep.execute(model, context, runtime);
+    }
+    const entry = FIELD_TO_STEP.find((e) => e.step.name === stepName);
+    if (!entry) {
+      throw new Error(`Unknown iteration step: ${stepName}`);
+    }
+    const result = await entry.step.execute(
+      model,
+      context as unknown as ActionContext<MealResult>,
+      runtime,
+    );
+    return result as StepResult<MealIterationResult, MealIterationStepName>;
+  },
+
+  async execute(
+    model: string,
+    context: ActionContext<MealIterationResult>,
+    runtime: MultiStepActionRuntime,
+  ): Promise<MultiStepActionResult<MealIterationResult, MealIterationStepName>> {
+    const completedSteps: MealIterationStepName[] = [];
+    const existingProposal = context.previousResults?.existingProposal;
+
+    if (!existingProposal) {
+      return { data: {}, completedSteps, cancelled: true };
+    }
+
+    // Step 1: Detect which fields need updating
+    const fieldResult = await detectFieldsToUpdateStep.execute(model, context, runtime);
+
+    if (fieldResult.cancelled) {
+      return { data: {}, completedSteps, cancelled: true };
+    }
+
+    const fieldsToUpdate: MealIterableField[] =
+      (fieldResult.data.fieldsToUpdate as MealIterableField[]) ?? [];
+    completedSteps.push('detectFieldsToUpdate');
+
+    // Notify consumer so it can update UI immediately (e.g. show which fields are being updated)
+    runtime.onStepComplete?.('detectFieldsToUpdate', { fieldsToUpdate });
+
+    if (fieldsToUpdate.length === 0 || runtime.abortSignal?.aborted) {
+      return { data: { fieldsToUpdate, existingProposal }, completedSteps, cancelled: false };
+    }
+
+    // Pre-populate accumulated result from the existing proposal so steps that are
+    // NOT being regenerated still have correct values to pass as context.
+    const accumulatedResult: Partial<MealIterationResult> = {
+      fieldsToUpdate,
+      existingProposal,
+      name: existingProposal.title,
+      category: existingProposal.category,
+      servings: existingProposal.servingSize,
+      totalTime: existingProposal.prepTime + existingProposal.cookTime,
+      description: existingProposal.description,
+      ingredients: existingProposal.ingredients.map((ing) => ({
+        name: ing.name,
+        type: ing.type,
+        unit: ing.unit,
+        servings: ing.servings,
+      })),
+      instructions: existingProposal.instructions,
+    };
+
+    const stepsToRun = FIELD_TO_STEP.filter(({ field }) => fieldsToUpdate.includes(field));
+
+    for (const { field, step } of stepsToRun) {
+      if (runtime.abortSignal?.aborted) break;
+
+      const stepContext: ActionContext<MealResult> = {
+        messages: context.messages,
+        previousResults: accumulatedResult as Partial<MealResult>,
+      };
+
+      const stepResult = await step.execute(model, stepContext, runtime);
+
+      if (stepResult.cancelled) break;
+
+      Object.assign(accumulatedResult, stepResult.data);
+      completedSteps.push(step.name as MealIterationStepName);
+
+      // Notify consumer about the completed step so the UI can update only the changed field.
+      if (runtime.onStepComplete) {
+        if (field === 'ingredients' && Array.isArray(stepResult.data.ingredients)) {
+          const existingIngredients = store.getState().ingredients.items;
+          const proposals: AgentIngredientProposal[] = (
+            stepResult.data.ingredients as Array<Record<string, unknown>>
+          ).map((ing) => {
+            const match = existingIngredients.find(
+              (e) => e.name.toLowerCase() === String(ing.name ?? '').toLowerCase(),
+            );
+            return {
+              name: String(ing.name ?? ''),
+              type: ing.type as IngredientType,
+              unit: ing.unit as MeasurementUnit,
+              servings: Number(ing.servings) || 0,
+              isNew: match === undefined,
+              existingIngredientId: match?.id ?? null,
+            };
+          });
+          runtime.onStepComplete(field, { ingredients: proposals });
+        } else {
+          runtime.onStepComplete(field, stepResult.data as Record<string, unknown>);
+        }
+      }
+    }
+
+    const cancelled =
+      (runtime.abortSignal?.aborted ?? false) ||
+      completedSteps.filter((s) => s !== 'detectFieldsToUpdate').length < stepsToRun.length;
+
+    if (!cancelled) {
+      const keepExistingTime = !fieldsToUpdate.includes('info');
+      const prepTime = keepExistingTime
+        ? existingProposal.prepTime
+        : Math.floor((accumulatedResult.totalTime ?? 30) * 0.4);
+      const cookTime = keepExistingTime
+        ? existingProposal.cookTime
+        : Math.ceil((accumulatedResult.totalTime ?? 30) * 0.6);
+
+      const existingIngredients = store.getState().ingredients.items;
+
+      const proposal: AgentMealProposal = {
+        title: accumulatedResult.name ?? existingProposal.title,
+        description: accumulatedResult.description ?? existingProposal.description,
+        category: accumulatedResult.category ?? existingProposal.category,
+        prepTime,
+        cookTime,
+        servingSize: accumulatedResult.servings ?? existingProposal.servingSize,
+        imageUrl: existingProposal.imageUrl,
+        instructions: accumulatedResult.instructions ?? existingProposal.instructions,
+        ingredients: fieldsToUpdate.includes('ingredients')
+          ? (accumulatedResult.ingredients ?? []).map((ing) => {
+              const match = existingIngredients.find(
+                (e) => e.name.toLowerCase() === ing.name.toLowerCase(),
+              );
+              return {
+                name: ing.name,
+                type: ing.type,
+                unit: ing.unit,
+                servings: ing.servings,
+                isNew: match === undefined,
+                existingIngredientId: match?.id ?? null,
+              };
+            })
+          : existingProposal.ingredients,
+      };
+
+      accumulatedResult.proposal = proposal;
+    }
+
+    return { data: accumulatedResult, completedSteps, cancelled };
+  },
+} satisfies ActionHandler<MealIterationResult, MealIterationStepName>;

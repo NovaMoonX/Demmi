@@ -90,3 +90,18 @@ export const MEAL_INSTRUCTIONS_SCHEMA: Record<string, unknown> = {
     },
   },
 };
+
+export const MEAL_FIELDS_DETECTION_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  required: ['fields'],
+  properties: {
+    fields: {
+      type: 'array',
+      items: {
+        type: 'string',
+        enum: ['name', 'info', 'description', 'ingredients', 'instructions'],
+      },
+      description: 'Which recipe fields need to be regenerated based on the user request',
+    },
+  },
+};
