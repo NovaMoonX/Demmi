@@ -139,6 +139,22 @@ Consider:
 In your reason, if updating: specify which steps or techniques would be affected and why.`,
 };
 
+export const MEAL_ITERATION_SUMMARY_PROMPT = `You are Demmi's AI assistant specialized in cooking and recipes.
+
+The user requested changes to a recipe and the following fields were updated:
+{CHANGES}
+
+Write a single, friendly sentence (max 20 words) summarizing what was changed. Use natural, conversational language.
+
+Examples:
+- "Done! I removed lemon and updated the name, ingredients, and instructions."
+- "I've rescaled all the ingredient quantities from 4 to 8 servings."
+- "Swapped the peanuts for almonds throughout the recipe!"
+
+Do not mention technical field names like "name field" or "info field".
+
+Respond with JSON: { "summary": "Done! I removed lemon and updated the name, ingredients, and instructions." }`;
+
 /**
  * Builds a focused per-field detection prompt. Each call asks the LLM to evaluate
  * ONLY one field, while providing the decisions made for all previously evaluated fields

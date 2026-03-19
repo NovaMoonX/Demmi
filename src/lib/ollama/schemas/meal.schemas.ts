@@ -107,6 +107,17 @@ export const MEAL_FIELD_DETECTION_SCHEMA: Record<string, unknown> = {
   },
 };
 
+export const MEAL_ITERATION_SUMMARY_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  required: ['summary'],
+  properties: {
+    summary: {
+      type: 'string',
+      description: 'Very brief, friendly 1-sentence summary of what was changed in the recipe',
+    },
+  },
+};
+
 export const MEAL_ITERATION_VALIDATION_SCHEMA: Record<string, unknown> = {
   type: 'object',
   required: ['valid', 'agentMessage'],

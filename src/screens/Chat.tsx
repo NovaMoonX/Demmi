@@ -649,7 +649,6 @@ export function Chat() {
                   }
                 } else if (key === 'detectFieldsToUpdate') {
                   const rawFields = data.fieldsToUpdate;
-                  console.log('rawFields', rawFields); // REMOVE
                   const fields: MealIterableField[] = Array.isArray(rawFields)
                     ? (rawFields as MealIterableField[])
                     : [];
@@ -730,15 +729,30 @@ export function Chat() {
               }),
             );
 
-            const newCardContent = newProposal
-              ? `I updated the recipe based on your feedback. Review this new version and save if it looks good.`
-              : `I reviewed your feedback and kept the same proposal because no recipe changes were detected.`;
+            // Use the LLM-generated summary when available so the user gets a specific,
+            // natural description of what changed. Fall back to a generic string only if
+            // the summary step was skipped (e.g. no fields were updated).
+            const iterationSummary = result.data.iterationSummary as string | undefined;
+            const displayContent = iterationSummary
+              ?? (newProposal
+                ? 'I updated the recipe based on your feedback. Review the changes and save when ready.'
+                : 'I reviewed your feedback — no recipe changes were detected.');
 
             dispatch(
               updateMessageContent({
                 chatId: currentChatId,
                 messageId: iteratingMessageId,
-                content: newCardContent,
+                content: displayContent,
+              }),
+            );
+
+            // Also store the summary so buildIterationContextMessages can include it
+            // in future iteration context — giving the agent awareness of prior changes.
+            dispatch(
+              updateMessageSummary({
+                chatId: currentChatId,
+                messageId: iteratingMessageId,
+                summary: displayContent,
               }),
             );
           }
