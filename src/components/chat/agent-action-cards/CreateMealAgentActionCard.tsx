@@ -8,8 +8,9 @@ import type {
   CreateMealAgentActionStatus,
   MealIterableField,
 } from '@lib/ollama/action-types/createMealAction.types';
-import { Badge, Button, Card } from '@moondreamsdev/dreamer-ui/components';
+import { Badge, Button, Card, Skeleton } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
+import { GeneratingIndicator } from '../GeneratingIndicator';
 import { AgentActionCardProps } from './types';
 
 const GENERATING_STATUSES = new Set<CreateMealAgentActionStatus>([
@@ -36,10 +37,6 @@ const FIELD_LABELS: Record<MealIterableField, string> = {
   instructions: 'instructions',
 };
 
-function SkeletonLine({ className }: { className?: string }) {
-  return <div className={join('animate-pulse rounded bg-muted', className ?? 'h-4 w-32')} />;
-}
-
 function IteratingMealCard({
   meal,
   updatingFields,
@@ -60,14 +57,14 @@ function IteratingMealCard({
         <div className='flex items-start justify-between gap-2'>
           <div className='min-w-0 flex-1'>
             {updatingName ? (
-              <SkeletonLine className='h-5 w-40' />
+              <Skeleton shape='rectangle' className='h-5 w-40' />
             ) : (
               <h4 className='text-foreground text-base font-semibold'>{meal.title}</h4>
             )}
             {updatingDescription ? (
               <div className='mt-1.5 flex flex-col gap-1'>
-                <SkeletonLine className='h-3.5 w-full' />
-                <SkeletonLine className='h-3.5 w-3/4' />
+                <Skeleton shape='rectangle' className='h-3.5 w-full' />
+                <Skeleton shape='rectangle' className='h-3.5 w-3/4' />
               </div>
             ) : (
               <p className='text-muted-foreground mt-0.5 line-clamp-2 text-sm'>
@@ -82,9 +79,9 @@ function IteratingMealCard({
 
         {updatingInfo ? (
           <div className='flex flex-wrap gap-2'>
-            <SkeletonLine className='h-5 w-16' />
-            <SkeletonLine className='h-5 w-28' />
-            <SkeletonLine className='h-5 w-20' />
+            <Skeleton shape='rectangle' className='h-5 w-16' />
+            <Skeleton shape='rectangle' className='h-5 w-28' />
+            <Skeleton shape='rectangle' className='h-5 w-20' />
           </div>
         ) : (
           <div className='flex flex-wrap items-center gap-2'>
@@ -104,7 +101,7 @@ function IteratingMealCard({
         )}
 
         {updatingInstructions ? (
-          <SkeletonLine className='h-3.5 w-36' />
+          <Skeleton shape='rectangle' className='h-3.5 w-36' />
         ) : (
           meal.instructions.length > 0 && (
             <div className='text-muted-foreground text-xs'>
@@ -121,7 +118,11 @@ function IteratingMealCard({
             </p>
             <div className='flex flex-wrap gap-1.5'>
               {(['w-16', 'w-12', 'w-20', 'w-14', 'w-10'] as const).map((wClass, i) => (
-                <SkeletonLine key={i} className={join('h-6 rounded-md', wClass)} />
+                <Skeleton
+                  key={i}
+                  shape='rectangle'
+                  className={join('h-6 rounded-md', wClass)}
+                />
               ))}
             </div>
           </div>
@@ -366,15 +367,7 @@ export function CreateMealAgentActionCard({
         {hasPartialData && recipe && <PartialRecipeCard recipe={recipe} />}
 
         <div className='flex items-center gap-3'>
-          <div className='text-muted-foreground flex gap-1'>
-            <span className='animate-bounce text-sm'>●</span>
-            <span className='animate-bounce text-sm [animation-delay:0.15s]'>
-              ●
-            </span>
-            <span className='animate-bounce text-sm [animation-delay:0.3s]'>
-              ●
-            </span>
-          </div>
+          <GeneratingIndicator />
           <div className='flex flex-col gap-0.5'>
             {!hasPartialData && (
               <p className='text-muted-foreground text-sm'>
@@ -395,16 +388,12 @@ export function CreateMealAgentActionCard({
     const fieldNames = updatingFields.map((f) => FIELD_LABELS[f]).join(', ');
     const statusText = updatingFields.length > 0
       ? `Updating ${fieldNames}…`
-      : 'Analysing your request…';
+      : 'Analyzing your request…';
 
     return (
       <div className='border-border bg-card/50 mt-3 flex flex-col gap-3 rounded-xl border p-3'>
         <div className='flex items-center gap-2'>
-          <div className='text-muted-foreground flex gap-1'>
-            <span className='animate-bounce text-sm'>●</span>
-            <span className='animate-bounce text-sm [animation-delay:0.15s]'>●</span>
-            <span className='animate-bounce text-sm [animation-delay:0.3s]'>●</span>
-          </div>
+          <GeneratingIndicator />
           <span className='text-muted-foreground text-xs'>{statusText}</span>
         </div>
 
