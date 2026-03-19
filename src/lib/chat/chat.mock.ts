@@ -2,15 +2,159 @@ import { ChatConversation } from './chat.types';
 
 const now = Date.now();
 const oneHourAgo = now - 60 * 60 * 1000;
+const twoHoursAgo = now - 2 * 60 * 60 * 1000;
 const oneDayAgo = now - 24 * 60 * 60 * 1000;
 const twoDaysAgo = now - 2 * 24 * 60 * 60 * 1000;
 const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
 
 export const mockChatConversations: ChatConversation[] = [
   {
+    id: 'chat-005',
+    title: 'Salmon Bowl Ready to Save',
+    isPinned: true,
+    lastUpdated: oneHourAgo - 5 * 60 * 1000,
+    userId: 'demo',
+    messages: [
+      {
+        id: 'msg-011',
+        role: 'user',
+        content: 'Create a lemon garlic salmon bowl recipe with rice and broccoli.',
+        timestamp: oneHourAgo - 20 * 60 * 1000,
+        model: null,
+        rawContent: null,
+        agentAction: null,
+        summary: null,
+      },
+      {
+        id: 'msg-012',
+        role: 'assistant',
+        content: 'Great idea. I drafted a complete recipe for review before saving.',
+        timestamp: oneHourAgo - 5 * 60 * 1000,
+        model: null,
+        rawContent: null,
+        agentAction: {
+          type: 'create_meal',
+          status: 'pending_approval',
+          proposedName: 'Lemon Garlic Salmon Bowl',
+          meals: [
+            {
+              title: 'Lemon Garlic Salmon Bowl',
+              description: 'A balanced dinner bowl with baked salmon, fluffy rice, and roasted broccoli finished with a bright lemon garlic drizzle.',
+              category: 'dinner',
+              prepTime: 15,
+              cookTime: 20,
+              servingSize: 2,
+              instructions: [
+                'Cook rice according to package directions and keep warm.',
+                'Season salmon with salt, pepper, garlic, and lemon zest, then bake at 400F for 12 to 14 minutes.',
+                'Roast broccoli with olive oil, salt, and pepper until tender and lightly charred.',
+                'Whisk lemon juice, minced garlic, and olive oil to make a quick drizzle.',
+                'Assemble bowls with rice, salmon, and broccoli, then finish with the lemon garlic drizzle.',
+              ],
+              imageUrl: '',
+              ingredients: [
+                {
+                  name: 'Salmon fillet',
+                  type: 'seafood',
+                  unit: 'piece',
+                  servings: 2,
+                  isNew: false,
+                  existingIngredientId: 'ing-salmon',
+                },
+                {
+                  name: 'Rice',
+                  type: 'grains',
+                  unit: 'cup',
+                  servings: 1,
+                  isNew: false,
+                  existingIngredientId: 'ing-rice',
+                },
+                {
+                  name: 'Broccoli',
+                  type: 'produce',
+                  unit: 'cup',
+                  servings: 2,
+                  isNew: false,
+                  existingIngredientId: 'ing-broccoli',
+                },
+                {
+                  name: 'Lemon',
+                  type: 'produce',
+                  unit: 'piece',
+                  servings: 1,
+                  isNew: true,
+                  existingIngredientId: null,
+                },
+              ],
+            },
+          ],
+          recipe: null,
+          completedSteps: [
+            'name',
+            'info',
+            'description',
+            'ingredients',
+            'instructions',
+          ],
+          updatingFields: null,
+        },
+        summary: 'User asked for a lemon garlic salmon bowl recipe. Assistant generated a full create-meal proposal and is waiting for approval before saving it to meals.',
+      },
+    ],
+  },
+  {
+    id: 'chat-000',
+    title: 'Creamy Tomato Pasta Request',
+    isPinned: true,
+    lastUpdated: twoHoursAgo,
+    userId: 'demo',
+    messages: [
+      {
+        id: 'msg-000',
+        role: 'user',
+        content: 'Can you create a creamy tomato pasta recipe for dinner tonight?',
+        timestamp: twoHoursAgo - 15000,
+        model: null,
+        rawContent: null,
+        agentAction: null,
+        summary: null,
+      },
+      {
+        id: 'msg-000a',
+        role: 'assistant',
+        content: 'I can help with that. Before I generate the full recipe, I want to confirm your request.',
+        timestamp: twoHoursAgo,
+        model: null,
+        rawContent: null,
+        agentAction: {
+          type: 'create_meal',
+          status: 'pending_confirmation',
+          proposedName: 'Creamy Tomato Pasta',
+          meals: [
+            {
+              title: 'Creamy Tomato Pasta',
+              description: '',
+              category: 'dinner',
+              prepTime: 0,
+              cookTime: 0,
+              servingSize: 2,
+              instructions: [],
+              imageUrl: '',
+              ingredients: [],
+            },
+          ],
+          recipe: null,
+          completedSteps: null,
+          updatingFields: null,
+        },
+        summary: 'User asked the assistant to create a creamy tomato pasta recipe for dinner. Assistant detected a create-meal intent and is waiting for user confirmation before generating the recipe.',
+      },
+    ],
+  },
+  {
     id: 'chat-001',
     title: 'Quick Breakfast Ideas',
-    isPinned: true,
+    isPinned: false,
     lastUpdated: oneHourAgo,
     userId: 'demo',
     messages: [
