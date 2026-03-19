@@ -1,6 +1,6 @@
+import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Button } from '@moondreamsdev/dreamer-ui/components';
 
 type CameraPermission = 'prompt' | 'granted' | 'denied';
 
@@ -30,7 +30,18 @@ export function IngredientBarcodeScanner() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void startCamera();
+
+    // Listen for camera permission changes
+    navigator.permissions
+      .query({ name: 'camera' })
+      .then((status) => {
+        status.onchange = () => {
+          if (status.state === 'granted') void startCamera();
+          if (status.state === 'denied') setPermission('denied');
+        };
+      });
 
     return () => {
       if (streamRef.current) {
@@ -49,45 +60,45 @@ export function IngredientBarcodeScanner() {
         >
           {fromMealPath ? '← Back to Meal' : '← Back to Ingredients'}
         </Link>
-        <h1 className='text-foreground mb-2 text-4xl font-bold'>Scan Barcode</h1>
+        <h1 className='text-foreground mb-2 text-4xl font-bold'>
+          Scan Barcode
+        </h1>
         <p className='text-muted-foreground'>
           Point your camera at a product barcode to get started.
         </p>
       </div>
 
       <div className='bg-muted flex aspect-video w-full items-center justify-center overflow-hidden rounded-2xl border'>
-        {permission === 'granted' && (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className='h-full w-full object-cover'
-          />
-        )}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={join(
+            'h-full w-full object-cover',
+            permission !== 'granted' && 'hidden',
+          )}
+        />
 
         {permission === 'denied' && (
           <div className='flex flex-col items-center gap-4 p-8 text-center'>
             <span className='text-5xl'>📷</span>
-            <p className='text-foreground font-semibold'>Camera access denied</p>
-            <p className='text-muted-foreground text-sm'>
-              Please allow camera access in your browser settings, then try again.
+            <p className='text-foreground font-semibold'>
+              Camera access denied
             </p>
-            <Button
-              variant='ghost'
-              size='sm'
-              onClick={() => { void startCamera(); }}
-              className='text-primary text-sm underline underline-offset-4'
-            >
-              Request camera access
-            </Button>
+            <p className='text-muted-foreground text-sm'>
+              Please allow camera access in your browser settings, then try
+              again.
+            </p>
           </div>
         )}
 
         {permission === 'prompt' && (
           <div className='flex flex-col items-center gap-3 p-8 text-center'>
             <span className='text-5xl'>📷</span>
-            <p className='text-muted-foreground text-sm'>Waiting for camera permission…</p>
+            <p className='text-muted-foreground text-sm'>
+              Waiting for camera permission…
+            </p>
           </div>
         )}
       </div>
