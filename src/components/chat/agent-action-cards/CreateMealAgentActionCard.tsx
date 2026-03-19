@@ -388,13 +388,13 @@ export function CreateMealAgentActionCard({
     const fieldNames = updatingFields.map((f) => FIELD_LABELS[f]).join(', ');
     const statusText = updatingFields.length > 0
       ? `Updating ${fieldNames}…`
-      : 'Analyzing your request…';
+      : undefined;
 
     return (
       <div className='border-border bg-card/50 mt-3 flex flex-col gap-3 rounded-xl border p-3'>
         <div className='flex items-center gap-2'>
           <GeneratingIndicator />
-          <span className='text-muted-foreground text-xs'>{statusText}</span>
+          {statusText && <span className='text-muted-foreground text-xs'>{statusText}</span>}
         </div>
 
         {meal && updatingFields.length > 0 && (
