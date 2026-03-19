@@ -13,6 +13,10 @@ export interface ChatMessage {
   /** 2-4 sentence summary of the message exchange for context-efficient intent detection.
    * Generated asynchronously after each exchange. Null until generated or for legacy messages. */
   summary: string | null;
+  /** When true, this user message was sent during an iteration attempt that was determined
+   * to be unrelated to refining the recipe. These messages are filtered out of context
+   * when building subsequent iteration requests, so they don't degrade response quality. */
+  iterationInvalid: boolean | null;
 }
 
 export interface ChatConversation {

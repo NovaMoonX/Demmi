@@ -93,6 +93,11 @@ export const validateIterationRequestStep: ActionStep<MealIterationResult, 'vali
 
     const proposalSummary = formatProposalForPrompt(existingProposal);
 
+    // Validation only inspects the single latest user message — we don't want prior
+    // conversation context to influence whether this particular message is valid.
+    const lastMessage = context.messages[context.messages.length - 1];
+    const lastUserContent = lastMessage?.rawContent ?? lastMessage?.content ?? '';
+
     const response = await ollamaClient.chat({
       model,
       messages: [
@@ -100,7 +105,7 @@ export const validateIterationRequestStep: ActionStep<MealIterationResult, 'vali
           role: 'system',
           content: `${MEAL_ITERATION_VALIDATION_PROMPT}\n\nCurrent recipe:\n${proposalSummary}`,
         },
-        ...formatContextMessages(context.messages),
+        { role: 'user', content: lastUserContent },
       ],
       stream: false,
       format: MEAL_ITERATION_VALIDATION_SCHEMA,

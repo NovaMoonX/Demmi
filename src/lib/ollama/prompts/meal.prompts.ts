@@ -77,16 +77,27 @@ Fields you can update:
 - "ingredients": The complete ingredients list (add, remove, or substitute)
 - "instructions": The step-by-step cooking instructions
 
-Rules:
-- MINIMAL UPDATES: only include fields that genuinely need to change based on the user's request
-- Removing or substituting ingredients → include "ingredients"; if the removed ingredient is explicitly mentioned in cooking steps, also include "instructions"
-- Allergy/dietary restriction → include "ingredients" (and "instructions" if needed)
-- Different serving count → include "info" and "ingredients"
-- Rename the dish → include "name" and possibly "description"
-- Style change (e.g. "make it spicy") → include "ingredients" and possibly "description"
-- Never include fields that do not need to change
+Before deciding, read the full recipe carefully and reason through the user's request:
+1. What ingredient or concept is the user asking to change, remove, or add?
+2. Does that ingredient or concept appear in the recipe **title**? If so, include "name".
+3. Does that ingredient or concept appear in the recipe **description**? If so, include "description".
+4. Does the ingredient list need to change (additions, removals, substitutions, dietary restrictions)? If so, include "ingredients".
+5. Do the cooking steps reference that ingredient or concept in a way that would become inaccurate? If so, include "instructions".
+6. Is the user asking to change serving size, cooking time, or meal category? If so, include "info" (and "ingredients" if quantities scale with servings).
 
-Respond with JSON: { "fields": ["ingredients"] }`;
+Examples of cascading changes:
+- "I don't like lemon" on a recipe called "Lemon Garlic Salmon" → include "name" (lemon is in the title), "description" (likely references lemon), "ingredients" (remove lemon), "instructions" (steps may reference squeezing lemon)
+- "Make it vegan" → include "ingredients" (remove animal products), possibly "description" (highlight vegan angle), possibly "instructions" (if steps reference dairy/eggs)
+- "Make it spicier" → include "ingredients" (add chili, etc.), possibly "description"
+- "Rename it" → include "name", possibly "description"
+- "Serves 8 instead of 4" → include "info" and "ingredients"
+
+Rules:
+- Think holistically: if a key ingredient is removed, check whether it appears in ALL other fields
+- Never include fields that do not genuinely need to change
+- Never include "info" unless serving size, time, or category actually need to change
+
+Respond with JSON (example format only — include only the fields that actually apply): { "fields": ["ingredients", "instructions"] }`;
 
 export const MEAL_ITERATION_VALIDATION_PROMPT = `You are Demmi's AI assistant specialized in cooking and recipes.
 

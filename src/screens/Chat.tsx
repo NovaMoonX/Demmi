@@ -24,6 +24,7 @@ import {
   updateMessageSummary,
   updateRecipeStep,
   cancelRecipeGeneration,
+  markMessageIterationInvalid,
   deleteConversation,
   togglePinConversation,
 } from '@store/slices/chatsSlice';
@@ -74,9 +75,23 @@ function buildIterationContextMessages(
 
   const threadMessages = existingMessages.slice(threadStartIndex, pendingIndex + 1);
 
-  const contextMessages = threadMessages.flatMap((message) => {
+  const contextMessages = threadMessages.flatMap((message, idx) => {
     if (message.role === 'user') {
+      // Skip messages that were flagged as invalid iteration attempts — they were
+      // unrelated to the recipe and would reduce the quality of subsequent LLM calls.
+      if (message.iterationInvalid === true) {
+        return [];
+      }
       return [message];
+    }
+
+    // Skip assistant messages that immediately follow an invalid user message,
+    // so the agent's "I'm not sure what you want to change" response is also excluded.
+    // Note: `idx` is the index in the original `threadMessages` array, so
+    // `threadMessages[idx - 1]` is always the immediately preceding thread message.
+    const previousThreadMessage = threadMessages[idx - 1];
+    if (previousThreadMessage?.role === 'user' && previousThreadMessage.iterationInvalid === true) {
+      return [];
     }
 
     if (message.summary) {
@@ -89,6 +104,7 @@ function buildIterationContextMessages(
         rawContent: null,
         agentAction: null,
         summary: null,
+        iterationInvalid: null,
       };
       return [summaryMessage];
     }
@@ -539,6 +555,7 @@ export function Chat() {
       rawContent: null,
       agentAction: null,
       summary: null,
+      iterationInvalid: null,
     };
 
     // Before creating a new assistant message, check whether the user is refining an
@@ -592,6 +609,7 @@ export function Chat() {
             updatingFields: null,
           },
           summary: null,
+          iterationInvalid: null,
         };
 
         dispatch(
@@ -681,6 +699,15 @@ export function Chat() {
               }),
             );
 
+            // Mark the user's message as an invalid iteration so it is excluded
+            // from context when building subsequent iteration requests.
+            dispatch(
+              markMessageIterationInvalid({
+                chatId: currentChatId,
+                messageId: userMessage.id,
+              }),
+            );
+
             dispatch(
               updateAgentActionStatus({
                 chatId: currentChatId,
@@ -762,6 +789,7 @@ export function Chat() {
       rawContent: null,
       agentAction: null,
       summary: null,
+      iterationInvalid: null,
     };
 
     let targetChatId: string | null;
