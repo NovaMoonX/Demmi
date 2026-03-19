@@ -26,8 +26,17 @@ import type {
   StepResult,
 } from './types';
 import type { AgentMealProposal, RecipeStep } from '../action-types/createMealAction.types';
+import type { ChatMessage } from '@lib/chat';
 
 const MAX_CONTEXT_MESSAGES = 3;
+
+/** Maps the most recent chat messages to the format expected by the Ollama client. */
+export function formatContextMessages(messages: ChatMessage[], limit = MAX_CONTEXT_MESSAGES) {
+  return messages.slice(-limit).map((m) => ({
+    role: m.role as 'user' | 'assistant',
+    content: m.rawContent ?? m.content,
+  }));
+}
 
 export interface MealResult extends Record<string, unknown> {
   name: string;
@@ -126,6 +135,7 @@ export const generateBasicInfoStep: ActionStep<MealResult, 'generateBasicInfo'> 
       messages: [
         { role: 'system', content: MEAL_INFO_PROMPT },
         { role: 'user', content: `Meal name: ${name}` },
+        ...formatContextMessages(context.messages),
       ],
       stream: false,
       format: MEAL_INFO_SCHEMA,
@@ -166,6 +176,7 @@ export const generateDescriptionStep: ActionStep<MealResult, 'generateDescriptio
       messages: [
         { role: 'system', content: MEAL_DESCRIPTION_PROMPT },
         { role: 'user', content: `Meal name: ${name}` },
+        ...formatContextMessages(context.messages),
       ],
       stream: false,
       format: MEAL_DESCRIPTION_SCHEMA,
@@ -203,10 +214,7 @@ export const generateIngredientsStep: ActionStep<MealResult, 'generateIngredient
       messages: [
         { role: 'system', content: MEAL_INGREDIENTS_PROMPT },
         { role: 'user', content: `Meal name: ${name}\nServings: ${servings}` },
-        ...context.messages.slice(-MAX_CONTEXT_MESSAGES).map((m) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.rawContent ?? m.content,
-        })),
+        ...formatContextMessages(context.messages),
       ],
       stream: false,
       format: MEAL_INGREDIENTS_SCHEMA,
@@ -250,6 +258,7 @@ export const generateInstructionsStep: ActionStep<MealResult, 'generateInstructi
           role: 'user',
           content: `Meal name: ${name}\nIngredients: ${ingredientNames}`,
         },
+        ...formatContextMessages(context.messages),
       ],
       stream: false,
       format: MEAL_INSTRUCTIONS_SCHEMA,

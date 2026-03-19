@@ -105,3 +105,18 @@ export const MEAL_FIELDS_DETECTION_SCHEMA: Record<string, unknown> = {
     },
   },
 };
+
+export const MEAL_ITERATION_VALIDATION_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  required: ['valid', 'agentMessage'],
+  properties: {
+    valid: {
+      type: 'boolean',
+      description: 'Whether the user message is asking to refine/modify the current recipe',
+    },
+    agentMessage: {
+      type: 'string',
+      description: 'Friendly agent acknowledgment (valid) or clarification request (invalid)',
+    },
+  },
+};

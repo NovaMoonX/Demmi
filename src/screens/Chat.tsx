@@ -564,8 +564,6 @@ export function Chat() {
           userMessage,
         );
 
-        console.log('allMessagesForIteration', allMessagesForIteration); // REMOVE
-
         dispatch(addMessage({ chatId: currentChatId, message: userMessage }));
 
         dispatch(
@@ -580,7 +578,7 @@ export function Chat() {
         const iteratingMessage: ChatMessageType = {
           id: iteratingMessageId,
           role: 'assistant',
-          content: 'Updating your recipe based on your feedback...',
+          content: 'Analyzing your request…',
           timestamp: Date.now(),
           model: selectedModel,
           rawContent: null,
@@ -619,7 +617,19 @@ export function Chat() {
             {
               abortSignal: abortController.signal,
               onStepComplete: (key, data) => {
-                if (key === 'detectFieldsToUpdate') {
+                if (key === 'validateIterationRequest') {
+                  // Show the agent's acknowledgment or refusal immediately in the message text.
+                  const agentMsg = data.agentMessage as string;
+                  if (agentMsg) {
+                    dispatch(
+                      updateMessageContent({
+                        chatId: currentChatId,
+                        messageId: iteratingMessageId,
+                        content: agentMsg,
+                      }),
+                    );
+                  }
+                } else if (key === 'detectFieldsToUpdate') {
                   const rawFields = data.fieldsToUpdate;
                   const fields: MealIterableField[] = Array.isArray(rawFields)
                     ? (rawFields as MealIterableField[])
@@ -644,6 +654,30 @@ export function Chat() {
               removeMessage({
                 chatId: currentChatId,
                 messageId: iteratingMessageId,
+              }),
+            );
+
+            dispatch(
+              updateAgentActionStatus({
+                chatId: currentChatId,
+                messageId: pendingApprovalMsg.id,
+                status: 'pending_approval',
+              }),
+            );
+          } else if (result.data.iterationValid === false) {
+            // The user's message wasn't about refining the recipe.
+            // The agent's explanation is already in the message content (set via onStepComplete).
+            // Remove the iterating action card and restore the original pending_approval proposal.
+            const invalidContent = result.data.agentMessage as string | undefined;
+            if (!invalidContent) {
+              console.warn('[iterateMealAction] validation returned no agentMessage — using fallback');
+            }
+            dispatch(
+              updateMessageContent({
+                chatId: currentChatId,
+                messageId: iteratingMessageId,
+                content: invalidContent ?? "I'm not sure what you'd like to change. Could you clarify?",
+                agentAction: null,
               }),
             );
 

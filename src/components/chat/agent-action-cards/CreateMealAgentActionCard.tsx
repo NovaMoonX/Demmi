@@ -397,7 +397,7 @@ export function CreateMealAgentActionCard({
           <span className='text-muted-foreground text-xs'>{statusText}</span>
         </div>
 
-        {meal && (
+        {meal && updatingFields.length > 0 && (
           <IteratingMealCard meal={meal} updatingFields={updatingFields} />
         )}
       </div>

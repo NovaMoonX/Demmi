@@ -2,8 +2,8 @@ import type { MealCategory } from '@lib/meals';
 import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
 import { store } from '@store/index';
 import { ollamaClient } from '../ollama.service';
-import { MEAL_FIELDS_DETECTION_PROMPT } from '../prompts/meal.prompts';
-import { MEAL_FIELDS_DETECTION_SCHEMA } from '../schemas/meal.schemas';
+import { MEAL_FIELDS_DETECTION_PROMPT, MEAL_ITERATION_VALIDATION_PROMPT } from '../prompts/meal.prompts';
+import { MEAL_FIELDS_DETECTION_SCHEMA, MEAL_ITERATION_VALIDATION_SCHEMA } from '../schemas/meal.schemas';
 import type {
   ActionHandler,
   ActionStep,
@@ -24,16 +24,18 @@ import {
   generateDescriptionStep,
   generateIngredientsStep,
   generateInstructionsStep,
+  formatContextMessages,
 } from './createMealAction';
 import type { MealResult, MealStepName } from './createMealAction';
 
-const MAX_CONTEXT_MESSAGES = 5;
-
 export type MealIterationStepName =
+  | 'validateIterationRequest'
   | 'detectFieldsToUpdate'
   | MealStepName;
 
 export interface MealIterationResult extends Record<string, unknown> {
+  iterationValid: boolean;
+  agentMessage: string;
   fieldsToUpdate: MealIterableField[];
   existingProposal: AgentMealProposal;
   name: string;
@@ -63,6 +65,59 @@ function formatProposalForPrompt(proposal: AgentMealProposal): string {
   ].join('\n');
 }
 
+export const validateIterationRequestStep: ActionStep<MealIterationResult, 'validateIterationRequest'> = {
+  name: 'validateIterationRequest',
+
+  async execute(
+    model: string,
+    context: ActionContext<MealIterationResult>,
+    runtime: ActionRuntime,
+  ): Promise<StepResult<MealIterationResult, 'validateIterationRequest'>> {
+    const { abortSignal } = runtime;
+    const existingProposal = context.previousResults?.existingProposal;
+
+    if (!existingProposal) {
+      return {
+        stepName: 'validateIterationRequest',
+        data: {
+          iterationValid: false,
+          agentMessage: "I couldn't find a recipe to refine. Please start a new recipe creation.",
+        },
+      };
+    }
+
+    if (abortSignal?.aborted) {
+      // agentMessage is intentionally empty — cancelled results are never shown to the user.
+      return { stepName: 'validateIterationRequest', data: { iterationValid: false, agentMessage: '' }, cancelled: true };
+    }
+
+    const proposalSummary = formatProposalForPrompt(existingProposal);
+
+    const response = await ollamaClient.chat({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: `${MEAL_ITERATION_VALIDATION_PROMPT}\n\nCurrent recipe:\n${proposalSummary}`,
+        },
+        ...formatContextMessages(context.messages),
+      ],
+      stream: false,
+      format: MEAL_ITERATION_VALIDATION_SCHEMA,
+    });
+
+    if (abortSignal?.aborted) {
+      return { stepName: 'validateIterationRequest', data: { iterationValid: false, agentMessage: '' }, cancelled: true };
+    }
+
+    const parsed = JSON.parse(response.message.content);
+    const iterationValid: boolean = parsed.valid === true;
+    const agentMessage: string = parsed.agentMessage ?? '';
+
+    return { stepName: 'validateIterationRequest', data: { iterationValid, agentMessage } };
+  },
+};
+
 export const detectFieldsToUpdateStep: ActionStep<MealIterationResult, 'detectFieldsToUpdate'> = {
   name: 'detectFieldsToUpdate',
 
@@ -91,10 +146,7 @@ export const detectFieldsToUpdateStep: ActionStep<MealIterationResult, 'detectFi
           role: 'system',
           content: `${MEAL_FIELDS_DETECTION_PROMPT}\n\nCurrent recipe:\n${proposalSummary}`,
         },
-        ...context.messages.slice(-MAX_CONTEXT_MESSAGES).map((m) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.rawContent ?? m.content,
-        })),
+        ...formatContextMessages(context.messages),
       ],
       stream: false,
       format: MEAL_FIELDS_DETECTION_SCHEMA,
@@ -124,7 +176,7 @@ export const iterateMealAction = {
   description: 'Refine an existing meal proposal by regenerating only the fields that need to change',
   isMultiStep: true,
 
-  steps: [detectFieldsToUpdateStep],
+  steps: [validateIterationRequestStep, detectFieldsToUpdateStep],
 
   async executeStep(
     model: string,
@@ -132,6 +184,9 @@ export const iterateMealAction = {
     context: ActionContext<MealIterationResult>,
     runtime: ActionRuntime,
   ): Promise<StepResult<MealIterationResult, MealIterationStepName>> {
+    if (stepName === 'validateIterationRequest') {
+      return validateIterationRequestStep.execute(model, context, runtime);
+    }
     if (stepName === 'detectFieldsToUpdate') {
       return detectFieldsToUpdateStep.execute(model, context, runtime);
     }
@@ -159,27 +214,52 @@ export const iterateMealAction = {
       return { data: {}, completedSteps, cancelled: true };
     }
 
-    // Step 1: Detect which fields need updating
+    // Step 1: Validate that the user's message is actually about refining the recipe.
+    const validationResult = await validateIterationRequestStep.execute(model, context, runtime);
+
+    if (validationResult.cancelled) {
+      return { data: {}, completedSteps, cancelled: true };
+    }
+
+    const iterationValid = validationResult.data.iterationValid as boolean;
+    const agentMessage = (validationResult.data.agentMessage as string) ?? '';
+    completedSteps.push('validateIterationRequest');
+
+    // Notify consumer immediately with the agent's acknowledgment or refusal.
+    runtime.onStepComplete?.('validateIterationRequest', { iterationValid, agentMessage });
+
+    if (!iterationValid) {
+      // Not a valid refinement request — communicate this to the consumer and stop.
+      return {
+        data: { iterationValid, agentMessage, existingProposal },
+        completedSteps,
+        cancelled: false,
+      };
+    }
+
+    // Step 2: Detect which fields need updating.
     const fieldResult = await detectFieldsToUpdateStep.execute(model, context, runtime);
 
     if (fieldResult.cancelled) {
-      return { data: {}, completedSteps, cancelled: true };
+      return { data: { iterationValid, agentMessage }, completedSteps, cancelled: true };
     }
 
     const fieldsToUpdate: MealIterableField[] =
       (fieldResult.data.fieldsToUpdate as MealIterableField[]) ?? [];
     completedSteps.push('detectFieldsToUpdate');
 
-    // Notify consumer so it can update UI immediately (e.g. show which fields are being updated)
+    // Notify consumer so it can show per-field loading skeletons.
     runtime.onStepComplete?.('detectFieldsToUpdate', { fieldsToUpdate });
 
     if (fieldsToUpdate.length === 0 || runtime.abortSignal?.aborted) {
-      return { data: { fieldsToUpdate, existingProposal }, completedSteps, cancelled: false };
+      return { data: { iterationValid, agentMessage, fieldsToUpdate, existingProposal }, completedSteps, cancelled: false };
     }
 
     // Pre-populate accumulated result from the existing proposal so steps that are
     // NOT being regenerated still have correct values to pass as context.
     const accumulatedResult: Partial<MealIterationResult> = {
+      iterationValid,
+      agentMessage,
       fieldsToUpdate,
       existingProposal,
       name: existingProposal.title,
@@ -241,7 +321,7 @@ export const iterateMealAction = {
 
     const cancelled =
       (runtime.abortSignal?.aborted ?? false) ||
-      completedSteps.filter((s) => s !== 'detectFieldsToUpdate').length < stepsToRun.length;
+      completedSteps.filter((s) => s !== 'validateIterationRequest' && s !== 'detectFieldsToUpdate').length < stepsToRun.length;
 
     if (!cancelled) {
       const keepExistingTime = !fieldsToUpdate.includes('info');
