@@ -120,10 +120,11 @@ In your reason, if updating: specify what aspect of the description is now inacc
   ingredients: `Should the **ingredients list** be updated?
 
 Consider:
-- Is the user explicitly removing, adding, or substituting an ingredient?
+- Is the user removing, adding, or substituting an ingredient? This can be explicit or implied with previous decisions
 - Does the user mention an allergy, intolerance, or dietary restriction that affects ingredients?
 - Review any prior field decisions — if serving size is changing, ALL ingredient quantities must be rescaled.
 - If a key ingredient is being removed (e.g. lemon), ALL lemon-containing ingredients must be removed.
+- Return TRUE if any ingredient is changing, even if it's just one small change to one ingredient. For example, if the user is removing garlic and there is a "minced garlic", remove it.
 
 In your reason, if updating: specify exactly which ingredients are being added, removed, or changed and why.`,
 
@@ -133,6 +134,7 @@ Consider:
 - Do any instruction steps reference an ingredient that is being removed or changed?
 - Would any steps become inaccurate, redundant, or unsafe given the ingredient changes?
 - Review any prior field decisions about ingredients — if ingredients changed, scrutinize every step.
+- Return TRUE if any step needs modification, even if it's just one small change to one step. For example, if the user is removing garlic, and there's a step that says "Sauté the garlic until fragrant", that step must be updated or removed — so you would return true for instructions.
 
 In your reason, if updating: specify which steps or techniques would be affected and why.`,
 };

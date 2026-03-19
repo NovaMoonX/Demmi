@@ -649,6 +649,7 @@ export function Chat() {
                   }
                 } else if (key === 'detectFieldsToUpdate') {
                   const rawFields = data.fieldsToUpdate;
+                  console.log('rawFields', rawFields); // REMOVE
                   const fields: MealIterableField[] = Array.isArray(rawFields)
                     ? (rawFields as MealIterableField[])
                     : [];
