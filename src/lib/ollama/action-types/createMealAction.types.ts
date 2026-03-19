@@ -19,6 +19,8 @@ import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
  *  iterating             → AI is detecting & updating only the changed fields
  *       ↓
  *  pending_approval      → updated proposal; user reviews again
+ *       ↓ previous pending_approval card when iterating starts
+ *  stale                 → previous proposal snapshot (read-only, superseded)
  *       ↓
  *  approved / rejected / cancelled → terminal states
  */
@@ -30,6 +32,7 @@ export type CreateMealAgentActionStatus =
   | 'generating_ingredients'
   | 'generating_instructions'
   | 'iterating'
+  | 'stale'
   | 'pending_approval'
   | 'approved'
   | 'rejected'

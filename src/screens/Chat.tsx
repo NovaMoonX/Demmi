@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Button, Label, Toggle } from '@moondreamsdev/dreamer-ui/components';
 import { Textarea } from '@moondreamsdev/dreamer-ui/components';
 import { ScrollArea } from '@moondreamsdev/dreamer-ui/components';
@@ -43,6 +43,63 @@ import { generatedId } from '@utils/generatedId';
 
 const SCROLL_DELAY_MS = 100;
 
+function buildIterationContextMessages(
+  existingMessages: ChatMessageType[],
+  pendingApprovalMessage: ChatMessageType,
+  latestUserMessage: ChatMessageType,
+): ChatMessageType[] {
+  const pendingIndex = existingMessages.findIndex(
+    (message) => message.id === pendingApprovalMessage.id,
+  );
+
+  if (pendingIndex === -1) {
+    return [latestUserMessage];
+  }
+
+  let threadStartIndex = 0;
+  for (let i = pendingIndex; i >= 0; i--) {
+    const message = existingMessages[i];
+    const isAssistantNonRecipeMessage =
+      message.role === 'assistant' && message.agentAction?.type !== 'create_meal';
+
+    if (isAssistantNonRecipeMessage) {
+      threadStartIndex = i + 1;
+      break;
+    }
+
+    if (i === 0) {
+      threadStartIndex = 0;
+    }
+  }
+
+  const threadMessages = existingMessages.slice(threadStartIndex, pendingIndex + 1);
+
+  const contextMessages = threadMessages.flatMap((message) => {
+    if (message.role === 'user') {
+      return [message];
+    }
+
+    if (message.summary) {
+      const summaryMessage: ChatMessageType = {
+        id: `summary-${message.id}`,
+        role: 'assistant',
+        content: message.summary,
+        timestamp: message.timestamp,
+        model: null,
+        rawContent: null,
+        agentAction: null,
+        summary: null,
+      };
+      return [summaryMessage];
+    }
+
+    return [];
+  });
+
+  const result = [...contextMessages, latestUserMessage];
+  return result;
+}
+
 export function Chat() {
   const dispatch = useAppDispatch();
   const conversations = useAppSelector((state) => state.chats.conversations);
@@ -74,7 +131,15 @@ export function Chat() {
     pullMistral,
   } = useOllamaModels();
 
-  const currentChat = conversations.find((c) => c.id === currentChatId);
+  const currentChat = useMemo(() => {
+    const result = conversations.find((c) => c.id === currentChatId) ?? null;
+    return result;
+  }, [conversations, currentChatId]);
+
+  const currentMessages = useMemo(() => {
+    const result = currentChat?.messages ?? [];
+    return result;
+  }, [currentChat]);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -140,10 +205,7 @@ export function Chat() {
     const chatId = currentChatId;
     if (!chatId || !selectedModel) return;
 
-    const message = store
-      .getState()
-      .chats.conversations.find((c) => c.id === chatId)
-      ?.messages.find((m) => m.id === messageId);
+    const message = currentMessages.find((m) => m.id === messageId);
 
     const action = message?.agentAction;
     if (
@@ -161,11 +223,7 @@ export function Chat() {
     activeChatIdRef.current = chatId;
     activeMessageIdRef.current = messageId;
 
-    const allMessages =
-      store
-        .getState()
-        .chats.conversations.find((c) => c.id === chatId)
-        ?.messages ?? [];
+    const allMessages = [...currentMessages];
 
     const handler = getActionHandler('createMeal');
 
@@ -238,16 +296,11 @@ export function Chat() {
             }),
           );
 
-          const allCurrentMessages =
-            store
-              .getState()
-              .chats.conversations.find((c) => c.id === chatId)
-              ?.messages ?? [];
-          const msgIndex = allCurrentMessages.findIndex(
+          const msgIndex = allMessages.findIndex(
             (m) => m.id === messageId,
           );
           const userMessage =
-            msgIndex > 0 ? allCurrentMessages[msgIndex - 1] : null;
+            msgIndex > 0 ? allMessages[msgIndex - 1] : null;
 
           if (userMessage?.role === 'user') {
             generateSummary(
@@ -316,10 +369,7 @@ export function Chat() {
     const chatId = currentChatId;
     if (!chatId) return;
 
-    const message = store
-      .getState()
-      .chats.conversations.find((c) => c.id === chatId)
-      ?.messages.find((m) => m.id === messageId);
+    const message = currentMessages.find((m) => m.id === messageId);
 
     const action = message?.agentAction;
     if (
@@ -461,10 +511,18 @@ export function Chat() {
     const editMessageId = editingMessageId;
     setEditingMessageId(null);
 
+    const baseMessages = [...currentMessages];
+    let existingMessages = [...baseMessages];
+
     if (editMessageId && currentChatId) {
       dispatch(
         trimMessagesFrom({ chatId: currentChatId, messageId: editMessageId }),
       );
+
+      const trimIndex = baseMessages.findIndex((m) => m.id === editMessageId);
+      const trimmedMessages =
+        trimIndex !== -1 ? baseMessages.slice(0, trimIndex) : baseMessages;
+      existingMessages = trimmedMessages;
     }
 
     firstTokenReceivedRef.current = false;
@@ -484,14 +542,8 @@ export function Chat() {
     };
 
     // Before creating a new assistant message, check whether the user is refining an
-    // existing pending_approval proposal. If so, iterate in-place on that message.
+    // existing pending_approval proposal.
     if (currentChatId) {
-      const existingMessages =
-        store
-          .getState()
-          .chats.conversations.find((c) => c.id === currentChatId)
-          ?.messages ?? [];
-
       const pendingApprovalMsg = existingMessages
         .slice()
         .reverse()
@@ -506,24 +558,64 @@ export function Chat() {
         pendingApprovalMsg?.agentAction?.type === 'create_meal' &&
         pendingApprovalMsg.agentAction.meals.length > 0
       ) {
+        const allMessagesForIteration = buildIterationContextMessages(
+          existingMessages,
+          pendingApprovalMsg,
+          userMessage,
+        );
+
+        console.log('allMessagesForIteration', allMessagesForIteration); // REMOVE
+
         dispatch(addMessage({ chatId: currentChatId, message: userMessage }));
+
+        dispatch(
+          updateAgentActionStatus({
+            chatId: currentChatId,
+            messageId: pendingApprovalMsg.id,
+            status: 'stale',
+          }),
+        );
+
+        const iteratingMessageId = generatedId('msg');
+        const iteratingMessage: ChatMessageType = {
+          id: iteratingMessageId,
+          role: 'assistant',
+          content: 'Updating your recipe based on your feedback...',
+          timestamp: Date.now(),
+          model: selectedModel,
+          rawContent: null,
+          agentAction: {
+            type: 'create_meal',
+            status: 'iterating',
+            proposedName: pendingApprovalMsg.agentAction.proposedName,
+            meals: [...pendingApprovalMsg.agentAction.meals],
+            recipe: null,
+            completedSteps: null,
+            updatingFields: null,
+          },
+          summary: null,
+        };
+
+        dispatch(
+          addMessage({
+            chatId: currentChatId,
+            message: iteratingMessage,
+          }),
+        );
 
         firstTokenReceivedRef.current = true;
         activeChatIdRef.current = currentChatId;
-        activeMessageIdRef.current = pendingApprovalMsg.id;
-
-        const allMessages =
-          store
-            .getState()
-            .chats.conversations.find((c) => c.id === currentChatId)
-            ?.messages ?? [];
+        activeMessageIdRef.current = iteratingMessageId;
 
         const existingProposal = pendingApprovalMsg.agentAction.meals[0];
 
         try {
           const result = await iterateMealAction.execute(
             selectedModel,
-            { messages: allMessages, previousResults: { existingProposal } },
+            {
+              messages: allMessagesForIteration,
+              previousResults: { existingProposal },
+            },
             {
               abortSignal: abortController.signal,
               onStepComplete: (key, data) => {
@@ -536,7 +628,7 @@ export function Chat() {
                     dispatch(
                       updateAgentActionStatus({
                         chatId: currentChatId,
-                        messageId: pendingApprovalMsg.id,
+                        messageId: iteratingMessageId,
                         status: 'iterating',
                         updatingFields: fields,
                       }),
@@ -549,22 +641,42 @@ export function Chat() {
 
           if (result.cancelled) {
             dispatch(
-              updateAgentActionStatus({
+              removeMessage({
                 chatId: currentChatId,
-                messageId: pendingApprovalMsg.id,
-                status: 'pending_approval',
-                updatingFields: null,
+                messageId: iteratingMessageId,
               }),
             );
-          } else {
-            const newProposal = result.data.proposal;
+
             dispatch(
               updateAgentActionStatus({
                 chatId: currentChatId,
                 messageId: pendingApprovalMsg.id,
                 status: 'pending_approval',
-                meals: newProposal ? [newProposal] : undefined,
+              }),
+            );
+          } else {
+            const newProposal = result.data.proposal;
+            const activeProposal = newProposal ?? existingProposal;
+
+            dispatch(
+              updateAgentActionStatus({
+                chatId: currentChatId,
+                messageId: iteratingMessageId,
+                status: 'pending_approval',
+                meals: [activeProposal],
                 updatingFields: null,
+              }),
+            );
+
+            const newCardContent = newProposal
+              ? `I updated the recipe based on your feedback. Review this new version and save if it looks good.`
+              : `I reviewed your feedback and kept the same proposal because no recipe changes were detected.`;
+
+            dispatch(
+              updateMessageContent({
+                chatId: currentChatId,
+                messageId: iteratingMessageId,
+                content: newCardContent,
               }),
             );
           }
@@ -577,12 +689,19 @@ export function Chat() {
               type: 'error',
             });
           }
+
+          dispatch(
+            removeMessage({
+              chatId: currentChatId,
+              messageId: iteratingMessageId,
+            }),
+          );
+
           dispatch(
             updateAgentActionStatus({
               chatId: currentChatId,
               messageId: pendingApprovalMsg.id,
               status: 'pending_approval',
-              updatingFields: null,
             }),
           );
         } finally {
@@ -612,8 +731,11 @@ export function Chat() {
     };
 
     let targetChatId: string | null;
+    let allMessagesForIntent: ChatMessageType[] = [];
 
     if (!currentChatId) {
+      allMessagesForIntent = [userMessage];
+
       const newConversation = {
         title:
           messageContent.slice(0, 50) +
@@ -628,6 +750,7 @@ export function Chat() {
       targetChatId = store.getState().chats.currentChatId;
     } else {
       targetChatId = currentChatId;
+      allMessagesForIntent = [...existingMessages, userMessage];
       dispatch(addMessage({ chatId: currentChatId, message: userMessage }));
       dispatch(
         addMessage({ chatId: currentChatId, message: assistantMessage }),
@@ -646,13 +769,7 @@ export function Chat() {
     activeMessageIdRef.current = assistantMessageId;
 
     try {
-      const allMessages =
-        store
-          .getState()
-          .chats.conversations.find((c) => c.id === chatIdForStream)
-          ?.messages.filter((m) => m.id !== assistantMessageId) ?? [];
-
-      const intent = await detectIntent(modelUsed, allMessages);
+      const intent = await detectIntent(modelUsed, allMessagesForIntent);
 
       if (abortController.signal.aborted) {
         if (!firstTokenReceivedRef.current) {
@@ -674,7 +791,7 @@ export function Chat() {
         const stepResult = await handler.executeStep(
           modelUsed,
           'proposeName',
-          { messages: allMessages },
+          { messages: allMessagesForIntent },
           {
             abortSignal: abortController.signal,
           },
@@ -714,7 +831,7 @@ export function Chat() {
 
         const result = await handler.execute(
           modelUsed,
-          { messages: allMessages },
+          { messages: allMessagesForIntent },
           {
             abortSignal: abortController.signal,
             // The handler streams partial content via this callback; the consumer owns the dispatch.

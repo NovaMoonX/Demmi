@@ -438,6 +438,29 @@ export function CreateMealAgentActionCard({
     );
   }
 
+  if (action.status === 'stale') {
+    return (
+      <div className='border-border bg-card/50 mt-3 flex flex-col gap-3 rounded-xl border p-3 opacity-60'>
+        <div className='flex items-center gap-2'>
+          <span className='text-lg'>🕘</span>
+          <span className='text-muted-foreground text-sm font-semibold'>
+            Previous version (stale)
+          </span>
+        </div>
+
+        <div className='flex flex-col gap-2'>
+          {action.meals.map((meal, i) => (
+            <MealPreviewCard key={i} meal={meal} />
+          ))}
+        </div>
+
+        <p className='text-muted-foreground text-xs'>
+          This proposal has been superseded by a newer iteration below.
+        </p>
+      </div>
+    );
+  }
+
   if (action.status === 'approved') {
     return (
       <div className='mt-3 flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3'>

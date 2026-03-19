@@ -34,6 +34,8 @@ Rules:
 - 1-2 sentences only
 - Highlight key flavors, textures, or what makes it special
 - Friendly and enticing tone
+- Use the latest conversation context as highest priority (allergies, dislikes, substitutions, exclusions)
+- Do not mention ingredients the user asked to remove or avoid
 
 Respond with JSON: { "description": "A rich and creamy pasta..." }`;
 
@@ -47,6 +49,9 @@ Rules:
 - Use the most appropriate unit: ${MEASUREMENT_UNITS.join(' | ')}
 - servings: numeric quantity in the chosen unit (e.g. 2.0, 0.5, 200.0)
 - Scale amounts to match the servings count
+- Use the latest conversation context as highest priority (allergies, dislikes, substitutions, exclusions)
+- If the user says they dislike/hate/avoid an ingredient, exclude it completely
+- If current ingredients are provided, treat them as a baseline and only change what the user requested
 
 Respond with JSON: { "ingredients": [{ "name": "...", "type": "...", "unit": "...", "servings": 1.0 }] }`;
 

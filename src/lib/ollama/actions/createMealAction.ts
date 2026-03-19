@@ -203,6 +203,10 @@ export const generateIngredientsStep: ActionStep<MealResult, 'generateIngredient
       messages: [
         { role: 'system', content: MEAL_INGREDIENTS_PROMPT },
         { role: 'user', content: `Meal name: ${name}\nServings: ${servings}` },
+        ...context.messages.slice(-MAX_CONTEXT_MESSAGES).map((m) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.rawContent ?? m.content,
+        })),
       ],
       stream: false,
       format: MEAL_INGREDIENTS_SCHEMA,
