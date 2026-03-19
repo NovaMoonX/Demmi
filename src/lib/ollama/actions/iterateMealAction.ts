@@ -38,7 +38,7 @@ export type FieldDetectStepName =
 
 export type MealIterationStepName =
   | 'validateIterationRequest'
-  | FieldDetectStepName
+  | 'detectFieldsToUpdate'
   | MealStepName;
 
 export interface MealIterationResult extends Record<string, unknown> {
@@ -56,24 +56,6 @@ export interface MealIterationResult extends Record<string, unknown> {
   proposal: AgentMealProposal;
 }
 
-/** Maps a MealIterableField to its per-field detect-step name. */
-const FIELD_TO_DETECT_STEP: Record<MealIterableField, FieldDetectStepName> = {
-  name: 'detectNameUpdate',
-  info: 'detectInfoUpdate',
-  description: 'detectDescriptionUpdate',
-  ingredients: 'detectIngredientsUpdate',
-  instructions: 'detectInstructionsUpdate',
-};
-
-/** Maps a detect-step name back to its corresponding MealIterableField. */
-const DETECT_STEP_TO_FIELD: Record<FieldDetectStepName, MealIterableField> = {
-  detectNameUpdate: 'name',
-  detectInfoUpdate: 'info',
-  detectDescriptionUpdate: 'description',
-  detectIngredientsUpdate: 'ingredients',
-  detectInstructionsUpdate: 'instructions',
-};
-
 /** Ordered list of fields to evaluate — order matters because later steps see earlier decisions. */
 const FIELD_DETECTION_ORDER: MealIterableField[] = [
   'name',
@@ -82,9 +64,6 @@ const FIELD_DETECTION_ORDER: MealIterableField[] = [
   'ingredients',
   'instructions',
 ];
-
-/** Set of all detection step names, used to exclude them from the generation-steps count. */
-const DETECTION_STEP_NAMES = new Set<string>(Object.values(FIELD_TO_DETECT_STEP));
 
 const FIELD_TO_STEP: Array<{ field: MealIterableField; step: ActionStep<MealResult, MealStepName> }> = [
   { field: 'name', step: proposeNameStep },
@@ -111,7 +90,6 @@ function formatProposalForPrompt(proposal: AgentMealProposal): string {
   ].join('\n');
 }
 
-/** Format accumulated per-field decisions as context text for subsequent detection calls. */
 function formatPriorDecisions(
   decisions: Array<{ field: MealIterableField; shouldUpdate: boolean; reason: string }>,
 ): string {
@@ -122,6 +100,73 @@ function formatPriorDecisions(
     })
     .join('\n');
 }
+
+/**
+ * Runs 5 sequential per-field LLM calls (name → info → description → ingredients → instructions).
+ * Each call is focused on one field only and receives all prior field decisions as context,
+ * enabling cascading reasoning (e.g. "ingredients changed → instructions must be re-checked").
+ * Returns { fieldsToUpdate } — the subset of fields where shouldUpdate was true.
+ *
+ * Can be invoked in isolation via iterateMealAction.executeStep('detectFieldsToUpdate', ...).
+ */
+export const detectFieldsToUpdateStep: ActionStep<MealIterationResult, 'detectFieldsToUpdate'> = {
+  name: 'detectFieldsToUpdate',
+
+  async execute(
+    model: string,
+    context: ActionContext<MealIterationResult>,
+    runtime: ActionRuntime,
+  ): Promise<StepResult<MealIterationResult, 'detectFieldsToUpdate'>> {
+    const { abortSignal } = runtime;
+    const existingProposal = context.previousResults?.existingProposal;
+
+    if (!existingProposal) {
+      return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate: [] } };
+    }
+
+    if (abortSignal?.aborted) {
+      return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate: [] }, cancelled: true };
+    }
+
+    const proposalSummary = formatProposalForPrompt(existingProposal);
+    const priorDecisions: Array<{ field: MealIterableField; shouldUpdate: boolean; reason: string }> = [];
+
+    for (const field of FIELD_DETECTION_ORDER) {
+      if (abortSignal?.aborted) {
+        return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate: [] }, cancelled: true };
+      }
+
+      const priorDecisionsText = formatPriorDecisions(priorDecisions);
+      const systemContent = `${buildFieldDetectionPrompt(field, priorDecisionsText)}\n\nCurrent recipe:\n${proposalSummary}`;
+
+      const response = await ollamaClient.chat({
+        model,
+        messages: [
+          { role: 'system', content: systemContent },
+          ...formatContextMessages(context.messages),
+        ],
+        stream: false,
+        format: MEAL_FIELD_DETECTION_SCHEMA,
+      });
+
+      if (abortSignal?.aborted) {
+        return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate: [] }, cancelled: true };
+      }
+
+      const parsed = JSON.parse(response.message.content);
+      const shouldUpdate: boolean = parsed.shouldUpdate === true;
+      const reason: string = parsed.reason ?? '';
+
+      priorDecisions.push({ field, shouldUpdate, reason });
+    }
+
+    const fieldsToUpdate: MealIterableField[] = priorDecisions
+      .filter((d) => d.shouldUpdate)
+      .map((d) => d.field);
+
+    return { stepName: 'detectFieldsToUpdate', data: { fieldsToUpdate } };
+  },
+};
 
 export const validateIterationRequestStep: ActionStep<MealIterationResult, 'validateIterationRequest'> = {
   name: 'validateIterationRequest',
@@ -186,7 +231,7 @@ export const iterateMealAction = {
   description: 'Refine an existing meal proposal by regenerating only the fields that need to change',
   isMultiStep: true,
 
-  steps: [validateIterationRequestStep],
+  steps: [validateIterationRequestStep, detectFieldsToUpdateStep],
 
   async executeStep(
     model: string,
@@ -196,6 +241,9 @@ export const iterateMealAction = {
   ): Promise<StepResult<MealIterationResult, MealIterationStepName>> {
     if (stepName === 'validateIterationRequest') {
       return validateIterationRequestStep.execute(model, context, runtime);
+    }
+    if (stepName === 'detectFieldsToUpdate') {
+      return detectFieldsToUpdateStep.execute(model, context, runtime);
     }
     const entry = FIELD_TO_STEP.find((e) => e.step.name === stepName);
     if (!entry) {
@@ -244,45 +292,16 @@ export const iterateMealAction = {
       };
     }
 
-    // Steps 2–6: Per-field detection — each field gets its own focused LLM call.
-    // Decisions from earlier fields are passed as context to later ones, enabling
-    // cascading reasoning (e.g. if ingredients change, instructions check that).
-    const proposalSummary = formatProposalForPrompt(existingProposal);
-    const priorDecisions: Array<{ field: MealIterableField; shouldUpdate: boolean; reason: string }> = [];
+    // Step 2: Detect which fields need updating via 5 sequential per-field LLM calls.
+    const fieldResult = await detectFieldsToUpdateStep.execute(model, context, runtime);
 
-    for (const field of FIELD_DETECTION_ORDER) {
-      if (runtime.abortSignal?.aborted) {
-        return { data: { iterationValid, agentMessage }, completedSteps, cancelled: true };
-      }
-
-      const priorDecisionsText = formatPriorDecisions(priorDecisions);
-      const systemContent = `${buildFieldDetectionPrompt(field, priorDecisionsText)}\n\nCurrent recipe:\n${proposalSummary}`;
-
-      const response = await ollamaClient.chat({
-        model,
-        messages: [
-          { role: 'system', content: systemContent },
-          ...formatContextMessages(context.messages),
-        ],
-        stream: false,
-        format: MEAL_FIELD_DETECTION_SCHEMA,
-      });
-
-      if (runtime.abortSignal?.aborted) {
-        return { data: { iterationValid, agentMessage }, completedSteps, cancelled: true };
-      }
-
-      const parsed = JSON.parse(response.message.content);
-      const shouldUpdate: boolean = parsed.shouldUpdate === true;
-      const reason: string = parsed.reason ?? '';
-
-      priorDecisions.push({ field, shouldUpdate, reason });
-      completedSteps.push(FIELD_TO_DETECT_STEP[field]);
+    if (fieldResult.cancelled) {
+      return { data: { iterationValid, agentMessage }, completedSteps, cancelled: true };
     }
 
-    const fieldsToUpdate: MealIterableField[] = priorDecisions
-      .filter((d) => d.shouldUpdate)
-      .map((d) => d.field);
+    const fieldsToUpdate: MealIterableField[] =
+      (fieldResult.data.fieldsToUpdate as MealIterableField[]) ?? [];
+    completedSteps.push('detectFieldsToUpdate');
 
     // Notify consumer so it can show per-field loading skeletons.
     runtime.onStepComplete?.('detectFieldsToUpdate', { fieldsToUpdate });
@@ -356,7 +375,7 @@ export const iterateMealAction = {
     }
 
     const generationStepsCompleted = completedSteps.filter(
-      (s) => s !== 'validateIterationRequest' && !DETECTION_STEP_NAMES.has(s),
+      (s) => s !== 'validateIterationRequest' && s !== 'detectFieldsToUpdate',
     );
     const cancelled =
       (runtime.abortSignal?.aborted ?? false) ||
@@ -405,6 +424,3 @@ export const iterateMealAction = {
     return { data: accumulatedResult, completedSteps, cancelled };
   },
 } satisfies ActionHandler<MealIterationResult, MealIterationStepName>;
-
-// Re-export DETECT_STEP_TO_FIELD for consumers that need to map step names back to fields.
-export { DETECT_STEP_TO_FIELD };
