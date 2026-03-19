@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Textarea, Button, Label, Badge, Card } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useToast } from '@moondreamsdev/dreamer-ui/hooks';
+import { useActionModal } from '@moondreamsdev/dreamer-ui/hooks';
+import { OllamaModelControl } from '@components/chat/OllamaModelControl';
 import { useAppSelector, useAppDispatch } from '@store/hooks';
 import { createIngredient } from '@store/actions/ingredientActions';
 import { createMeal } from '@store/actions/mealActions';
@@ -19,6 +21,8 @@ import type {
 import type { RecipeStep } from '@lib/ollama/action-types/createMealAction.types';
 import type { MealIngredient } from '@lib/meals';
 import { generatedId } from '@utils/generatedId';
+
+const NAVIGATE_DELAY_MS = 400;
 
 type ScreenPhase = 'paste' | 'generating' | 'result';
 
@@ -127,9 +131,7 @@ function MealProposalCard({ meal }: { meal: AgentMealProposal }) {
         <div className='flex items-start justify-between gap-2'>
           <div className='min-w-0 flex-1'>
             <h4 className='text-foreground text-base font-semibold'>{meal.title}</h4>
-            <p className='text-muted-foreground mt-0.5 line-clamp-2 text-sm'>
-              {meal.description}
-            </p>
+            <p className='text-muted-foreground mt-0.5 line-clamp-3 text-sm'>{meal.description}</p>
           </div>
           <span className='shrink-0 text-2xl'>{MEAL_CATEGORY_EMOJIS[meal.category]}</span>
         </div>
@@ -147,14 +149,23 @@ function MealProposalCard({ meal }: { meal: AgentMealProposal }) {
             {meal.servingSize} {meal.servingSize === 1 ? 'serving' : 'servings'}
           </span>
         </div>
-        {meal.instructions.length > 0 && (
-          <div className='text-muted-foreground text-xs'>
-            {meal.instructions.length} instruction{' '}
-            {meal.instructions.length === 1 ? 'step' : 'steps'}
-          </div>
-        )}
         {meal.ingredients.length > 0 && (
           <IngredientProposalList ingredients={meal.ingredients} />
+        )}
+        {meal.instructions.length > 0 && (
+          <div className='flex flex-col gap-1.5'>
+            <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
+              Instructions
+            </p>
+            <ol className='flex flex-col gap-1'>
+              {meal.instructions.map((step, i) => (
+                <li key={i} className='text-foreground flex gap-2 text-sm'>
+                  <span className='text-muted-foreground shrink-0 font-medium'>{i + 1}.</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
         )}
       </div>
     </Card>
@@ -199,6 +210,7 @@ export function MealFromText() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { addToast } = useToast();
+  const { confirm } = useActionModal();
   const selectedModel = useAppSelector((state) => state.chats.selectedModel);
 
   const [recipeText, setRecipeText] = useState('');
@@ -280,7 +292,16 @@ export function MealFromText() {
     abortControllerRef.current?.abort();
   };
 
-  const handleRepaste = () => {
+  const handleRepaste = async () => {
+    const confirmed = await confirm({
+      title: 'Discard this recipe?',
+      message:
+        "You'll return to the text input and need to generate again. This recipe will be lost.",
+      confirmText: 'Yes, repaste',
+      cancelText: 'Keep recipe',
+    });
+    if (!confirmed) return;
+
     setPhase('paste');
     setPartialRecipe(null);
     setProposal(null);
@@ -291,6 +312,7 @@ export function MealFromText() {
 
     setIsSaving(true);
     const mealIngredients: MealIngredient[] = [];
+    let savedMealId: string | null = null;
 
     try {
       for (const ingredientProposal of proposal.ingredients) {
@@ -330,7 +352,7 @@ export function MealFromText() {
         }
       }
 
-      await dispatch(
+      const savedMeal = await dispatch(
         createMeal({
           title: proposal.title,
           description: proposal.description,
@@ -344,18 +366,22 @@ export function MealFromText() {
         }),
       ).unwrap();
 
+      savedMealId = savedMeal.id;
+
       addToast({
         title: 'Meal saved!',
         description: `"${proposal.title}" has been added to your collection.`,
         type: 'success',
       });
-
-      navigate('/meals');
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
       addToast({ title: 'Failed to save', description: errMsg, type: 'error' });
     } finally {
-      setIsSaving(false);
+      if (savedMealId) {
+        setTimeout(() => navigate(`/meals/${savedMealId}`), NAVIGATE_DELAY_MS);
+      } else {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -454,8 +480,20 @@ export function MealFromText() {
       </div>
 
       <div className='flex flex-col gap-6'>
-        <div>
-          <Label htmlFor='recipe-text'>Recipe Text</Label>
+        <div className='flex flex-col gap-1.5'>
+          <div className='flex items-center justify-between'>
+            <Label htmlFor='recipe-text'>Recipe Text</Label>
+            {recipeText && (
+              <Button
+                variant='ghost'
+                size='sm'
+                onClick={() => setRecipeText('')}
+                aria-label='Clear recipe text'
+              >
+                Clear
+              </Button>
+            )}
+          </div>
           <Textarea
             id='recipe-text'
             value={recipeText}
@@ -465,11 +503,9 @@ export function MealFromText() {
           />
         </div>
 
-        {!selectedModel && (
-          <p className='text-muted-foreground text-sm'>
-            ⚠️ No AI model selected. Please configure a model in the Chat screen first.
-          </p>
-        )}
+        <div className='flex justify-end'>
+          <OllamaModelControl />
+        </div>
 
         <div className='flex gap-3'>
           <Button
