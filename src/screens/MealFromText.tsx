@@ -485,7 +485,7 @@ export function MealFromText() {
             <Label htmlFor='recipe-text'>Recipe Text</Label>
             {recipeText && (
               <Button
-                variant='ghost'
+                variant='tertiary'
                 size='sm'
                 onClick={() => setRecipeText('')}
                 aria-label='Clear recipe text'
