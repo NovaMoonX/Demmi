@@ -66,39 +66,6 @@ Rules:
 
 Respond with JSON: { "steps": ["Step 1...", "Step 2...", "Step 3..."] }`;
 
-export const MEAL_FIELDS_DETECTION_PROMPT = `You are Demmi's AI assistant specialized in cooking and recipes.
-
-A user wants to refine an existing meal recipe. Based on their latest message and the current recipe shown below, determine which recipe fields need to be regenerated.
-
-Fields you can update:
-- "name": The recipe title/name
-- "info": Category, serving count, and total cooking time
-- "description": The short appetizing description text
-- "ingredients": The complete ingredients list (add, remove, or substitute)
-- "instructions": The step-by-step cooking instructions
-
-Before deciding, read the full recipe carefully and reason through the user's request:
-1. What ingredient or concept is the user asking to change, remove, or add?
-2. Does that ingredient or concept appear in the recipe **title**? If so, include "name".
-3. Does that ingredient or concept appear in the recipe **description**? If so, include "description".
-4. Does the ingredient list need to change (additions, removals, substitutions, dietary restrictions)? If so, include "ingredients".
-5. Do the cooking steps reference that ingredient or concept in a way that would become inaccurate? If so, include "instructions".
-6. Is the user asking to change serving size, cooking time, or meal category? If so, include "info" (and "ingredients" if quantities scale with servings).
-
-Examples of cascading changes:
-- "I don't like lemon" on a recipe called "Lemon Garlic Salmon" → include "name" (lemon is in the title), "description" (likely references lemon), "ingredients" (remove lemon), "instructions" (steps may reference squeezing lemon)
-- "Make it vegan" → include "ingredients" (remove animal products), possibly "description" (highlight vegan angle), possibly "instructions" (if steps reference dairy/eggs)
-- "Make it spicier" → include "ingredients" (add chili, etc.), possibly "description"
-- "Rename it" → include "name", possibly "description"
-- "Serves 8 instead of 4" → include "info" and "ingredients"
-
-Rules:
-- Think holistically: if a key ingredient is removed, check whether it appears in ALL other fields
-- Never include fields that do not genuinely need to change
-- Never include "info" unless serving size, time, or category actually need to change
-
-Respond with JSON (example format only — include only the fields that actually apply): { "fields": ["ingredients", "instructions"] }`;
-
 export const MEAL_ITERATION_VALIDATION_PROMPT = `You are Demmi's AI assistant specialized in cooking and recipes.
 
 Determine whether the user's latest message is asking to refine or modify the current meal recipe shown below.
@@ -120,3 +87,72 @@ If the message IS valid: write a short, friendly acknowledgment of what you unde
 If the message is NOT valid: write a short, friendly message explaining you're unsure what the user wants to change (e.g. "I'm not sure how you'd like to improve this recipe. Could you tell me what you'd like to update?").
 
 Respond with JSON: { "valid": true, "agentMessage": "Got it — I'll remove the peanuts for you!" }`;
+
+const FIELD_SPECIFIC_GUIDES: Record<string, string> = {
+  name: `Should the recipe **title/name** be updated?
+
+Consider:
+- Does the user's request remove, replace, or fundamentally change the main ingredient or concept the title is built around?
+- If a defining ingredient is being removed (e.g. lemon from "Lemon Garlic Salmon"), the name must change.
+- If only a minor ingredient changes (e.g. adding a pinch of salt), the name likely stays the same.
+- If the user explicitly asks to rename the dish, the name must change.
+
+In your reason, if updating: specify what the title should no longer include and why.`,
+
+  info: `Should the **category, serving size, or total cooking time** be updated?
+
+Consider:
+- Has the user asked to scale portions (e.g. "make it for 8 instead of 4")?
+- Is the cooking method or meal type changing (e.g. "make it a snack", "change to lunch")?
+- Will a significant dietary change meaningfully alter total prep/cook time?
+
+In your reason, if updating: specify which values are changing and what the new values should be (e.g. "Serving size should increase from 4 to 8").`,
+
+  description: `Should the **short description text** be updated?
+
+Consider:
+- Does the current description mention or highlight an ingredient or concept the user wants removed?
+- Will the recipe's character, style, or key selling points change enough that the current description would be inaccurate or misleading?
+- Review any prior field decisions — if the name or key ingredients are changing, the description likely needs to match.
+
+In your reason, if updating: specify what aspect of the description is now inaccurate and what direction the new description should take.`,
+
+  ingredients: `Should the **ingredients list** be updated?
+
+Consider:
+- Is the user explicitly removing, adding, or substituting an ingredient?
+- Does the user mention an allergy, intolerance, or dietary restriction that affects ingredients?
+- Review any prior field decisions — if serving size is changing, ALL ingredient quantities must be rescaled.
+- If a key ingredient is being removed (e.g. lemon), ALL lemon-containing ingredients must be removed.
+
+In your reason, if updating: specify exactly which ingredients are being added, removed, or changed and why.`,
+
+  instructions: `Should the **step-by-step cooking instructions** be updated?
+
+Consider:
+- Do any instruction steps reference an ingredient that is being removed or changed?
+- Would any steps become inaccurate, redundant, or unsafe given the ingredient changes?
+- Review any prior field decisions about ingredients — if ingredients changed, scrutinize every step.
+
+In your reason, if updating: specify which steps or techniques would be affected and why.`,
+};
+
+/**
+ * Builds a focused per-field detection prompt. Each call asks the LLM to evaluate
+ * ONLY one field, while providing the decisions made for all previously evaluated fields
+ * as context — enabling cascading reasoning (e.g. ingredient removal → instruction update).
+ */
+export function buildFieldDetectionPrompt(field: string, priorDecisionsText: string): string {
+  const guide = FIELD_SPECIFIC_GUIDES[field] ?? `Should the "${field}" field be updated based on the user's request?`;
+
+  const priorContext = priorDecisionsText
+    ? `\n\nDecisions already made for earlier fields:\n${priorDecisionsText}\nTake these into account when evaluating the current field.\n`
+    : '';
+
+  return `You are analyzing a recipe modification request.${priorContext}
+Your task: Evaluate ONLY the "${field}" field. Do not judge other fields.
+
+${guide}
+
+Respond with JSON: { "shouldUpdate": false, "reason": "Brief explanation of your decision, including any specifics about what would change" }`;
+}
