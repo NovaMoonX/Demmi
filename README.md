@@ -178,7 +178,7 @@ A cooking app powered with local LLM using Ollama.
 - **Detailed Meal View**: Full-screen dedicated view for creating and editing meals
   - **Create Meals**: Clicking "Create Meal" opens a modal offering three entry options:
     - **✍️ Manual Entry**: Navigates to `/meals/new` to fill in every detail yourself
-    - **💬 From Text**: Navigates to `/meals/new/from-text` — paste a full recipe text (e.g., one sent via message) into a tall textarea and continue; the CTA is disabled until text is entered
+    - **💬 From Text**: Navigates to `/meals/new/from-text` — paste a full recipe text (e.g., one sent via message) into a tall textarea, then click **Generate** to run the AI pipeline directly on the screen; a step-by-step progress indicator shows each generation phase (name → info → description → ingredients → instructions) with a live partial recipe preview; once complete the full recipe proposal is displayed and the user can either **Create Meal** (saves to collection) or **Repaste** (return to the text input)
     - **🌐 From URL**: Navigates to `/meals/new/from-url` — enter a recipe URL in a URL-type input; a live preview card appears below the field once a URL is typed; the CTA is disabled until a URL is entered
   - **Edit Meals**: Click on any meal card to edit it with pre-populated form data
   - **Back to Meals**: Quick link to return to the meals list from the detail view
