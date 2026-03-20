@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Select, Input, Toggle, Button } from '@moondreamsdev/dreamer-ui/components';
 import { MealCard } from '@components/meals/MealCard';
+import { CreateMealModal } from '@components/meals/CreateMealModal';
 import { useAppSelector } from '@store/hooks';
 import { Meal, MEAL_CATEGORY_OPTIONS } from '@lib/meals';
 
@@ -12,6 +13,7 @@ export function Meals() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [timeFilter, setTimeFilter] = useState<string>('all');
   const [noPrepTime, setNoPrepTime] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const categoryOptions = [
     { value: 'all', text: 'All Categories' },
@@ -57,7 +59,7 @@ export function Meals() {
   });
 
   const handleCreateMeal = () => {
-    navigate('/meals/new');
+    setIsCreateModalOpen(true);
   };
 
   const handleMealClick = (meal: Meal) => {
@@ -78,6 +80,13 @@ export function Meals() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto mt-10 md:mt-0">
+      <CreateMealModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSelectManual={() => navigate('/meals/new')}
+        onSelectFromText={() => navigate('/meals/new/from-text')}
+        onSelectFromUrl={() => navigate('/meals/new/from-url')}
+      />
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-4xl font-bold text-foreground">Meals</h1>

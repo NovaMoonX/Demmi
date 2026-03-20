@@ -72,6 +72,14 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                path: 'ingredients/new/barcode',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { default: IngredientBarcodeScanner } = await import('@screens/IngredientBarcodeScanner');
+                  return { Component: IngredientBarcodeScanner };
+                },
+              },
+              {
                 path: 'meals',
                 HydrateFallback: Loading,
                 lazy: async () => {
@@ -85,6 +93,22 @@ export const router = createBrowserRouter([
                 lazy: async () => {
                   const { default: MealDetail } = await import('@screens/MealDetail');
                   return { Component: MealDetail };
+                },
+              },
+              {
+                path: 'meals/new/from-text',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { default: MealFromText } = await import('@screens/MealFromText');
+                  return { Component: MealFromText };
+                },
+              },
+              {
+                path: 'meals/new/from-url',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { default: MealFromUrl } = await import('@screens/MealFromUrl');
+                  return { Component: MealFromUrl };
                 },
               },
               {

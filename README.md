@@ -177,7 +177,10 @@ A cooking app powered with local LLM using Ollama.
 - **Filter by Total Time**: Dropdown filter to show meals by total cooking time (prep + cook time: `under-15`, `15-30`, `30-60`, `over-60`)
 - **No Prep Time Toggle**: Filter switch to show only meals that require no preparation time
 - **Detailed Meal View**: Full-screen dedicated view for creating and editing meals
-  - **Create Meals**: Navigate to `/meals/new` to add new meals
+  - **Create Meals**: Clicking "Create Meal" opens a modal offering three entry options:
+    - **✍️ Manual Entry**: Navigates to `/meals/new` to fill in every detail yourself
+    - **💬 From Text**: Navigates to `/meals/new/from-text` — paste a full recipe text (e.g., one sent via message) into a tall textarea with a **Clear** button (visible when text is present); an **AI Model** picker below the textarea (reuses the same self-contained `OllamaModelControl` component as Chat) lets you select and download models without leaving the screen; clicking **Generate** runs the AI pipeline directly: a step-by-step progress indicator shows each generation phase (name → info → description → ingredients → instructions) with a live partial recipe preview; once complete the full recipe proposal is displayed — with ingredients, timing, and the full instruction list — and the user can either **Create Meal** (saves to collection, then navigates to the new meal detail page after 400 ms) or **Repaste** (confirms via dialog before discarding the generated recipe and returning to the text input)
+    - **🌐 From URL**: Navigates to `/meals/new/from-url` — enter a recipe URL in a URL-type input; a live preview card appears below the field once a URL is typed; the CTA is disabled until a URL is entered
   - **Edit Meals**: Click on any meal card to edit it with pre-populated form data
   - **Back to Meals**: Quick link to return to the meals list from the detail view
   - **Delete Meals**: Delete button on detailed view with confirmation dialog
