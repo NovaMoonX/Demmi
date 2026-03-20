@@ -214,7 +214,7 @@ export function MealDetail() {
                 {MEAL_CATEGORY_EMOJIS[existingMeal.category]} {existingMeal.category}
               </Badge>
             </div>
-            <div className='flex shrink-0 gap-2'>
+            <div className='hidden md:flex shrink-0 gap-2'>
               <Button
                 type='button'
                 variant='primary'
@@ -320,6 +320,34 @@ export function MealDetail() {
               </ol>
             </div>
           )}
+        </div>
+
+        <div className='bg-background border-border sticky bottom-0 flex gap-2 border-t pt-4 pb-6 md:hidden'>
+          <Button
+            type='button'
+            variant='primary'
+            onClick={() => navigate(`/meals/${existingMeal.id}/cook`)}
+            disabled={existingMeal.instructions.length === 0}
+            className='flex-1'
+          >
+            🍳 Cook
+          </Button>
+          <Button
+            type='button'
+            variant='secondary'
+            onClick={() => setIsViewMode(false)}
+            className='flex-1'
+          >
+            Edit
+          </Button>
+          <Button
+            type='button'
+            variant='destructive'
+            onClick={handleDelete}
+            className='flex-1'
+          >
+            Delete
+          </Button>
         </div>
       </div>
     );

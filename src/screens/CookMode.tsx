@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button, Drawer } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
@@ -15,6 +15,18 @@ export function CookMode() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [showIngredients, setShowIngredients] = useState(false);
+  const [servings, setServings] = useState(meal?.servingSize ?? 1);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setElapsedSeconds((s) => s + 1);
+    }, 1000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   if (!meal) {
     return (
@@ -46,6 +58,18 @@ export function CookMode() {
   const totalSteps = meal.instructions.length;
   const progress = ((currentStep + 1) / totalSteps) * 100;
 
+  const formatTime = (totalSecs: number) => {
+    const minutes = Math.floor(totalSecs / 60);
+    const seconds = totalSecs % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const scaleFactor = meal.servingSize > 0 ? servings / meal.servingSize : 1;
+
+  const getScaledAmount = (baseServings: number) => {
+    return Number((baseServings * scaleFactor).toFixed(2));
+  };
+
   const handlePrev = () => {
     setCurrentStep((s) => Math.max(0, s - 1));
   };
@@ -62,36 +86,62 @@ export function CookMode() {
   const isFirstStep = currentStep === 0;
 
   const ingredientsContent = (
-    <ul className='divide-border divide-y'>
-      {meal.ingredients.length === 0 ? (
-        <li className='text-muted-foreground py-4 text-center text-sm'>
-          No ingredients listed.
-        </li>
-      ) : (
-        meal.ingredients.map((ing) => {
-          const ingredient = allIngredients.find(
-            (i) => i.id === ing.ingredientId,
-          );
-          return (
-            <li
-              key={ing.ingredientId}
-              className='flex items-center justify-between py-3'
-            >
-              <span className='text-foreground font-medium'>
-                {ingredient?.name ?? 'Unknown Ingredient'}
-              </span>
-              <span className='text-muted-foreground text-sm'>
-                {ing.servings} {ing.servings === 1 ? 'serving' : 'servings'}
-              </span>
-            </li>
-          );
-        })
-      )}
-    </ul>
+    <>
+      <div className='mb-4 flex items-center justify-between'>
+        <span className='text-foreground text-sm font-semibold'>Servings</span>
+        <div className='flex items-center gap-2'>
+          <Button
+            variant='secondary'
+            size='icon'
+            onClick={() => setServings((s) => Math.max(1, s - 1))}
+            disabled={servings <= 1}
+          >
+            −
+          </Button>
+          <span className='text-foreground w-8 text-center font-bold'>
+            {servings}
+          </span>
+          <Button
+            variant='secondary'
+            size='icon'
+            onClick={() => setServings((s) => s + 1)}
+          >
+            +
+          </Button>
+        </div>
+      </div>
+      <ul className='divide-border divide-y'>
+        {meal.ingredients.length === 0 ? (
+          <li className='text-muted-foreground py-4 text-center text-sm'>
+            No ingredients listed.
+          </li>
+        ) : (
+          meal.ingredients.map((ing) => {
+            const ingredient = allIngredients.find(
+              (i) => i.id === ing.ingredientId,
+            );
+            const scaledAmount = getScaledAmount(ing.servings);
+            return (
+              <li
+                key={ing.ingredientId}
+                className='flex items-center justify-between py-3'
+              >
+                <span className='text-foreground font-medium'>
+                  {ingredient?.name ?? 'Unknown Ingredient'}
+                </span>
+                <span className='text-muted-foreground text-sm'>
+                  {scaledAmount} {scaledAmount === 1 ? 'serving' : 'servings'}
+                </span>
+              </li>
+            );
+          })
+        )}
+      </ul>
+    </>
   );
 
   return (
-    <div className='bg-background flex h-screen flex-col overflow-hidden md:flex-row'>
+    <div className='bg-background flex h-full flex-col overflow-hidden md:flex-row'>
       {/* Desktop: Left panel with image and meal info */}
       <div className='hidden shrink-0 flex-col md:flex md:w-80 lg:w-96'>
         <div className='flex flex-col overflow-y-auto'>
@@ -163,34 +213,47 @@ export function CookMode() {
       {/* Main cooking area */}
       <div className='flex flex-1 flex-col overflow-hidden'>
         {/* Mobile header */}
-        <div className='border-border flex items-center justify-between border-b px-4 py-3 md:hidden'>
-          <Link
-            to={`/meals/${meal.id}`}
-            className='text-muted-foreground hover:text-foreground text-sm'
-          >
-            ✕
-          </Link>
-          <h1 className='text-foreground max-w-[60%] truncate text-sm font-semibold'>
-            {meal.title}
-          </h1>
-          <Button
-            variant='tertiary'
-            onClick={() => setShowIngredients(true)}
-          >
-            Ingredients
-          </Button>
+        <div className='border-border shrink-0 border-b md:hidden'>
+          <div className='flex items-center justify-between px-4 py-3'>
+            <Link
+              to={`/meals/${meal.id}`}
+              className='text-muted-foreground hover:text-foreground text-sm'
+            >
+              ✕
+            </Link>
+            <h1 className='text-foreground max-w-[50%] truncate text-sm font-semibold'>
+              {meal.title}
+            </h1>
+            <Button
+              variant='tertiary'
+              onClick={() => setShowIngredients(true)}
+            >
+              Ingredients
+            </Button>
+          </div>
+          <div className='flex items-center justify-center gap-1.5 pb-2'>
+            <span className='text-primary text-sm'>⏱</span>
+            <span className='text-primary font-mono text-sm font-semibold'>
+              {formatTime(elapsedSeconds)}
+            </span>
+          </div>
         </div>
 
         {/* Desktop header */}
-        <div className='border-border hidden items-center justify-between border-b px-6 py-4 md:flex'>
-          <h2 className='text-foreground font-semibold'>Cook Mode</h2>
+        <div className='border-border hidden shrink-0 items-center justify-between border-b px-6 py-4 md:flex'>
+          <div className='flex items-center gap-3'>
+            <h2 className='text-foreground font-semibold'>Cook Mode</h2>
+            <span className='bg-primary/10 text-primary rounded-full px-3 py-1 font-mono text-sm font-semibold'>
+              ⏱ {formatTime(elapsedSeconds)}
+            </span>
+          </div>
           <span className='text-muted-foreground text-sm'>
             Step {currentStep + 1} of {totalSteps}
           </span>
         </div>
 
         {/* Progress bar */}
-        <div className='bg-muted h-1 w-full'>
+        <div className='bg-muted h-1 w-full shrink-0'>
           <div
             className='bg-primary h-1 transition-all duration-300 ease-in-out'
             style={{ width: `${progress}%` }}
@@ -216,7 +279,7 @@ export function CookMode() {
         </div>
 
         {/* Step indicators (dots) */}
-        <div className='flex justify-center gap-1.5 px-6 pb-4'>
+        <div className='flex shrink-0 justify-center gap-1.5 px-6 pb-4'>
           {meal.instructions.map((_, i) => (
             <button
               key={i}
@@ -233,7 +296,7 @@ export function CookMode() {
         </div>
 
         {/* Navigation buttons */}
-        <div className='border-border border-t px-4 py-4 md:px-6'>
+        <div className='border-border shrink-0 border-t px-4 py-4 md:px-6'>
           <div className='mx-auto flex w-full max-w-2xl gap-3'>
             <Button
               variant='secondary'
