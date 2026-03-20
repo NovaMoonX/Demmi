@@ -13,6 +13,7 @@
     "devh": "vite --host"
   },
   "dependencies": {
+    "@ericblade/quagga2": "^1.12.1",
     "@moondreamsdev/dreamer-ui": "^1.7.26",
     "@reduxjs/toolkit": "^2.11.2",
     "@tailwindcss/typography": "^0.5.19",
