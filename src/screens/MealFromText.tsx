@@ -8,6 +8,7 @@ import { OllamaModelControl } from '@components/chat/OllamaModelControl';
 import { useAppSelector, useAppDispatch } from '@store/hooks';
 import { createIngredient } from '@store/actions/ingredientActions';
 import { createMeal } from '@store/actions/mealActions';
+import { createShoppingListItem } from '@store/actions/shoppingListActions';
 import { createMealAction } from '@lib/ollama/actions';
 import type { MealCategory } from '@lib/meals';
 import { MEAL_CATEGORY_COLORS, MEAL_CATEGORY_EMOJIS } from '@lib/meals';
@@ -221,6 +222,8 @@ export function MealFromText() {
   const [partialRecipe, setPartialRecipe] = useState<AgentPartialRecipe | null>(null);
   const [proposal, setProposal] = useState<AgentMealProposal | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [savedMealId, setSavedMealId] = useState<string | null>(null);
+  const [shoppingListPhase, setShoppingListPhase] = useState<'idle' | 'prompt' | 'adding' | 'done'>('idle');
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -314,7 +317,7 @@ export function MealFromText() {
 
     setIsSaving(true);
     const mealIngredients: MealIngredient[] = [];
-    let savedMealId: string | null = null;
+    let newlySavedMealId: string | null = null;
 
     try {
       for (const ingredientProposal of proposal.ingredients) {
@@ -368,7 +371,7 @@ export function MealFromText() {
         }),
       ).unwrap();
 
-      savedMealId = savedMeal.id;
+      newlySavedMealId = savedMeal.id;
 
       addToast({
         title: 'Meal saved!',
@@ -379,12 +382,56 @@ export function MealFromText() {
       const errMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
       addToast({ title: 'Failed to save', description: errMsg, type: 'error' });
     } finally {
-      if (savedMealId) {
-        setTimeout(() => navigate(`/meals/${savedMealId}`), NAVIGATE_DELAY_MS);
+      if (newlySavedMealId) {
+        setSavedMealId(newlySavedMealId);
+        setShoppingListPhase('prompt');
+        setIsSaving(false);
       } else {
         setIsSaving(false);
       }
     }
+  };
+
+  const handleAddIngredientsToShoppingList = async () => {
+    if (!proposal) return;
+    setShoppingListPhase('adding');
+
+    let itemsAdded = 0;
+    for (const ing of proposal.ingredients) {
+      try {
+        await dispatch(
+          createShoppingListItem({
+            name: ing.name,
+            ingredientId: ing.existingIngredientId ?? null,
+            productId: null,
+            amount: ing.servings,
+            unit: ing.unit,
+            category: ing.type,
+            note: null,
+            checked: false,
+          }),
+        ).unwrap();
+        itemsAdded++;
+      } catch {
+        // Continue adding remaining items even if one fails
+      }
+    }
+
+    if (itemsAdded > 0) {
+      addToast({
+        title: 'Added to shopping list',
+        description: `${itemsAdded} ingredient${itemsAdded === 1 ? '' : 's'} added.`,
+        type: 'success',
+      });
+    }
+
+    setShoppingListPhase('done');
+    setTimeout(() => navigate(`/meals/${savedMealId}`), NAVIGATE_DELAY_MS);
+  };
+
+  const handleSkipShoppingList = () => {
+    setShoppingListPhase('done');
+    setTimeout(() => navigate(`/meals/${savedMealId}`), NAVIGATE_DELAY_MS);
   };
 
   if (phase === 'generating') {
@@ -430,6 +477,9 @@ export function MealFromText() {
   }
 
   if (phase === 'result' && proposal) {
+    const isSaved = shoppingListPhase !== 'idle';
+    const isAddingToList = shoppingListPhase === 'adding';
+
     return (
       <div className='mx-auto mt-10 max-w-2xl p-6 md:mt-0'>
         <div className='mb-8'>
@@ -439,28 +489,60 @@ export function MealFromText() {
           >
             ← Back to Meals
           </Link>
-          <h1 className='text-foreground mb-2 text-4xl font-bold'>Recipe Ready!</h1>
+          <h1 className='text-foreground mb-2 text-4xl font-bold'>
+            {isSaved ? 'Meal Created!' : 'Recipe Ready!'}
+          </h1>
           <p className='text-muted-foreground'>
-            Review your recipe below, then save it to your collection.
+            {isSaved
+              ? 'Your meal has been saved to your collection.'
+              : 'Review your recipe below, then save it to your collection.'}
           </p>
         </div>
 
         <div className='flex flex-col gap-6'>
           <MealProposalCard meal={proposal} />
 
-          <div className='flex gap-3'>
-            <Button
-              variant='primary'
-              className='flex-1'
-              onClick={handleCreateMeal}
-              disabled={isSaving}
-            >
-              {isSaving ? 'Saving…' : '✓ Create Meal'}
-            </Button>
-            <Button variant='secondary' className='flex-1' onClick={handleRepaste}>
-              Repaste
-            </Button>
-          </div>
+          {shoppingListPhase === 'prompt' && (
+            <div className='border-border rounded-xl border p-4 flex flex-col gap-3'>
+              <p className='text-foreground text-sm font-medium'>
+                🛒 Would you like to add the ingredients to your shopping list?
+              </p>
+              <div className='flex gap-3'>
+                <Button
+                  variant='primary'
+                  className='flex-1'
+                  onClick={handleAddIngredientsToShoppingList}
+                  disabled={isAddingToList}
+                >
+                  Yes, add them
+                </Button>
+                <Button
+                  variant='secondary'
+                  className='flex-1'
+                  onClick={handleSkipShoppingList}
+                  disabled={isAddingToList}
+                >
+                  No thanks
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {shoppingListPhase === 'idle' && (
+            <div className='flex gap-3'>
+              <Button
+                variant='primary'
+                className='flex-1'
+                onClick={handleCreateMeal}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving…' : '✓ Create Meal'}
+              </Button>
+              <Button variant='secondary' className='flex-1' onClick={handleRepaste}>
+                Repaste
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );

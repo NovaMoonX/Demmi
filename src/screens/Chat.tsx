@@ -30,6 +30,7 @@ import {
 } from '@store/slices/chatsSlice';
 import { createIngredient } from '@store/actions/ingredientActions';
 import { createMeal } from '@store/actions/mealActions';
+import { createShoppingListItem } from '@store/actions/shoppingListActions';
 import { ChatMessage as ChatMessageType } from '@lib/chat';
 import type { MealIngredient } from '@lib/meals';
 import {
@@ -472,18 +473,46 @@ export function Chat() {
         description: `${mealsCreated} ${mealsCreated === 1 ? 'meal' : 'meals'} added to your collection.`,
         type: 'success',
       });
+    }
+  };
 
-      const savedMealsText =
-        mealsCreated === 1
-          ? `**${action.meals[0].title}**`
-          : `**${mealsCreated} recipes**`;
-      dispatch(
-        updateMessageContent({
-          chatId,
-          messageId,
-          content: `I've saved ${savedMealsText} to your meals collection! 🎉`,
-        }),
-      );
+  const handleAddToShoppingList = async (messageId: string) => {
+    const chatId = currentChatId;
+    if (!chatId) return;
+
+    const message = currentMessages.find((m) => m.id === messageId);
+    const action = message?.agentAction;
+    if (!action || action.type !== 'create_meal') return;
+
+    let itemsAdded = 0;
+    for (const mealProposal of action.meals) {
+      for (const ing of mealProposal.ingredients) {
+        try {
+          await dispatch(
+            createShoppingListItem({
+              name: ing.name,
+              ingredientId: ing.existingIngredientId ?? null,
+              productId: null,
+              amount: ing.servings,
+              unit: ing.unit,
+              category: ing.type,
+              note: null,
+              checked: false,
+            }),
+          ).unwrap();
+          itemsAdded++;
+        } catch {
+          // Continue adding remaining items even if one fails
+        }
+      }
+    }
+
+    if (itemsAdded > 0) {
+      addToast({
+        title: 'Added to shopping list',
+        description: `${itemsAdded} ingredient${itemsAdded === 1 ? '' : 's'} added.`,
+        type: 'success',
+      });
     }
   };
 
@@ -1085,6 +1114,7 @@ export function Chat() {
                   onRejectIntent={handleRejectIntent}
                   onApproveAction={handleApproveAction}
                   onRejectAction={handleRejectAction}
+                  onAddToShoppingList={handleAddToShoppingList}
                 />
               ))}
               <div ref={messagesEndRef} />

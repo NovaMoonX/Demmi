@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { INGREDIENT_TYPE_EMOJIS } from '@lib/ingredients';
 import type { MealCategory } from '@lib/meals';
 import { MEAL_CATEGORY_COLORS, MEAL_CATEGORY_EMOJIS } from '@lib/meals';
@@ -322,7 +323,9 @@ export function CreateMealAgentActionCard({
   onRejectIntent,
   onApprove,
   onReject,
+  onAddToShoppingList,
 }: AgentActionCardProps) {
+  const [shoppingListState, setShoppingListState] = useState<'prompt' | 'added' | 'skipped'>('prompt');
   if (action.status === 'pending_confirmation') {
     const name =
       action.proposedName || (action.meals[0]?.title ?? 'this recipe');
@@ -463,14 +466,55 @@ export function CreateMealAgentActionCard({
 
   if (action.status === 'approved') {
     return (
-      <div className='mt-3 flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3'>
-        <span className='text-base text-green-600 dark:text-green-400'>✓</span>
-        <span className='text-sm font-medium text-green-700 dark:text-green-400'>
-          {action.meals.length === 1
-            ? 'Meal saved'
-            : `${action.meals.length} meals saved`}{' '}
-          to your collection
-        </span>
+      <div className='mt-3 flex flex-col gap-3 rounded-xl border border-green-500/30 bg-green-500/5 p-3'>
+        <div className='flex items-center gap-2 px-1'>
+          <span className='text-base text-green-600 dark:text-green-400'>✓</span>
+          <span className='text-sm font-medium text-green-700 dark:text-green-400'>
+            {action.meals.length === 1
+              ? 'Meal saved'
+              : `${action.meals.length} meals saved`}{' '}
+            to your collection
+          </span>
+        </div>
+
+        <div className='flex flex-col gap-2'>
+          {action.meals.map((meal, i) => (
+            <MealPreviewCard key={i} meal={meal} />
+          ))}
+        </div>
+
+        {onAddToShoppingList && shoppingListState === 'prompt' && (
+          <div className='border-green-500/20 flex flex-col gap-2 border-t pt-2'>
+            <p className='text-muted-foreground text-xs'>
+              🛒 Would you like to add the ingredients to your shopping list?
+            </p>
+            <div className='flex items-center gap-2'>
+              <Button
+                variant='secondary'
+                size='sm'
+                onClick={() => {
+                  onAddToShoppingList();
+                  setShoppingListState('added');
+                }}
+              >
+                Yes, add them
+              </Button>
+              <Button
+                variant='tertiary'
+                size='sm'
+                onClick={() => setShoppingListState('skipped')}
+              >
+                No thanks
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {shoppingListState === 'added' && (
+          <p className='text-muted-foreground border-green-500/20 border-t pt-2 text-xs'>
+            🛒 Ingredients added to your shopping list
+          </p>
+        )}
       </div>
     );
   }

@@ -19,6 +19,7 @@ import {
   updateMeal as updateMealAsync,
   deleteMeal as deleteMealAsync,
 } from '@store/actions/mealActions';
+import { createShoppingListItem } from '@store/actions/shoppingListActions';
 import type { DynamicListItem } from '@moondreamsdev/dreamer-ui/components';
 import { MealIngredientSelector } from '@components/meals/MealIngredientSelector';
 
@@ -36,6 +37,9 @@ export function MealDetail() {
   const existingMeal = isEditing ? meals.find((m) => m.id === id) : undefined;
 
   const [isViewMode, setIsViewMode] = useState(isEditing);
+  const [pendingShoppingListIngredients, setPendingShoppingListIngredients] =
+    useState<MealIngredient[] | null>(null);
+  const [shoppingListPhase, setShoppingListPhase] = useState<'prompt' | 'adding' | 'done' | null>(null);
 
   const fromMealPath =
     isEditing && existingMeal ? `/meals/${existingMeal.id}` : '/meals/new';
@@ -141,10 +145,16 @@ export function MealDetail() {
       if (isEditing && existingMeal) {
         const updatedMeal: Meal = { ...existingMeal, ...mealData };
         await dispatch(updateMealAsync(updatedMeal)).unwrap();
+        navigate('/meals');
       } else {
         await dispatch(createMealAsync(mealData)).unwrap();
+        if (ingredientsList.length > 0) {
+          setPendingShoppingListIngredients(ingredientsList);
+          setShoppingListPhase('prompt');
+        } else {
+          navigate('/meals');
+        }
       }
-      navigate('/meals');
     } catch (err) {
       console.error(isEditing ? 'Failed to update meal:' : 'Failed to create meal:', err);
       addToast({
@@ -153,6 +163,51 @@ export function MealDetail() {
         type: 'destructive',
       });
     }
+  };
+
+  const handleAddIngredientsToShoppingList = async () => {
+    if (!pendingShoppingListIngredients) return;
+    setShoppingListPhase('adding');
+
+    let itemsAdded = 0;
+    for (const mealIngredient of pendingShoppingListIngredients) {
+      const ingredient = allIngredients.find((i) => i.id === mealIngredient.ingredientId);
+      if (!ingredient) continue;
+
+      try {
+        await dispatch(
+          createShoppingListItem({
+            name: ingredient.name,
+            ingredientId: ingredient.id,
+            productId: null,
+            amount: mealIngredient.servings,
+            unit: ingredient.unit,
+            category: ingredient.type,
+            note: null,
+            checked: false,
+          }),
+        ).unwrap();
+        itemsAdded++;
+      } catch {
+        // Continue adding remaining items even if one fails
+      }
+    }
+
+    if (itemsAdded > 0) {
+      addToast({
+        title: 'Added to shopping list',
+        description: `${itemsAdded} ingredient${itemsAdded === 1 ? '' : 's'} added.`,
+        type: 'success',
+      });
+    }
+
+    setShoppingListPhase('done');
+    navigate('/meals');
+  };
+
+  const handleSkipShoppingList = () => {
+    setShoppingListPhase('done');
+    navigate('/meals');
   };
 
   const handleDelete = async () => {
@@ -475,21 +530,55 @@ export function MealDetail() {
         </div>
 
         <div className='border-border flex gap-3 border-t pt-4'>
-          <Button type='submit' variant='primary' className='flex-1'>
-            {isEditing ? 'Update Meal' : 'Create Meal'}
-          </Button>
-          <Button
-            type='button'
-            variant='secondary'
-            onClick={handleCancel}
-            className='flex-1'
-          >
-            Cancel
-          </Button>
-          {isEditing && (
-            <Button type='button' variant='destructive' onClick={handleDelete}>
-              Delete Meal
-            </Button>
+          {shoppingListPhase === 'prompt' ? (
+            <div className='flex w-full flex-col gap-3'>
+              <p className='text-foreground text-sm font-medium'>
+                🛒 Would you like to add the ingredients to your shopping list?
+              </p>
+              <div className='flex gap-3'>
+                <Button
+                  type='button'
+                  variant='primary'
+                  className='flex-1'
+                  onClick={handleAddIngredientsToShoppingList}
+                >
+                  Yes, add them
+                </Button>
+                <Button
+                  type='button'
+                  variant='secondary'
+                  className='flex-1'
+                  onClick={handleSkipShoppingList}
+                >
+                  No thanks
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Button
+                type='submit'
+                variant='primary'
+                className='flex-1'
+                disabled={shoppingListPhase === 'adding'}
+              >
+                {isEditing ? 'Update Meal' : 'Create Meal'}
+              </Button>
+              <Button
+                type='button'
+                variant='secondary'
+                onClick={handleCancel}
+                className='flex-1'
+                disabled={shoppingListPhase === 'adding'}
+              >
+                Cancel
+              </Button>
+              {isEditing && (
+                <Button type='button' variant='destructive' onClick={handleDelete}>
+                  Delete Meal
+                </Button>
+              )}
+            </>
           )}
         </div>
       </form>
