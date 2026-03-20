@@ -362,6 +362,9 @@ export const summarizeIterationStep: ActionStep<MealIterationResult, 'summarizeI
 
     const fieldsToUpdate = (context.previousResults?.fieldsToUpdate as MealIterableField[]) ?? [];
     const fieldReasons = (context.previousResults?.fieldReasons as Partial<Record<MealIterableField, string>>) ?? {};
+    const existingProposal = context.previousResults?.existingProposal as AgentMealProposal | undefined;
+    const updatedName = context.previousResults?.name as string | undefined;
+    const mealName = updatedName ?? existingProposal?.title;
 
     if (abortSignal?.aborted) {
       return { stepName: 'summarizeIteration', data: { iterationSummary: '' }, cancelled: true };
@@ -374,11 +377,16 @@ export const summarizeIterationStep: ActionStep<MealIterationResult, 'summarizeI
       })
       .join('\n');
 
-    const systemContent = MEAL_ITERATION_SUMMARY_PROMPT.replace('{CHANGES}', changeLines);
+    const userContent = mealName
+      ? `Recipe: "${mealName}"\nChanges made:\n${changeLines}`
+      : `Changes made:\n${changeLines}`;
 
     const response = await ollamaClient.chat({
       model,
-      messages: [{ role: 'system', content: systemContent }],
+      messages: [
+        { role: 'system', content: MEAL_ITERATION_SUMMARY_PROMPT },
+        { role: 'user', content: userContent },
+      ],
       stream: false,
       format: MEAL_ITERATION_SUMMARY_SCHEMA,
     });

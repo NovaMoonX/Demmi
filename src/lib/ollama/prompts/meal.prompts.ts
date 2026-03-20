@@ -139,21 +139,16 @@ Consider:
 In your reason, if updating: specify which steps or techniques would be affected and why.`,
 };
 
-export const MEAL_ITERATION_SUMMARY_PROMPT = `You are Demmi's AI assistant specialized in cooking and recipes.
+export const MEAL_ITERATION_SUMMARY_PROMPT = `You are a recipe assistant.
 
-The user requested changes to a recipe and the following fields were updated:
-{CHANGES}
+Based on the changes listed by the user, write exactly one friendly sentence (max 20 words) telling the user what was updated. Use natural, conversational language.
 
-Write a single, friendly sentence (max 20 words) summarizing what was changed. Use natural, conversational language.
+Rules:
+- Refer to the recipe by name when helpful
+- Do NOT use technical terms like "name field", "info field", or "instructions field"
+- Speak as if you just made the changes yourself
 
-Examples:
-- "Done! I removed lemon and updated the name, ingredients, and instructions."
-- "I've rescaled all the ingredient quantities from 4 to 8 servings."
-- "Swapped the peanuts for almonds throughout the recipe!"
-
-Do not mention technical field names like "name field" or "info field".
-
-Respond with JSON: { "summary": "Done! I removed lemon and updated the name, ingredients, and instructions." }`;
+Respond with JSON only: { "summary": "..." }`;
 
 /**
  * Builds a focused per-field detection prompt. Each call asks the LLM to evaluate
