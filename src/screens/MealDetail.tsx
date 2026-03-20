@@ -19,6 +19,7 @@ import {
   updateMeal as updateMealAsync,
   deleteMeal as deleteMealAsync,
 } from '@store/actions/mealActions';
+import { createShoppingListItem } from '@store/actions/shoppingListActions';
 import type { DynamicListItem } from '@moondreamsdev/dreamer-ui/components';
 import { MealIngredientSelector } from '@components/meals/MealIngredientSelector';
 
@@ -139,12 +140,55 @@ export function MealDetail() {
 
     try {
       if (isEditing && existingMeal) {
+        // Shopping list prompt is intentionally skipped for meal updates —
+        // ingredients are already in the user's inventory and were added when
+        // the meal was originally created.
         const updatedMeal: Meal = { ...existingMeal, ...mealData };
         await dispatch(updateMealAsync(updatedMeal)).unwrap();
+        navigate('/meals');
       } else {
         await dispatch(createMealAsync(mealData)).unwrap();
+
+        if (ingredientsList.length > 0) {
+          const addToList = await confirm({
+            title: 'Add to Shopping List?',
+            message: 'Would you like to add the ingredients for this meal to your shopping list?',
+            confirmText: 'Yes, add them',
+            cancelText: 'No thanks',
+          });
+
+          if (addToList) {
+            for (const ing of ingredientsList) {
+              const ingredient = allIngredients.find((i) => i.id === ing.ingredientId);
+              if (ingredient) {
+                try {
+                  await dispatch(
+                    createShoppingListItem({
+                      name: ingredient.name,
+                      ingredientId: ingredient.id,
+                      productId: null,
+                      amount: ing.servings,
+                      unit: ingredient.unit,
+                      category: ingredient.type,
+                      note: null,
+                      checked: false,
+                    }),
+                  ).unwrap();
+                } catch (err) {
+                  console.error('Failed to add ingredient to shopping list:', err);
+                }
+              }
+            }
+            addToast({
+              title: 'Added to shopping list!',
+              description: 'Ingredients have been added to your shopping list.',
+              type: 'success',
+            });
+          }
+        }
+
+        navigate('/meals');
       }
-      navigate('/meals');
     } catch (err) {
       console.error(isEditing ? 'Failed to update meal:' : 'Failed to create meal:', err);
       addToast({

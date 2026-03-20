@@ -30,8 +30,10 @@ import {
 } from '@store/slices/chatsSlice';
 import { createIngredient } from '@store/actions/ingredientActions';
 import { createMeal } from '@store/actions/mealActions';
+import { createShoppingListItem } from '@store/actions/shoppingListActions';
 import { ChatMessage as ChatMessageType } from '@lib/chat';
 import type { MealIngredient } from '@lib/meals';
+import type { IngredientType, MeasurementUnit } from '@lib/ingredients';
 import {
   detectIntent,
   generateSummary,
@@ -134,6 +136,17 @@ export function Chat() {
   const activeMessageIdRef = useRef<string | null>(null);
   const { confirm } = useActionModal();
   const { addToast } = useToast();
+
+  const [pendingShoppingList, setPendingShoppingList] = useState<{
+    messageId: string;
+    ingredients: Array<{
+      name: string;
+      type: IngredientType;
+      unit: MeasurementUnit;
+      servings: number;
+      ingredientId: string;
+    }>;
+  } | null>(null);
 
   const { selectedModel } = useOllamaModels();
 
@@ -391,6 +404,14 @@ export function Chat() {
 
     let mealsCreated = 0;
 
+    const collectedIngredients: Array<{
+      name: string;
+      type: IngredientType;
+      unit: MeasurementUnit;
+      servings: number;
+      ingredientId: string;
+    }> = [];
+
     try {
       for (const mealProposal of action.meals) {
         const mealIngredients: MealIngredient[] = [];
@@ -400,6 +421,13 @@ export function Chat() {
             mealIngredients.push({
               ingredientId: ingredientProposal.existingIngredientId,
               servings: ingredientProposal.servings,
+            });
+            collectedIngredients.push({
+              name: ingredientProposal.name,
+              type: ingredientProposal.type,
+              unit: ingredientProposal.unit,
+              servings: ingredientProposal.servings,
+              ingredientId: ingredientProposal.existingIngredientId,
             });
           } else {
             const created = await dispatch(
@@ -428,6 +456,13 @@ export function Chat() {
             mealIngredients.push({
               ingredientId: created.id,
               servings: ingredientProposal.servings,
+            });
+            collectedIngredients.push({
+              name: ingredientProposal.name,
+              type: ingredientProposal.type,
+              unit: ingredientProposal.unit,
+              servings: ingredientProposal.servings,
+              ingredientId: created.id,
             });
           }
         }
@@ -484,7 +519,40 @@ export function Chat() {
           content: `I've saved ${savedMealsText} to your meals collection! 🎉`,
         }),
       );
+
+      if (collectedIngredients.length > 0) {
+        setPendingShoppingList({ messageId, ingredients: collectedIngredients });
+      }
     }
+  };
+
+  const handleAddToShoppingList = async (messageId: string, add: boolean) => {
+    if (add && pendingShoppingList?.messageId === messageId) {
+      for (const ing of pendingShoppingList.ingredients) {
+        try {
+          await dispatch(
+            createShoppingListItem({
+              name: ing.name,
+              ingredientId: ing.ingredientId,
+              productId: null,
+              amount: ing.servings,
+              unit: ing.unit,
+              category: ing.type,
+              note: null,
+              checked: false,
+            }),
+          ).unwrap();
+        } catch (err) {
+          console.error('Failed to add ingredient to shopping list:', err);
+        }
+      }
+      addToast({
+        title: 'Added to shopping list!',
+        description: 'Ingredients have been added to your shopping list.',
+        type: 'success',
+      });
+    }
+    setPendingShoppingList(null);
   };
 
   const handleRejectAction = (messageId: string) => {
@@ -1085,6 +1153,8 @@ export function Chat() {
                   onRejectIntent={handleRejectIntent}
                   onApproveAction={handleApproveAction}
                   onRejectAction={handleRejectAction}
+                  showShoppingListPrompt={pendingShoppingList?.messageId === message.id}
+                  onAddToShoppingList={handleAddToShoppingList}
                 />
               ))}
               <div ref={messagesEndRef} />
