@@ -55,11 +55,21 @@ export const fetchShoppingList = createAsyncThunk(
 /**
  * Create a new shopping list item. In demo mode, persists to local Redux state only.
  * In normal mode, persists to Firestore.
+ * Silently skips creation if an item with the same name (case-insensitive, trimmed) already exists.
  */
 export const createShoppingListItem = createAsyncThunk(
   'shoppingList/createShoppingListItem',
-  async (params: Omit<ShoppingListItem, 'id' | 'userId' | 'createdAt'>, { getState }) => {
+  async (params: Omit<ShoppingListItem, 'id' | 'userId' | 'createdAt'>, { getState, rejectWithValue }) => {
     const state = getState() as RootState;
+
+    const normalizedNew = params.name.toLowerCase().trim();
+    const isDuplicate = state.shoppingList.items.some(
+      (item) => item.name.toLowerCase().trim() === normalizedNew,
+    );
+    if (isDuplicate) {
+      return rejectWithValue('duplicate' as const);
+    }
+
     const itemId = generatedId('sl');
     const createdAt = Date.now();
 

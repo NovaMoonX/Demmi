@@ -183,7 +183,7 @@ export function MealDetail() {
             amount: mealIngredient.servings,
             unit: ingredient.unit,
             category: ingredient.type,
-            note: null,
+            note: `For ${title}`,
             checked: false,
           }),
         ).unwrap();

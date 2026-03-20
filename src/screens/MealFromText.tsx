@@ -24,8 +24,6 @@ import type { MealIngredient } from '@lib/meals';
 import { generatedId } from '@utils/generatedId';
 import { ChatMessage } from '@/lib/chat';
 
-const NAVIGATE_DELAY_MS = 400;
-
 type ScreenPhase = 'paste' | 'generating' | 'result';
 
 const STEP_LABELS: Partial<Record<CreateMealAgentActionStatus, string>> = {
@@ -224,6 +222,7 @@ export function MealFromText() {
   const [isSaving, setIsSaving] = useState(false);
   const [savedMealId, setSavedMealId] = useState<string | null>(null);
   const [shoppingListPhase, setShoppingListPhase] = useState<'idle' | 'prompt' | 'adding' | 'done'>('idle');
+  const [ingredientsAddedCount, setIngredientsAddedCount] = useState(0);
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -407,31 +406,22 @@ export function MealFromText() {
             amount: ing.servings,
             unit: ing.unit,
             category: ing.type,
-            note: null,
+            note: `For ${proposal.title}`,
             checked: false,
           }),
         ).unwrap();
         itemsAdded++;
       } catch {
-        // Continue adding remaining items even if one fails
+        // Continue adding remaining items even if one fails (e.g. duplicates)
       }
     }
 
-    if (itemsAdded > 0) {
-      addToast({
-        title: 'Added to shopping list',
-        description: `${itemsAdded} ingredient${itemsAdded === 1 ? '' : 's'} added.`,
-        type: 'success',
-      });
-    }
-
+    setIngredientsAddedCount(itemsAdded);
     setShoppingListPhase('done');
-    setTimeout(() => navigate(`/meals/${savedMealId}`), NAVIGATE_DELAY_MS);
   };
 
   const handleSkipShoppingList = () => {
     setShoppingListPhase('done');
-    setTimeout(() => navigate(`/meals/${savedMealId}`), NAVIGATE_DELAY_MS);
   };
 
   if (phase === 'generating') {
@@ -503,7 +493,7 @@ export function MealFromText() {
           <MealProposalCard meal={proposal} />
 
           {shoppingListPhase === 'prompt' && (
-            <div className='border-border rounded-xl border p-4 flex flex-col gap-3'>
+            <div className='border-border flex flex-col gap-3 rounded-xl border p-4'>
               <p className='text-foreground text-sm font-medium'>
                 🛒 Would you like to add the ingredients to your shopping list?
               </p>
@@ -523,6 +513,41 @@ export function MealFromText() {
                   disabled={isAddingToList}
                 >
                   No thanks
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {shoppingListPhase === 'done' && (
+            <div className='flex flex-col gap-3'>
+              {ingredientsAddedCount > 0 && (
+                <div className='border-border flex items-center justify-between gap-3 rounded-xl border bg-card/50 px-4 py-3'>
+                  <p className='text-foreground text-sm'>
+                    🛒 Added {ingredientsAddedCount} ingredient{ingredientsAddedCount === 1 ? '' : 's'} to your shopping list
+                  </p>
+                  <Button
+                    variant='tertiary'
+                    size='sm'
+                    onClick={() => navigate('/shopping')}
+                  >
+                    View list →
+                  </Button>
+                </div>
+              )}
+              <div className='flex gap-3'>
+                <Button
+                  variant='primary'
+                  className='flex-1'
+                  onClick={() => navigate(`/meals/${savedMealId}`)}
+                >
+                  View Recipe
+                </Button>
+                <Button
+                  variant='secondary'
+                  className='flex-1'
+                  onClick={() => navigate('/meals')}
+                >
+                  Exit
                 </Button>
               </div>
             </div>

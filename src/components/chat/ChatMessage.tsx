@@ -13,7 +13,7 @@ interface ChatMessageProps {
   onRejectIntent?: (messageId: string) => void;
   onApproveAction?: (messageId: string) => void;
   onRejectAction?: (messageId: string) => void;
-  onAddToShoppingList?: (messageId: string) => void;
+  onAddToShoppingList?: (messageId: string) => Promise<number>;
 }
 
 function formatTimestamp(ts: number): string {

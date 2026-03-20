@@ -476,13 +476,13 @@ export function Chat() {
     }
   };
 
-  const handleAddToShoppingList = async (messageId: string) => {
+  const handleAddToShoppingList = async (messageId: string): Promise<number> => {
     const chatId = currentChatId;
-    if (!chatId) return;
+    if (!chatId) return 0;
 
     const message = currentMessages.find((m) => m.id === messageId);
     const action = message?.agentAction;
-    if (!action || action.type !== 'create_meal') return;
+    if (!action || action.type !== 'create_meal') return 0;
 
     let itemsAdded = 0;
     for (const mealProposal of action.meals) {
@@ -496,24 +496,18 @@ export function Chat() {
               amount: ing.servings,
               unit: ing.unit,
               category: ing.type,
-              note: null,
+              note: `For ${mealProposal.title}`,
               checked: false,
             }),
           ).unwrap();
           itemsAdded++;
         } catch {
-          // Continue adding remaining items even if one fails
+          // Continue adding remaining items even if one fails (e.g. duplicates)
         }
       }
     }
 
-    if (itemsAdded > 0) {
-      addToast({
-        title: 'Added to shopping list',
-        description: `${itemsAdded} ingredient${itemsAdded === 1 ? '' : 's'} added.`,
-        type: 'success',
-      });
-    }
+    return itemsAdded;
   };
 
   const handleRejectAction = (messageId: string) => {
