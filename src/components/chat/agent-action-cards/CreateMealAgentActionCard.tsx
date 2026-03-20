@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { INGREDIENT_TYPE_EMOJIS } from '@lib/ingredients';
 import type { MealCategory } from '@lib/meals';
 import { MEAL_CATEGORY_COLORS, MEAL_CATEGORY_EMOJIS } from '@lib/meals';
@@ -322,7 +324,10 @@ export function CreateMealAgentActionCard({
   onRejectIntent,
   onApprove,
   onReject,
+  onAddToShoppingList,
+  onSkipShoppingList,
 }: AgentActionCardProps) {
+  const [isAdding, setIsAdding] = useState(false);
   if (action.status === 'pending_confirmation') {
     const name =
       action.proposedName || (action.meals[0]?.title ?? 'this recipe');
@@ -462,23 +467,110 @@ export function CreateMealAgentActionCard({
   }
 
   if (action.status === 'approved') {
+    const decision = action.shoppingListDecision ?? null;
+    const itemsAdded = action.shoppingListItemsAdded ?? 0;
+
     return (
-      <div className='mt-3 flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3'>
-        <span className='text-base text-green-600 dark:text-green-400'>✓</span>
-        <span className='text-sm font-medium text-green-700 dark:text-green-400'>
-          {action.meals.length === 1
-            ? 'Meal saved'
-            : `${action.meals.length} meals saved`}{' '}
-          to your collection
-        </span>
+      <div className='mt-3 flex flex-col gap-3 rounded-xl border border-green-500/30 bg-green-500/5 p-3'>
+        <div className='flex items-center gap-2 px-1'>
+          <span className='text-base text-green-600 dark:text-green-400'>✓</span>
+          <span className='text-sm font-medium text-green-700 dark:text-green-400'>
+            {action.meals.length === 1
+              ? 'Meal saved'
+              : `${action.meals.length} meals saved`}{' '}
+            to your collection
+          </span>
+        </div>
+
+        <div className='flex flex-col gap-2'>
+          {action.meals.map((meal, i) => (
+            <div key={i} className='flex items-start justify-between gap-2 px-1'>
+              <div className='min-w-0 flex-1'>
+                <h4 className='text-foreground text-sm font-semibold'>{meal.title}</h4>
+                {meal.description && (
+                  <p className='text-muted-foreground mt-0.5 line-clamp-2 text-xs'>
+                    {meal.description}
+                  </p>
+                )}
+              </div>
+              <Badge
+                variant='base'
+                className={join('shrink-0 capitalize', MEAL_CATEGORY_COLORS[meal.category])}
+              >
+                {MEAL_CATEGORY_EMOJIS[meal.category]} {meal.category}
+              </Badge>
+            </div>
+          ))}
+        </div>
+
+        {onAddToShoppingList && decision === null && (
+          <div className='border-green-500/20 flex flex-col gap-2 border-t pt-2'>
+            <p className='text-muted-foreground text-xs'>
+              🛒 Would you like to add the ingredients to your shopping list?
+            </p>
+            <div className='flex items-center gap-2'>
+              <Button
+                variant='secondary'
+                size='sm'
+                disabled={isAdding}
+                onClick={async () => {
+                  if (!onAddToShoppingList) return;
+                  setIsAdding(true);
+                  await onAddToShoppingList();
+                  setIsAdding(false);
+                }}
+              >
+                Yes, add them
+              </Button>
+              <Button
+                variant='tertiary'
+                size='sm'
+                disabled={isAdding}
+                onClick={() => onSkipShoppingList?.()}
+              >
+                No thanks
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {decision === 'added' && (
+          <div className='border-green-500/20 flex items-center justify-between gap-2 border-t pt-2'>
+            <p className='text-muted-foreground text-xs'>
+              🛒 {itemsAdded} ingredient{itemsAdded === 1 ? '' : 's'} added to your shopping list
+            </p>
+            <Link
+              to='/shopping-list'
+              className='text-primary hover:text-primary/80 shrink-0 text-xs underline-offset-2 hover:underline'
+            >
+              View list →
+            </Link>
+          </div>
+        )}
       </div>
     );
   }
 
   if (action.status === 'rejected') {
+    const meal = action.meals[0];
+    const name = meal?.title ?? action.proposedName;
+    const category = meal?.category;
+
     return (
-      <div className='border-border bg-muted/30 mt-3 flex items-center gap-2 rounded-xl border px-4 py-3'>
-        <span className='text-muted-foreground text-sm'>Declined</span>
+      <div className='border-border bg-muted/30 mt-3 flex items-center gap-3 rounded-xl border px-4 py-3 opacity-50'>
+        <span className='text-muted-foreground shrink-0 text-sm'>✕</span>
+        <div className='min-w-0 flex-1'>
+          {name && <p className='text-foreground truncate text-sm font-medium'>{name}</p>}
+        </div>
+        {category && (
+          <Badge
+            variant='base'
+            className={join('shrink-0 capitalize', MEAL_CATEGORY_COLORS[category])}
+          >
+            {MEAL_CATEGORY_EMOJIS[category]} {category}
+          </Badge>
+        )}
+        <span className='text-muted-foreground shrink-0 text-xs'>Declined</span>
       </div>
     );
   }

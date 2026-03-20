@@ -25,11 +25,13 @@ import {
   updateRecipeStep,
   cancelRecipeGeneration,
   markMessageIterationInvalid,
+  setMealActionShoppingListDecision,
   deleteConversation,
   togglePinConversation,
 } from '@store/slices/chatsSlice';
 import { createIngredient } from '@store/actions/ingredientActions';
 import { createMeal } from '@store/actions/mealActions';
+import { createShoppingListItem } from '@store/actions/shoppingListActions';
 import { ChatMessage as ChatMessageType } from '@lib/chat';
 import type { MealIngredient } from '@lib/meals';
 import {
@@ -248,6 +250,8 @@ export function Chat() {
             recipe: null,
             completedSteps: null,
             updatingFields: null,
+            shoppingListDecision: null,
+            shoppingListItemsAdded: null,
           },
         }),
       );
@@ -472,19 +476,64 @@ export function Chat() {
         description: `${mealsCreated} ${mealsCreated === 1 ? 'meal' : 'meals'} added to your collection.`,
         type: 'success',
       });
-
-      const savedMealsText =
-        mealsCreated === 1
-          ? `**${action.meals[0].title}**`
-          : `**${mealsCreated} recipes**`;
-      dispatch(
-        updateMessageContent({
-          chatId,
-          messageId,
-          content: `I've saved ${savedMealsText} to your meals collection! 🎉`,
-        }),
-      );
     }
+  };
+
+  const handleAddToShoppingList = async (messageId: string): Promise<number> => {
+    const chatId = currentChatId;
+    if (!chatId) return 0;
+
+    const message = currentMessages.find((m) => m.id === messageId);
+    const action = message?.agentAction;
+    if (!action || action.type !== 'create_meal') return 0;
+
+    let itemsAdded = 0;
+    for (const mealProposal of action.meals) {
+      for (const ing of mealProposal.ingredients) {
+        try {
+          await dispatch(
+            createShoppingListItem({
+              name: ing.name,
+              ingredientId: ing.existingIngredientId ?? null,
+              productId: null,
+              amount: ing.servings,
+              unit: ing.unit,
+              category: ing.type,
+              note: `For ${mealProposal.title}`,
+              checked: false,
+            }),
+          ).unwrap();
+          itemsAdded++;
+        } catch {
+          // Continue adding remaining items even if one fails (e.g. duplicates)
+        }
+      }
+    }
+
+    dispatch(
+      setMealActionShoppingListDecision({
+        chatId,
+        messageId,
+        decision: 'added',
+        itemsAdded,
+      }),
+    );
+
+    return itemsAdded;
+  };
+
+  const handleSkipShoppingList = (messageId: string) => {
+    const chatId = currentChatId;
+    if (!chatId) return;
+
+    dispatch(
+      setMealActionShoppingListDecision({
+        chatId,
+        messageId,
+        decision: 'skipped',
+        itemsAdded: 0,
+      }),
+    );
   };
 
   const handleRejectAction = (messageId: string) => {
@@ -597,6 +646,8 @@ export function Chat() {
             recipe: null,
             completedSteps: null,
             updatingFields: null,
+            shoppingListDecision: null,
+            shoppingListItemsAdded: null,
           },
           summary: null,
           iterationInvalid: null,
@@ -890,6 +941,8 @@ export function Chat() {
               recipe: null,
               completedSteps: null,
               updatingFields: null,
+              shoppingListDecision: null,
+              shoppingListItemsAdded: null,
             },
           }),
         );
@@ -1085,6 +1138,8 @@ export function Chat() {
                   onRejectIntent={handleRejectIntent}
                   onApproveAction={handleApproveAction}
                   onRejectAction={handleRejectAction}
+                  onAddToShoppingList={handleAddToShoppingList}
+                  onSkipShoppingList={handleSkipShoppingList}
                 />
               ))}
               <div ref={messagesEndRef} />

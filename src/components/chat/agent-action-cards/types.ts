@@ -6,4 +6,6 @@ export interface AgentActionCardProps {
   onRejectIntent: () => void;
   onApprove: () => void;
   onReject: () => void;
+  onAddToShoppingList?: () => Promise<number>;
+  onSkipShoppingList?: () => void;
 }
