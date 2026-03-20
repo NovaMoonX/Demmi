@@ -322,6 +322,8 @@ export function CreateMealAgentActionCard({
   onRejectIntent,
   onApprove,
   onReject,
+  showShoppingListPrompt,
+  onAddToShoppingList,
 }: AgentActionCardProps) {
   if (action.status === 'pending_confirmation') {
     const name =
@@ -462,15 +464,51 @@ export function CreateMealAgentActionCard({
   }
 
   if (action.status === 'approved') {
+    const totalTimeForMeal = (meal: AgentMealProposal) => meal.prepTime + meal.cookTime;
+    const hasIngredients = action.meals.some((m) => m.ingredients.length > 0);
+
     return (
-      <div className='mt-3 flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3'>
-        <span className='text-base text-green-600 dark:text-green-400'>✓</span>
-        <span className='text-sm font-medium text-green-700 dark:text-green-400'>
-          {action.meals.length === 1
-            ? 'Meal saved'
-            : `${action.meals.length} meals saved`}{' '}
-          to your collection
-        </span>
+      <div className='border-border bg-card/50 mt-3 flex flex-col gap-3 rounded-xl border p-3'>
+        <div className='flex items-center gap-2'>
+          <span className='text-base text-green-600 dark:text-green-400'>✓</span>
+          <span className='text-sm font-medium text-green-700 dark:text-green-400'>
+            {action.meals.length === 1
+              ? 'Meal saved'
+              : `${action.meals.length} meals saved`}{' '}
+            to your collection
+          </span>
+        </div>
+
+        <div className='flex flex-col gap-2'>
+          {action.meals.map((meal, i) => (
+            <div key={i} className='flex items-center gap-3'>
+              <span className='shrink-0 text-2xl'>{MEAL_CATEGORY_EMOJIS[meal.category]}</span>
+              <div className='min-w-0 flex-1'>
+                <p className='text-foreground text-sm font-semibold'>{meal.title}</p>
+                <p className='text-muted-foreground text-xs'>
+                  {meal.category} · {totalTimeForMeal(meal)}m ·{' '}
+                  {meal.servingSize} {meal.servingSize === 1 ? 'serving' : 'servings'}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {showShoppingListPrompt && hasIngredients && (
+          <div className='border-border border-t pt-3'>
+            <p className='text-foreground mb-2 text-sm'>
+              🛒 Would you like to add the ingredients to your shopping list?
+            </p>
+            <div className='flex gap-2'>
+              <Button variant='primary' size='sm' onClick={() => onAddToShoppingList?.(true)}>
+                Yes, add them
+              </Button>
+              <Button variant='secondary' size='sm' onClick={() => onAddToShoppingList?.(false)}>
+                No thanks
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

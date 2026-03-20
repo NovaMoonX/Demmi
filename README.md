@@ -71,6 +71,9 @@ A cooking app powered with local LLM using Ollama.
 - **New vs. Existing Indicators**: Each ingredient in the proposal is marked as `+new` (highlighted, will be created) or shown normally if it already exists in your inventory — giving you full visibility before committing
 - **Duplicate Detection**: If a proposed meal title already exists in your collection a yellow "Already exists" badge appears and the **Save** button is disabled, preventing accidental duplicates
 - **Automatic Ingredient Creation**: Approving a proposal auto-creates any ingredients that don't yet exist in your inventory, with sensible defaults (nutrients at 0, amount at 0 — editable later)
+- **Shopping List Prompt**: After saving a meal (both from chat and the meal creation screen), you're offered a one-time prompt to add the ingredients directly to your shopping list — a simple Yes / No decision
+- **Recipe Stays Visible**: While deciding on the shopping list, the saved meal's title, category, total time, and servings remain visible in the approved card — you're never left without context
+- **Transient Prompt**: The shopping-list question is not stored in chat history — it only appears immediately after saving and disappears once you answer or refresh
 - **Dynamic Message Content**: Message content updates based on user decisions — declining the intent shows a friendly cancellation message, declining a generated recipe shows a dismissal message, and saving shows a confirmation with the meal name
 - **Decline**: Clicking **Decline** marks the proposal as dismissed — the card shows a "Declined" badge and the buttons are removed
 - **Iterate**: The proposal is a conversation — reply in the chat to refine it (e.g. *"Make it vegetarian"* or *"Change servings to 6"*) and the AI generates a fresh proposal
