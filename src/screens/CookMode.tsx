@@ -215,13 +215,7 @@ export function CookMode() {
         {/* Mobile header */}
         <div className='border-border shrink-0 border-b md:hidden'>
           <div className='flex items-center justify-between px-4 py-3'>
-            <Link
-              to={`/meals/${meal.id}`}
-              className='text-muted-foreground hover:text-foreground text-sm'
-            >
-              ✕
-            </Link>
-            <h1 className='text-foreground max-w-[50%] truncate text-sm font-semibold'>
+            <h1 className='text-foreground truncate text-sm font-semibold'>
               {meal.title}
             </h1>
             <Button
@@ -298,6 +292,13 @@ export function CookMode() {
         {/* Navigation buttons */}
         <div className='border-border shrink-0 border-t px-4 py-4 md:px-6'>
           <div className='mx-auto flex w-full max-w-2xl gap-3'>
+            <Link
+              to={`/meals/${meal.id}`}
+              className='text-muted-foreground hover:text-foreground hover:bg-muted flex shrink-0 items-center justify-center rounded-md px-3 text-sm transition-colors md:hidden'
+              aria-label='Exit cook mode'
+            >
+              ✕
+            </Link>
             <Button
               variant='secondary'
               onClick={handlePrev}
