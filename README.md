@@ -196,6 +196,15 @@ A cooking app powered with local LLM using Ollama.
   - **Update**: Edits are persisted to Firestore with ownership verification (only the owner can update)
   - **Delete**: Deletions are persisted to Firestore with ownership verification (only the owner can delete)
   - **Error Toasts**: Toast notifications alert the user if any Firestore operation fails
+- **👨‍🍳 Cook Mode**: Immersive, step-by-step cooking experience inspired by popular cooking apps (e.g. Tasty)
+  - **Step-by-Step Display**: Each cooking step is shown in large, readable text — one step at a time — so you can follow along hands-free
+  - **Progress Dots**: An animated dot row below the step number shows your position within the recipe; collapses to a maximum of 10 dots for long recipes
+  - **Prev / Next Navigation**: Large, thumb-friendly buttons navigate between steps; the final step shows a "🎉 Done!" button that returns you to the meal detail page
+  - **Ingredients Panel**: A 🧂 button in the top bar slides up an ingredient list panel (sheet) from the bottom on mobile; on desktop it appears as a side panel. A backdrop overlay lets you dismiss it by tapping outside
+  - **Desktop Layout**: On `xl` screens (1280 px+) the recipe image (or category emoji fallback), title, category badge, description, and timing stats appear in a fixed left sidebar, keeping context visible while you cook
+  - **Top Bar**: Compact bar with an ✕ Exit button (returns to meal detail), centered meal title + category badge, and the ingredients toggle; all elements truncate gracefully on small screens
+  - **Entry Point**: A **👨‍🍳 Cook** button appears on the meal detail view page (only visible when the recipe has at least one instruction step) and navigates to `/meals/:id/cook`
+  - **Full-Screen Immersion**: Cook Mode fills the entire viewport (no sidebar or layout chrome) for a distraction-free cooking experience — optimized for both mobile and desktop
 - **Demo Mode Isolation**: When demo mode is active, all meal changes update in-memory state only — nothing is written to Firestore. This is handled transparently inside the async thunks, so components always dispatch a single action regardless of demo state.
 - **Responsive Grid**: Adapts from 1 column (mobile) to 3 columns (desktop)
 - **Mock Data**: 8 sample meals across all categories for demonstration

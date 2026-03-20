@@ -96,6 +96,14 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                path: 'meals/:id/cook',
+                HydrateFallback: Loading,
+                lazy: async () => {
+                  const { default: CookMode } = await import('@screens/CookMode');
+                  return { Component: CookMode };
+                },
+              },
+              {
                 path: 'meals/new/from-text',
                 HydrateFallback: Loading,
                 lazy: async () => {

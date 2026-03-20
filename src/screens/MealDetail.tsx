@@ -214,7 +214,16 @@ export function MealDetail() {
                 {MEAL_CATEGORY_EMOJIS[existingMeal.category]} {existingMeal.category}
               </Badge>
             </div>
-            <div className='flex shrink-0 gap-2'>
+            <div className='flex shrink-0 flex-wrap justify-end gap-2'>
+              {existingMeal.instructions.length > 0 && (
+                <Button
+                  type='button'
+                  variant='primary'
+                  onClick={() => navigate(`/meals/${existingMeal.id}/cook`)}
+                >
+                  👨‍🍳 Cook
+                </Button>
+              )}
               <Button
                 type='button'
                 variant='secondary'
