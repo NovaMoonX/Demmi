@@ -55,20 +55,20 @@ export const mockChatConversations: ChatConversation[] = [
               imageUrl: '',
               ingredients: [
                 {
-                  name: 'Salmon fillet',
+                  name: 'Salmon Fillet',
                   type: 'seafood',
                   unit: 'piece',
                   servings: 2,
                   isNew: false,
-                  existingIngredientId: 'ing-salmon',
+                  existingIngredientId: 'ing-009',
                 },
                 {
-                  name: 'Rice',
+                  name: 'Brown Rice',
                   type: 'grains',
                   unit: 'cup',
                   servings: 1,
                   isNew: false,
-                  existingIngredientId: 'ing-rice',
+                  existingIngredientId: 'ing-004',
                 },
                 {
                   name: 'Broccoli',
@@ -76,7 +76,7 @@ export const mockChatConversations: ChatConversation[] = [
                   unit: 'cup',
                   servings: 2,
                   isNew: false,
-                  existingIngredientId: 'ing-broccoli',
+                  existingIngredientId: 'ing-002',
                 },
                 {
                   name: 'Lemon',
