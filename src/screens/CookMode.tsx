@@ -214,16 +214,10 @@ export function CookMode() {
       <div className='flex flex-1 flex-col overflow-hidden'>
         {/* Mobile header */}
         <div className='border-border shrink-0 border-b md:hidden'>
-          <div className='relative flex items-center justify-end px-4 py-3'>
-            <h1 className='text-foreground pointer-events-none absolute inset-x-0 mx-auto max-w-[55%] truncate text-center text-sm font-semibold'>
+          <div className='flex items-center justify-center px-4 py-3'>
+            <h1 className='text-foreground max-w-[70%] truncate text-center text-sm font-semibold'>
               {meal.title}
             </h1>
-            <Button
-              variant='tertiary'
-              onClick={() => setShowIngredients(true)}
-            >
-              Ingredients
-            </Button>
           </div>
           <div className='flex items-center justify-center gap-1.5 pb-2'>
             <span className='text-primary text-sm'>⏱</span>
@@ -255,7 +249,14 @@ export function CookMode() {
         </div>
 
         {/* Step content */}
-        <div className='flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-8 md:px-12'>
+        <div className='relative flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-8 md:px-12'>
+          <Button
+            variant='tertiary'
+            onClick={() => setShowIngredients(true)}
+            className='absolute top-3 right-3 md:hidden'
+          >
+            Ingredients
+          </Button>
           <div className='w-full max-w-2xl'>
             <div className='mb-4 flex items-center gap-3'>
               <span className='bg-primary text-primary-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-bold'>
