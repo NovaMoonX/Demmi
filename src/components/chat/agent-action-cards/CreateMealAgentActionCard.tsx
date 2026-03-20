@@ -325,9 +325,9 @@ export function CreateMealAgentActionCard({
   onApprove,
   onReject,
   onAddToShoppingList,
+  onSkipShoppingList,
 }: AgentActionCardProps) {
-  const [shoppingListState, setShoppingListState] = useState<'prompt' | 'adding' | 'added' | 'skipped'>('prompt');
-  const [shoppingListCount, setShoppingListCount] = useState(0);
+  const [isAdding, setIsAdding] = useState(false);
   if (action.status === 'pending_confirmation') {
     const name =
       action.proposedName || (action.meals[0]?.title ?? 'this recipe');
@@ -467,6 +467,9 @@ export function CreateMealAgentActionCard({
   }
 
   if (action.status === 'approved') {
+    const decision = action.shoppingListDecision ?? null;
+    const itemsAdded = action.shoppingListItemsAdded ?? 0;
+
     return (
       <div className='mt-3 flex flex-col gap-3 rounded-xl border border-green-500/30 bg-green-500/5 p-3'>
         <div className='flex items-center gap-2 px-1'>
@@ -500,7 +503,7 @@ export function CreateMealAgentActionCard({
           ))}
         </div>
 
-        {onAddToShoppingList && shoppingListState === 'prompt' && (
+        {onAddToShoppingList && decision === null && (
           <div className='border-green-500/20 flex flex-col gap-2 border-t pt-2'>
             <p className='text-muted-foreground text-xs'>
               🛒 Would you like to add the ingredients to your shopping list?
@@ -509,13 +512,12 @@ export function CreateMealAgentActionCard({
               <Button
                 variant='secondary'
                 size='sm'
-                disabled={shoppingListState === 'adding'}
+                disabled={isAdding}
                 onClick={async () => {
                   if (!onAddToShoppingList) return;
-                  setShoppingListState('adding');
-                  const count = await onAddToShoppingList();
-                  setShoppingListCount(count);
-                  setShoppingListState('added');
+                  setIsAdding(true);
+                  await onAddToShoppingList();
+                  setIsAdding(false);
                 }}
               >
                 Yes, add them
@@ -523,7 +525,8 @@ export function CreateMealAgentActionCard({
               <Button
                 variant='tertiary'
                 size='sm'
-                onClick={() => setShoppingListState('skipped')}
+                disabled={isAdding}
+                onClick={() => onSkipShoppingList?.()}
               >
                 No thanks
               </Button>
@@ -531,13 +534,13 @@ export function CreateMealAgentActionCard({
           </div>
         )}
 
-        {shoppingListState === 'added' && (
+        {decision === 'added' && (
           <div className='border-green-500/20 flex items-center justify-between gap-2 border-t pt-2'>
             <p className='text-muted-foreground text-xs'>
-              🛒 {shoppingListCount} ingredient{shoppingListCount === 1 ? '' : 's'} added to your shopping list
+              🛒 {itemsAdded} ingredient{itemsAdded === 1 ? '' : 's'} added to your shopping list
             </p>
             <Link
-              to='/shopping'
+              to='/shopping-list'
               className='text-primary hover:text-primary/80 shrink-0 text-xs underline-offset-2 hover:underline'
             >
               View list →

@@ -528,7 +528,7 @@ export function MealFromText() {
                   <Button
                     variant='tertiary'
                     size='sm'
-                    onClick={() => navigate('/shopping')}
+                    onClick={() => navigate('/shopping-list')}
                   >
                     View list →
                   </Button>

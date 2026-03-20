@@ -14,6 +14,7 @@ interface ChatMessageProps {
   onApproveAction?: (messageId: string) => void;
   onRejectAction?: (messageId: string) => void;
   onAddToShoppingList?: (messageId: string) => Promise<number>;
+  onSkipShoppingList?: (messageId: string) => void;
 }
 
 function formatTimestamp(ts: number): string {
@@ -33,6 +34,7 @@ export function ChatMessage({
   onApproveAction,
   onRejectAction,
   onAddToShoppingList,
+  onSkipShoppingList,
 }: ChatMessageProps) {
   const isUser = message.role === 'user';
 
@@ -100,6 +102,11 @@ export function ChatMessage({
               onAddToShoppingList={
                 onAddToShoppingList
                   ? () => onAddToShoppingList(message.id)
+                  : undefined
+              }
+              onSkipShoppingList={
+                onSkipShoppingList
+                  ? () => onSkipShoppingList(message.id)
                   : undefined
               }
             />

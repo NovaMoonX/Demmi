@@ -298,6 +298,23 @@ const chatsSlice = createSlice({
         message.iterationInvalid = true;
       }
     },
+    setMealActionShoppingListDecision: (
+      state,
+      action: PayloadAction<{
+        chatId: string;
+        messageId: string;
+        decision: 'added' | 'skipped';
+        itemsAdded: number;
+      }>,
+    ) => {
+      const chat = state.conversations.find((c) => c.id === action.payload.chatId);
+      const message = chat?.messages.find((m) => m.id === action.payload.messageId);
+      if (message?.agentAction?.type === 'create_meal') {
+        const mealAction = message.agentAction as AgentCreateMealAction;
+        mealAction.shoppingListDecision = action.payload.decision;
+        mealAction.shoppingListItemsAdded = action.payload.itemsAdded;
+      }
+    },
     resetChats: (state) => {
       state.conversations = [];
       state.currentChatId = null;
@@ -368,6 +385,7 @@ export const {
   updateAgentActionStatus,
   updateMessageSummary,
   markMessageIterationInvalid,
+  setMealActionShoppingListDecision,
   startRecipeGeneration,
   updateRecipeStep,
   cancelRecipeGeneration,

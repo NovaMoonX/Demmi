@@ -25,6 +25,7 @@ import {
   updateRecipeStep,
   cancelRecipeGeneration,
   markMessageIterationInvalid,
+  setMealActionShoppingListDecision,
   deleteConversation,
   togglePinConversation,
 } from '@store/slices/chatsSlice';
@@ -249,6 +250,8 @@ export function Chat() {
             recipe: null,
             completedSteps: null,
             updatingFields: null,
+            shoppingListDecision: null,
+            shoppingListItemsAdded: null,
           },
         }),
       );
@@ -507,7 +510,30 @@ export function Chat() {
       }
     }
 
+    dispatch(
+      setMealActionShoppingListDecision({
+        chatId,
+        messageId,
+        decision: 'added',
+        itemsAdded,
+      }),
+    );
+
     return itemsAdded;
+  };
+
+  const handleSkipShoppingList = (messageId: string) => {
+    const chatId = currentChatId;
+    if (!chatId) return;
+
+    dispatch(
+      setMealActionShoppingListDecision({
+        chatId,
+        messageId,
+        decision: 'skipped',
+        itemsAdded: 0,
+      }),
+    );
   };
 
   const handleRejectAction = (messageId: string) => {
@@ -620,6 +646,8 @@ export function Chat() {
             recipe: null,
             completedSteps: null,
             updatingFields: null,
+            shoppingListDecision: null,
+            shoppingListItemsAdded: null,
           },
           summary: null,
           iterationInvalid: null,
@@ -913,6 +941,8 @@ export function Chat() {
               recipe: null,
               completedSteps: null,
               updatingFields: null,
+              shoppingListDecision: null,
+              shoppingListItemsAdded: null,
             },
           }),
         );
@@ -1109,6 +1139,7 @@ export function Chat() {
                   onApproveAction={handleApproveAction}
                   onRejectAction={handleRejectAction}
                   onAddToShoppingList={handleAddToShoppingList}
+                  onSkipShoppingList={handleSkipShoppingList}
                 />
               ))}
               <div ref={messagesEndRef} />

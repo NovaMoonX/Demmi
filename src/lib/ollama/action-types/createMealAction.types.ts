@@ -83,4 +83,9 @@ export interface AgentCreateMealAction {
   completedSteps: RecipeStep[] | null;
   /** Fields being regenerated during an iteration pass. Null when not iterating. */
   updatingFields: MealIterableField[] | null;
+  /** Persisted decision for the shopping list prompt. Null = not yet decided (prompt visible).
+   *  'added' = user confirmed; 'skipped' = user declined. */
+  shoppingListDecision: 'added' | 'skipped' | null;
+  /** Number of ingredients actually added to the shopping list (0 if skipped or all duplicates). */
+  shoppingListItemsAdded: number | null;
 }
