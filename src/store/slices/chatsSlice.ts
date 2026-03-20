@@ -4,6 +4,7 @@ import type {
   AgentCreateMealAction,
   AgentMealProposal,
   AgentPartialRecipe,
+  MealIterableField,
   RecipeStep,
 } from '@lib/ollama/action-types/createMealAction.types';
 import { generatedId } from '@utils/generatedId';
@@ -185,6 +186,7 @@ const chatsSlice = createSlice({
         messageId: string;
         status: AgentActionStatus;
         meals?: AgentMealProposal[];
+        updatingFields?: MealIterableField[] | null;
       }>,
     ) => {
       const conversation = state.conversations.find(
@@ -202,6 +204,13 @@ const chatsSlice = createSlice({
           ) {
             (message.agentAction as AgentCreateMealAction).meals =
               action.payload.meals;
+          }
+          if (
+            action.payload.updatingFields !== undefined &&
+            message.agentAction.type === 'create_meal'
+          ) {
+            (message.agentAction as AgentCreateMealAction).updatingFields =
+              action.payload.updatingFields ?? null;
           }
         }
       }
@@ -279,6 +288,16 @@ const chatsSlice = createSlice({
         (message.agentAction as AgentCreateMealAction).status = 'cancelled';
       }
     },
+    markMessageIterationInvalid: (
+      state,
+      action: PayloadAction<{ chatId: string; messageId: string }>,
+    ) => {
+      const chat = state.conversations.find((c) => c.id === action.payload.chatId);
+      const message = chat?.messages.find((m) => m.id === action.payload.messageId);
+      if (message) {
+        message.iterationInvalid = true;
+      }
+    },
     resetChats: (state) => {
       state.conversations = [];
       state.currentChatId = null;
@@ -348,6 +367,7 @@ export const {
   updateMessageContent,
   updateAgentActionStatus,
   updateMessageSummary,
+  markMessageIterationInvalid,
   startRecipeGeneration,
   updateRecipeStep,
   cancelRecipeGeneration,

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Button, Label, Toggle } from '@moondreamsdev/dreamer-ui/components';
 import { Textarea } from '@moondreamsdev/dreamer-ui/components';
 import { ScrollArea } from '@moondreamsdev/dreamer-ui/components';
@@ -24,6 +24,7 @@ import {
   updateMessageSummary,
   updateRecipeStep,
   cancelRecipeGeneration,
+  markMessageIterationInvalid,
   deleteConversation,
   togglePinConversation,
 } from '@store/slices/chatsSlice';
@@ -35,11 +36,85 @@ import {
   detectIntent,
   generateSummary,
   getActionHandler,
+  iterateMealAction,
 } from '@lib/ollama';
+import type { MealIterableField } from '@lib/ollama/action-types/createMealAction.types';
 import type { RecipeStep } from '@lib/ollama/action-types/createMealAction.types';
 import { generatedId } from '@utils/generatedId';
 
 const SCROLL_DELAY_MS = 100;
+
+function buildIterationContextMessages(
+  existingMessages: ChatMessageType[],
+  pendingApprovalMessage: ChatMessageType,
+  latestUserMessage: ChatMessageType,
+): ChatMessageType[] {
+  const pendingIndex = existingMessages.findIndex(
+    (message) => message.id === pendingApprovalMessage.id,
+  );
+
+  if (pendingIndex === -1) {
+    return [latestUserMessage];
+  }
+
+  let threadStartIndex = 0;
+  for (let i = pendingIndex; i >= 0; i--) {
+    const message = existingMessages[i];
+    const isAssistantNonRecipeMessage =
+      message.role === 'assistant' && message.agentAction?.type !== 'create_meal';
+
+    if (isAssistantNonRecipeMessage) {
+      threadStartIndex = i + 1;
+      break;
+    }
+
+    if (i === 0) {
+      threadStartIndex = 0;
+    }
+  }
+
+  const threadMessages = existingMessages.slice(threadStartIndex, pendingIndex + 1);
+
+  const contextMessages = threadMessages.flatMap((message, idx) => {
+    if (message.role === 'user') {
+      // Skip messages that were flagged as invalid iteration attempts — they were
+      // unrelated to the recipe and would reduce the quality of subsequent LLM calls.
+      if (message.iterationInvalid === true) {
+        return [];
+      }
+      return [message];
+    }
+
+    // Skip assistant messages that immediately follow an invalid user message,
+    // so the agent's "I'm not sure what you want to change" response is also excluded.
+    // Note: `idx` is the index in the original `threadMessages` array, so
+    // `threadMessages[idx - 1]` is always the immediately preceding thread message.
+    const previousThreadMessage = threadMessages[idx - 1];
+    if (previousThreadMessage?.role === 'user' && previousThreadMessage.iterationInvalid === true) {
+      return [];
+    }
+
+    if (message.summary) {
+      const summaryMessage: ChatMessageType = {
+        id: `summary-${message.id}`,
+        role: 'assistant',
+        content: message.summary,
+        timestamp: message.timestamp,
+        model: null,
+        rawContent: null,
+        agentAction: null,
+        summary: null,
+        iterationInvalid: null,
+      };
+      return [summaryMessage];
+    }
+
+    return [];
+  });
+
+  const result = [...contextMessages, latestUserMessage];
+  return result;
+}
 
 export function Chat() {
   const dispatch = useAppDispatch();
@@ -62,7 +137,15 @@ export function Chat() {
 
   const { selectedModel } = useOllamaModels();
 
-  const currentChat = conversations.find((c) => c.id === currentChatId);
+  const currentChat = useMemo(() => {
+    const result = conversations.find((c) => c.id === currentChatId) ?? null;
+    return result;
+  }, [conversations, currentChatId]);
+
+  const currentMessages = useMemo(() => {
+    const result = currentChat?.messages ?? [];
+    return result;
+  }, [currentChat]);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -128,10 +211,7 @@ export function Chat() {
     const chatId = currentChatId;
     if (!chatId || !selectedModel) return;
 
-    const message = store
-      .getState()
-      .chats.conversations.find((c) => c.id === chatId)
-      ?.messages.find((m) => m.id === messageId);
+    const message = currentMessages.find((m) => m.id === messageId);
 
     const action = message?.agentAction;
     if (
@@ -149,11 +229,7 @@ export function Chat() {
     activeChatIdRef.current = chatId;
     activeMessageIdRef.current = messageId;
 
-    const allMessages =
-      store
-        .getState()
-        .chats.conversations.find((c) => c.id === chatId)
-        ?.messages ?? [];
+    const allMessages = [...currentMessages];
 
     const handler = getActionHandler('createMeal');
 
@@ -171,6 +247,7 @@ export function Chat() {
             meals: [],
             recipe: null,
             completedSteps: null,
+            updatingFields: null,
           },
         }),
       );
@@ -225,16 +302,11 @@ export function Chat() {
             }),
           );
 
-          const allCurrentMessages =
-            store
-              .getState()
-              .chats.conversations.find((c) => c.id === chatId)
-              ?.messages ?? [];
-          const msgIndex = allCurrentMessages.findIndex(
+          const msgIndex = allMessages.findIndex(
             (m) => m.id === messageId,
           );
           const userMessage =
-            msgIndex > 0 ? allCurrentMessages[msgIndex - 1] : null;
+            msgIndex > 0 ? allMessages[msgIndex - 1] : null;
 
           if (userMessage?.role === 'user') {
             generateSummary(
@@ -303,10 +375,7 @@ export function Chat() {
     const chatId = currentChatId;
     if (!chatId) return;
 
-    const message = store
-      .getState()
-      .chats.conversations.find((c) => c.id === chatId)
-      ?.messages.find((m) => m.id === messageId);
+    const message = currentMessages.find((m) => m.id === messageId);
 
     const action = message?.agentAction;
     if (
@@ -448,10 +517,18 @@ export function Chat() {
     const editMessageId = editingMessageId;
     setEditingMessageId(null);
 
+    const baseMessages = [...currentMessages];
+    let existingMessages = [...baseMessages];
+
     if (editMessageId && currentChatId) {
       dispatch(
         trimMessagesFrom({ chatId: currentChatId, messageId: editMessageId }),
       );
+
+      const trimIndex = baseMessages.findIndex((m) => m.id === editMessageId);
+      const trimmedMessages =
+        trimIndex !== -1 ? baseMessages.slice(0, trimIndex) : baseMessages;
+      existingMessages = trimmedMessages;
     }
 
     firstTokenReceivedRef.current = false;
@@ -468,7 +545,244 @@ export function Chat() {
       rawContent: null,
       agentAction: null,
       summary: null,
+      iterationInvalid: null,
     };
+
+    // Before creating a new assistant message, check whether the user is refining an
+    // existing pending_approval proposal.
+    if (currentChatId) {
+      const pendingApprovalMsg = existingMessages
+        .slice()
+        .reverse()
+        .find(
+          (m) =>
+            m.role === 'assistant' &&
+            m.agentAction?.type === 'create_meal' &&
+            m.agentAction?.status === 'pending_approval',
+        );
+
+      if (
+        pendingApprovalMsg?.agentAction?.type === 'create_meal' &&
+        pendingApprovalMsg.agentAction.meals.length > 0
+      ) {
+        const allMessagesForIteration = buildIterationContextMessages(
+          existingMessages,
+          pendingApprovalMsg,
+          userMessage,
+        );
+
+        dispatch(addMessage({ chatId: currentChatId, message: userMessage }));
+
+        dispatch(
+          updateAgentActionStatus({
+            chatId: currentChatId,
+            messageId: pendingApprovalMsg.id,
+            status: 'stale',
+          }),
+        );
+
+        const iteratingMessageId = generatedId('msg');
+        const iteratingMessage: ChatMessageType = {
+          id: iteratingMessageId,
+          role: 'assistant',
+          content: 'Analyzing your request…',
+          timestamp: Date.now(),
+          model: selectedModel,
+          rawContent: null,
+          agentAction: {
+            type: 'create_meal',
+            status: 'iterating',
+            proposedName: pendingApprovalMsg.agentAction.proposedName,
+            meals: [...pendingApprovalMsg.agentAction.meals],
+            recipe: null,
+            completedSteps: null,
+            updatingFields: null,
+          },
+          summary: null,
+          iterationInvalid: null,
+        };
+
+        dispatch(
+          addMessage({
+            chatId: currentChatId,
+            message: iteratingMessage,
+          }),
+        );
+
+        firstTokenReceivedRef.current = true;
+        activeChatIdRef.current = currentChatId;
+        activeMessageIdRef.current = iteratingMessageId;
+
+        const existingProposal = pendingApprovalMsg.agentAction.meals[0];
+
+        try {
+          const result = await iterateMealAction.execute(
+            selectedModel,
+            {
+              messages: allMessagesForIteration,
+              previousResults: { existingProposal },
+            },
+            {
+              abortSignal: abortController.signal,
+              onStepComplete: (key, data) => {
+                if (key === 'validateIterationRequest') {
+                  // Show the agent's acknowledgment or refusal immediately in the message text.
+                  const agentMsg = data.agentMessage as string;
+                  if (agentMsg) {
+                    dispatch(
+                      updateMessageContent({
+                        chatId: currentChatId,
+                        messageId: iteratingMessageId,
+                        content: agentMsg,
+                      }),
+                    );
+                  }
+                } else if (key === 'detectFieldsToUpdate') {
+                  const rawFields = data.fieldsToUpdate;
+                  const fields: MealIterableField[] = Array.isArray(rawFields)
+                    ? (rawFields as MealIterableField[])
+                    : [];
+                  if (fields.length > 0) {
+                    dispatch(
+                      updateAgentActionStatus({
+                        chatId: currentChatId,
+                        messageId: iteratingMessageId,
+                        status: 'iterating',
+                        updatingFields: fields,
+                      }),
+                    );
+                  }
+                }
+              },
+            },
+          );
+
+          if (result.cancelled) {
+            dispatch(
+              removeMessage({
+                chatId: currentChatId,
+                messageId: iteratingMessageId,
+              }),
+            );
+
+            dispatch(
+              updateAgentActionStatus({
+                chatId: currentChatId,
+                messageId: pendingApprovalMsg.id,
+                status: 'pending_approval',
+              }),
+            );
+          } else if (result.data.iterationValid === false) {
+            // The user's message wasn't about refining the recipe.
+            // The agent's explanation is already in the message content (set via onStepComplete).
+            // Remove the iterating action card and restore the original pending_approval proposal.
+            const invalidContent = result.data.agentMessage as string | undefined;
+            if (!invalidContent) {
+              console.warn('[iterateMealAction] validation returned no agentMessage — using fallback');
+            }
+            dispatch(
+              updateMessageContent({
+                chatId: currentChatId,
+                messageId: iteratingMessageId,
+                content: invalidContent ?? "I'm not sure what you'd like to change. Could you clarify?",
+                agentAction: null,
+              }),
+            );
+
+            // Mark the user's message as an invalid iteration so it is excluded
+            // from context when building subsequent iteration requests.
+            dispatch(
+              markMessageIterationInvalid({
+                chatId: currentChatId,
+                messageId: userMessage.id,
+              }),
+            );
+
+            dispatch(
+              updateAgentActionStatus({
+                chatId: currentChatId,
+                messageId: pendingApprovalMsg.id,
+                status: 'pending_approval',
+              }),
+            );
+          } else {
+            const newProposal = result.data.proposal;
+            const activeProposal = newProposal ?? existingProposal;
+
+            dispatch(
+              updateAgentActionStatus({
+                chatId: currentChatId,
+                messageId: iteratingMessageId,
+                status: 'pending_approval',
+                meals: [activeProposal],
+                updatingFields: null,
+              }),
+            );
+
+            // Use the LLM-generated summary when available so the user gets a specific,
+            // natural description of what changed. Fall back to a generic string only if
+            // the summary step was skipped (e.g. no fields were updated).
+            const iterationSummary = result.data.iterationSummary as string | undefined;
+            const displayContent = iterationSummary
+              ?? (newProposal
+                ? 'I updated the recipe based on your feedback. Review the changes and save when ready.'
+                : 'I reviewed your feedback — no recipe changes were detected.');
+
+            dispatch(
+              updateMessageContent({
+                chatId: currentChatId,
+                messageId: iteratingMessageId,
+                content: displayContent,
+              }),
+            );
+
+            // Also store the summary so buildIterationContextMessages can include it
+            // in future iteration context — giving the agent awareness of prior changes.
+            dispatch(
+              updateMessageSummary({
+                chatId: currentChatId,
+                messageId: iteratingMessageId,
+                summary: displayContent,
+              }),
+            );
+          }
+        } catch (err) {
+          if (!abortController.signal.aborted) {
+            addToast({
+              title: 'Refinement failed',
+              description:
+                err instanceof Error ? err.message : 'An unexpected error occurred.',
+              type: 'error',
+            });
+          }
+
+          dispatch(
+            removeMessage({
+              chatId: currentChatId,
+              messageId: iteratingMessageId,
+            }),
+          );
+
+          dispatch(
+            updateAgentActionStatus({
+              chatId: currentChatId,
+              messageId: pendingApprovalMsg.id,
+              status: 'pending_approval',
+            }),
+          );
+        } finally {
+          if (abortControllerRef.current === abortController) {
+            abortControllerRef.current = null;
+            firstTokenReceivedRef.current = false;
+            activeChatIdRef.current = null;
+            activeMessageIdRef.current = null;
+            setIsSending(false);
+          }
+        }
+
+        return;
+      }
+    }
 
     const assistantMessageId = generatedId('msg');
     const assistantMessage: ChatMessageType = {
@@ -480,11 +794,15 @@ export function Chat() {
       rawContent: null,
       agentAction: null,
       summary: null,
+      iterationInvalid: null,
     };
 
     let targetChatId: string | null;
+    let allMessagesForIntent: ChatMessageType[] = [];
 
     if (!currentChatId) {
+      allMessagesForIntent = [userMessage];
+
       const newConversation = {
         title:
           messageContent.slice(0, 50) +
@@ -499,6 +817,7 @@ export function Chat() {
       targetChatId = store.getState().chats.currentChatId;
     } else {
       targetChatId = currentChatId;
+      allMessagesForIntent = [...existingMessages, userMessage];
       dispatch(addMessage({ chatId: currentChatId, message: userMessage }));
       dispatch(
         addMessage({ chatId: currentChatId, message: assistantMessage }),
@@ -517,13 +836,7 @@ export function Chat() {
     activeMessageIdRef.current = assistantMessageId;
 
     try {
-      const allMessages =
-        store
-          .getState()
-          .chats.conversations.find((c) => c.id === chatIdForStream)
-          ?.messages.filter((m) => m.id !== assistantMessageId) ?? [];
-
-      const intent = await detectIntent(modelUsed, allMessages);
+      const intent = await detectIntent(modelUsed, allMessagesForIntent);
 
       if (abortController.signal.aborted) {
         if (!firstTokenReceivedRef.current) {
@@ -545,7 +858,7 @@ export function Chat() {
         const stepResult = await handler.executeStep(
           modelUsed,
           'proposeName',
-          { messages: allMessages },
+          { messages: allMessagesForIntent },
           {
             abortSignal: abortController.signal,
           },
@@ -576,6 +889,7 @@ export function Chat() {
               meals: [],
               recipe: null,
               completedSteps: null,
+              updatingFields: null,
             },
           }),
         );
@@ -584,7 +898,7 @@ export function Chat() {
 
         const result = await handler.execute(
           modelUsed,
-          { messages: allMessages },
+          { messages: allMessagesForIntent },
           {
             abortSignal: abortController.signal,
             // The handler streams partial content via this callback; the consumer owns the dispatch.

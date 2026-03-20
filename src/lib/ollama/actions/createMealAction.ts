@@ -26,8 +26,26 @@ import type {
   StepResult,
 } from './types';
 import type { AgentMealProposal, RecipeStep } from '../action-types/createMealAction.types';
+import type { ChatMessage } from '@lib/chat';
 
 const MAX_CONTEXT_MESSAGES = 3;
+
+/** Maps the most recent chat messages to the format expected by the Ollama client. */
+export function formatContextMessages(messages: ChatMessage[], limit = MAX_CONTEXT_MESSAGES) {
+  return messages.slice(-limit).map((m) => ({
+    role: m.role as 'user' | 'assistant',
+    content: m.rawContent ?? m.content,
+  }));
+}
+
+/**
+ * Appends `additionalContext` (the field-specific reason from detectFieldsToUpdateStep)
+ * to the base user content string. When iterating on a meal, each generation step
+ * receives the reason why its field needs updating, giving the LLM precise guidance.
+ */
+function withContext(baseContent: string, additionalContext?: string): string {
+  return additionalContext ? `${baseContent}\nChange context: ${additionalContext}` : baseContent;
+}
 
 export interface MealResult extends Record<string, unknown> {
   name: string;
@@ -39,6 +57,10 @@ export interface MealResult extends Record<string, unknown> {
   instructions: string[];
   // Built after all steps complete — the final proposal ready for the consumer to save.
   proposal: AgentMealProposal;
+  /** Optional guidance passed by the iterate flow — a reason from detectFieldsToUpdateStep
+   * describing exactly what to change for this field. When set, generation steps append it
+   * to the user content so the LLM knows precisely what to regenerate. */
+  additionalContext: string;
 }
 
 export type MealStepName =
@@ -90,6 +112,9 @@ export const proposeNameStep: ActionStep<MealResult, 'proposeName'> = {
           role: m.role as 'user' | 'assistant',
           content: m.rawContent ?? m.content,
         })),
+        ...(context.previousResults?.additionalContext
+          ? [{ role: 'user' as const, content: `Change context: ${context.previousResults.additionalContext}` }]
+          : []),
       ],
       stream: false,
       format: MEAL_NAME_SCHEMA,
@@ -125,7 +150,11 @@ export const generateBasicInfoStep: ActionStep<MealResult, 'generateBasicInfo'> 
       model,
       messages: [
         { role: 'system', content: MEAL_INFO_PROMPT },
-        { role: 'user', content: `Meal name: ${name}` },
+        {
+          role: 'user',
+          content: withContext(`Meal name: ${name}`, context.previousResults?.additionalContext as string | undefined),
+        },
+        ...formatContextMessages(context.messages),
       ],
       stream: false,
       format: MEAL_INFO_SCHEMA,
@@ -165,7 +194,11 @@ export const generateDescriptionStep: ActionStep<MealResult, 'generateDescriptio
       model,
       messages: [
         { role: 'system', content: MEAL_DESCRIPTION_PROMPT },
-        { role: 'user', content: `Meal name: ${name}` },
+        {
+          role: 'user',
+          content: withContext(`Meal name: ${name}`, context.previousResults?.additionalContext as string | undefined),
+        },
+        ...formatContextMessages(context.messages),
       ],
       stream: false,
       format: MEAL_DESCRIPTION_SCHEMA,
@@ -202,7 +235,11 @@ export const generateIngredientsStep: ActionStep<MealResult, 'generateIngredient
       model,
       messages: [
         { role: 'system', content: MEAL_INGREDIENTS_PROMPT },
-        { role: 'user', content: `Meal name: ${name}\nServings: ${servings}` },
+        {
+          role: 'user',
+          content: withContext(`Meal name: ${name}\nServings: ${servings}`, context.previousResults?.additionalContext as string | undefined),
+        },
+        ...formatContextMessages(context.messages),
       ],
       stream: false,
       format: MEAL_INGREDIENTS_SCHEMA,
@@ -244,8 +281,9 @@ export const generateInstructionsStep: ActionStep<MealResult, 'generateInstructi
         { role: 'system', content: MEAL_INSTRUCTIONS_PROMPT },
         {
           role: 'user',
-          content: `Meal name: ${name}\nIngredients: ${ingredientNames}`,
+          content: withContext(`Meal name: ${name}\nIngredients: ${ingredientNames}`, context.previousResults?.additionalContext as string | undefined),
         },
+        ...formatContextMessages(context.messages),
       ],
       stream: false,
       format: MEAL_INSTRUCTIONS_SCHEMA,

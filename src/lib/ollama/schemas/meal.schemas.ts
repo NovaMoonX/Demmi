@@ -90,3 +90,45 @@ export const MEAL_INSTRUCTIONS_SCHEMA: Record<string, unknown> = {
     },
   },
 };
+
+export const MEAL_FIELD_DETECTION_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  required: ['shouldUpdate', 'reason'],
+  properties: {
+    shouldUpdate: {
+      type: 'boolean',
+      description: 'Whether this specific recipe field needs to be regenerated',
+    },
+    reason: {
+      type: 'string',
+      description:
+        'Concise explanation of why this field should or should not change, including specifics about what would change (e.g. serving size from 4 to 8, lemon removed from ingredients)',
+    },
+  },
+};
+
+export const MEAL_ITERATION_SUMMARY_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  required: ['summary'],
+  properties: {
+    summary: {
+      type: 'string',
+      description: 'Very brief, friendly 1-sentence summary of what was changed in the recipe',
+    },
+  },
+};
+
+export const MEAL_ITERATION_VALIDATION_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  required: ['valid', 'agentMessage'],
+  properties: {
+    valid: {
+      type: 'boolean',
+      description: 'Whether the user message is asking to refine/modify the current recipe',
+    },
+    agentMessage: {
+      type: 'string',
+      description: 'Friendly agent acknowledgment (valid) or clarification request (invalid)',
+    },
+  },
+};

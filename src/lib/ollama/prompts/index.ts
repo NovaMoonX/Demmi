@@ -6,4 +6,6 @@ export {
   MEAL_DESCRIPTION_PROMPT,
   MEAL_INGREDIENTS_PROMPT,
   MEAL_INSTRUCTIONS_PROMPT,
+  buildFieldDetectionPrompt,
+  MEAL_ITERATION_VALIDATION_PROMPT,
 } from './meal.prompts';

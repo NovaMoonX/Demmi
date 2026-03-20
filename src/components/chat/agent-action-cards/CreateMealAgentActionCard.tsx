@@ -6,9 +6,11 @@ import type {
   AgentMealProposal,
   AgentPartialRecipe,
   CreateMealAgentActionStatus,
+  MealIterableField,
 } from '@lib/ollama/action-types/createMealAction.types';
-import { Badge, Button, Card } from '@moondreamsdev/dreamer-ui/components';
+import { Badge, Button, Card, Skeleton } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
+import { GeneratingIndicator } from '../GeneratingIndicator';
 import { AgentActionCardProps } from './types';
 
 const GENERATING_STATUSES = new Set<CreateMealAgentActionStatus>([
@@ -26,6 +28,111 @@ const STEP_LABELS: Partial<Record<CreateMealAgentActionStatus, string>> = {
   generating_ingredients: 'Generating ingredients…',
   generating_instructions: 'Generating instructions…',
 };
+
+const FIELD_LABELS: Record<MealIterableField, string> = {
+  name: 'name',
+  info: 'basic info',
+  description: 'description',
+  ingredients: 'ingredients',
+  instructions: 'instructions',
+};
+
+function IteratingMealCard({
+  meal,
+  updatingFields,
+}: {
+  meal: AgentMealProposal;
+  updatingFields: MealIterableField[];
+}) {
+  const totalTime = meal.prepTime + meal.cookTime;
+  const updatingName = updatingFields.includes('name');
+  const updatingInfo = updatingFields.includes('info');
+  const updatingDescription = updatingFields.includes('description');
+  const updatingIngredients = updatingFields.includes('ingredients');
+  const updatingInstructions = updatingFields.includes('instructions');
+
+  return (
+    <Card className='overflow-hidden'>
+      <div className='flex flex-col gap-3 p-4'>
+        <div className='flex items-start justify-between gap-2'>
+          <div className='min-w-0 flex-1'>
+            {updatingName ? (
+              <Skeleton shape='rectangle' className='h-5 w-40' />
+            ) : (
+              <h4 className='text-foreground text-base font-semibold'>{meal.title}</h4>
+            )}
+            {updatingDescription ? (
+              <div className='mt-1.5 flex flex-col gap-1'>
+                <Skeleton shape='rectangle' className='h-3.5 w-full' />
+                <Skeleton shape='rectangle' className='h-3.5 w-3/4' />
+              </div>
+            ) : (
+              <p className='text-muted-foreground mt-0.5 line-clamp-2 text-sm'>
+                {meal.description}
+              </p>
+            )}
+          </div>
+          <span className='shrink-0 text-2xl'>
+            {updatingInfo ? '…' : MEAL_CATEGORY_EMOJIS[meal.category]}
+          </span>
+        </div>
+
+        {updatingInfo ? (
+          <div className='flex flex-wrap gap-2'>
+            <Skeleton shape='rectangle' className='h-5 w-16' />
+            <Skeleton shape='rectangle' className='h-5 w-28' />
+            <Skeleton shape='rectangle' className='h-5 w-20' />
+          </div>
+        ) : (
+          <div className='flex flex-wrap items-center gap-2'>
+            <Badge
+              variant='base'
+              className={join('capitalize', MEAL_CATEGORY_COLORS[meal.category])}
+            >
+              {meal.category}
+            </Badge>
+            <span className='text-muted-foreground text-xs'>
+              Prep {meal.prepTime}m · Cook {meal.cookTime}m · {totalTime}m total
+            </span>
+            <span className='text-muted-foreground text-xs'>
+              {meal.servingSize} {meal.servingSize === 1 ? 'serving' : 'servings'}
+            </span>
+          </div>
+        )}
+
+        {updatingInstructions ? (
+          <Skeleton shape='rectangle' className='h-3.5 w-36' />
+        ) : (
+          meal.instructions.length > 0 && (
+            <div className='text-muted-foreground text-xs'>
+              {meal.instructions.length} instruction{' '}
+              {meal.instructions.length === 1 ? 'step' : 'steps'}
+            </div>
+          )
+        )}
+
+        {updatingIngredients ? (
+          <div className='flex flex-col gap-1.5'>
+            <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
+              Ingredients
+            </p>
+            <div className='flex flex-wrap gap-1.5'>
+              {(['w-16', 'w-12', 'w-20', 'w-14', 'w-10'] as const).map((wClass, i) => (
+                <Skeleton
+                  key={i}
+                  shape='rectangle'
+                  className={join('h-6 rounded-md', wClass)}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          meal.ingredients.length > 0 && <IngredientList ingredients={meal.ingredients} />
+        )}
+      </div>
+    </Card>
+  );
+}
 
 function MealPreviewCard({ meal }: { meal: AgentMealProposal }) {
   const totalTime = meal.prepTime + meal.cookTime;
@@ -260,15 +367,7 @@ export function CreateMealAgentActionCard({
         {hasPartialData && recipe && <PartialRecipeCard recipe={recipe} />}
 
         <div className='flex items-center gap-3'>
-          <div className='text-muted-foreground flex gap-1'>
-            <span className='animate-bounce text-sm'>●</span>
-            <span className='animate-bounce text-sm [animation-delay:0.15s]'>
-              ●
-            </span>
-            <span className='animate-bounce text-sm [animation-delay:0.3s]'>
-              ●
-            </span>
-          </div>
+          <GeneratingIndicator />
           <div className='flex flex-col gap-0.5'>
             {!hasPartialData && (
               <p className='text-muted-foreground text-sm'>
@@ -278,6 +377,29 @@ export function CreateMealAgentActionCard({
             <p className='text-muted-foreground text-xs'>{stepLabel}</p>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (action.status === 'iterating') {
+    const meal = action.meals[0];
+    const updatingFields = action.updatingFields ?? [];
+
+    const fieldNames = updatingFields.map((f) => FIELD_LABELS[f]).join(', ')
+    const statusText = updatingFields.length > 0
+      ? `Updating ${fieldNames}…`
+      : undefined;
+
+    return (
+      <div className='border-border bg-card/50 mt-3 flex flex-col gap-3 rounded-xl border p-3'>
+        <div className='flex items-center gap-2'>
+          <GeneratingIndicator />
+          {statusText && <span className='text-muted-foreground text-xs'>{statusText}</span>}
+        </div>
+
+        {meal && updatingFields.length > 0 && (
+          <IteratingMealCard meal={meal} updatingFields={updatingFields} />
+        )}
       </div>
     );
   }
@@ -311,6 +433,29 @@ export function CreateMealAgentActionCard({
         </div>
         <p className='text-muted-foreground text-xs'>
           💬 Not quite right? Reply to adjust the details.
+        </p>
+      </div>
+    );
+  }
+
+  if (action.status === 'stale') {
+    return (
+      <div className='border-border bg-card/50 mt-3 flex flex-col gap-3 rounded-xl border p-3 opacity-60'>
+        <div className='flex items-center gap-2'>
+          <span className='text-lg'>🕘</span>
+          <span className='text-muted-foreground text-sm font-semibold'>
+            Previous version (stale)
+          </span>
+        </div>
+
+        <div className='flex flex-col gap-2'>
+          {action.meals.map((meal, i) => (
+            <MealPreviewCard key={i} meal={meal} />
+          ))}
+        </div>
+
+        <p className='text-muted-foreground text-xs'>
+          This proposal has been superseded by a newer iteration below.
         </p>
       </div>
     );
