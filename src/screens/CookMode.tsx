@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button, Drawer } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
@@ -11,7 +11,7 @@ export function CookMode() {
   const meals = useAppSelector((state) => state.meals.items);
   const allIngredients = useAppSelector((state) => state.ingredients.items);
 
-  const meal = meals.find((m) => m.id === id);
+  const meal = useMemo(() => meals.find((m) => m.id === id), [meals, id]);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [showIngredients, setShowIngredients] = useState(false);
@@ -214,8 +214,8 @@ export function CookMode() {
       <div className='flex flex-1 flex-col overflow-hidden'>
         {/* Mobile header */}
         <div className='border-border shrink-0 border-b md:hidden'>
-          <div className='flex items-center justify-between px-4 py-3'>
-            <h1 className='text-foreground truncate text-sm font-semibold'>
+          <div className='relative flex items-center justify-end px-4 py-3'>
+            <h1 className='text-foreground pointer-events-none absolute inset-x-0 mx-auto max-w-[55%] truncate text-center text-sm font-semibold'>
               {meal.title}
             </h1>
             <Button
