@@ -149,7 +149,14 @@ A cooking app powered with local LLM using Ollama.
   - **Back to Ingredients**: Quick link to return to the ingredients list from the detail view
   - **Delete Ingredients**: Delete button on detailed view with confirmation dialog
   - **File Upload**: Upload ingredient images with live preview
-  - Form includes: name, type, current amount, serving size, unit (with custom unit support), price per unit, image upload, and comprehensive nutrient profile
+  - Form includes: name, type, current amount, serving size, unit (with custom unit support), price per unit, image upload, barcode, and comprehensive nutrient profile
+- **Barcode Support**: Each ingredient can optionally store a barcode number (e.g. EAN-13 / UPC)
+  - **Enter Barcode Flow**: "Enter Barcode" option in the create modal takes users to a dedicated barcode entry screen
+    - Visual sample barcode (SVG) shows the expected format with digits on the left, right, and below the bars
+    - Instructional text prompts users to include all digits outside the bars
+    - Automatic lookup against the **Open Food Facts** public API (via TanStack React Query with caching) to pre-fill the ingredient name, image, and nutritional info (per 100 g)
+    - Users can continue to the ingredient form with pre-filled data, or proceed to manual entry if the barcode is not found
+  - **Search Live Price**: When a barcode is saved on an ingredient, a "🔍 Search Live Price" button appears on the ingredient detail page — it opens a Google search for the barcode number in a new tab
 - **Inventory Details**:
   - Ingredient name and type
   - Servings available based on serving size

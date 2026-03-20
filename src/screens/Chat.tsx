@@ -422,6 +422,7 @@ export function Chat() {
                 otherUnit: null,
                 products: [],
                 defaultProductId: null,
+                barcode: null,
               }),
             ).unwrap();
 

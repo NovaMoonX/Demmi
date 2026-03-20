@@ -48,7 +48,23 @@ export function IngredientDetail() {
   const fromMealPath =
     (location.state as { fromMealPath?: string } | null)?.fromMealPath ?? null;
 
-  const [name, setName] = useState(existingIngredient?.name || '');
+  // Pre-fill data passed from IngredientBarcodeEntry
+  const barcodePrefill = (location.state as {
+    barcodePrefill?: {
+      barcode?: string | null;
+      name?: string;
+      imageUrl?: string;
+      protein?: number;
+      carbs?: number;
+      fat?: number;
+      fiber?: number;
+      sugar?: number;
+      sodium?: number;
+      calories?: number;
+    };
+  } | null)?.barcodePrefill ?? null;
+
+  const [name, setName] = useState(existingIngredient?.name ?? barcodePrefill?.name ?? '');
   const [type, setType] = useState<IngredientType>(
     existingIngredient?.type ?? 'other',
   );
@@ -62,33 +78,36 @@ export function IngredientDetail() {
     existingIngredient?.unit ?? 'g',
   );
   const [otherUnit, setOtherUnit] = useState<string>(
-    existingIngredient?.otherUnit || '',
+    existingIngredient?.otherUnit ?? '',
   );
   const [imageUrl, setImageUrl] = useState<string>(
-    existingIngredient?.imageUrl || '',
+    existingIngredient?.imageUrl ?? barcodePrefill?.imageUrl ?? '',
+  );
+  const [barcode, setBarcode] = useState<string>(
+    existingIngredient?.barcode ?? barcodePrefill?.barcode ?? '',
   );
 
   // Nutrient profile state
   const [protein, setProtein] = useState(
-    existingIngredient?.nutrients.protein.toString() ?? '0',
+    existingIngredient?.nutrients.protein.toString() ?? barcodePrefill?.protein?.toString() ?? '0',
   );
   const [carbs, setCarbs] = useState(
-    existingIngredient?.nutrients.carbs.toString() ?? '0',
+    existingIngredient?.nutrients.carbs.toString() ?? barcodePrefill?.carbs?.toString() ?? '0',
   );
   const [fat, setFat] = useState(
-    existingIngredient?.nutrients.fat.toString() ?? '0',
+    existingIngredient?.nutrients.fat.toString() ?? barcodePrefill?.fat?.toString() ?? '0',
   );
   const [fiber, setFiber] = useState(
-    existingIngredient?.nutrients.fiber.toString() ?? '0',
+    existingIngredient?.nutrients.fiber.toString() ?? barcodePrefill?.fiber?.toString() ?? '0',
   );
   const [sugar, setSugar] = useState(
-    existingIngredient?.nutrients.sugar.toString() ?? '0',
+    existingIngredient?.nutrients.sugar.toString() ?? barcodePrefill?.sugar?.toString() ?? '0',
   );
   const [sodium, setSodium] = useState(
-    existingIngredient?.nutrients.sodium.toString() ?? '0',
+    existingIngredient?.nutrients.sodium.toString() ?? barcodePrefill?.sodium?.toString() ?? '0',
   );
   const [calories, setCalories] = useState(
-    existingIngredient?.nutrients.calories.toString() ?? '0',
+    existingIngredient?.nutrients.calories.toString() ?? barcodePrefill?.calories?.toString() ?? '0',
   );
 
   // Products state
@@ -236,6 +255,7 @@ export function IngredientDetail() {
       products: products,
       defaultProductId: defaultProductId,
       imageUrl: imageUrl,
+      barcode: barcode.trim() || null,
       nutrients: {
         protein: Number(protein) || 0,
         carbs: Number(carbs) || 0,
@@ -463,6 +483,30 @@ export function IngredientDetail() {
               </ul>
             </div>
           )}
+
+          {existingIngredient.barcode && (
+            <div className='border-border rounded-lg border p-4'>
+              <div className='flex items-center justify-between gap-3'>
+                <div>
+                  <p className='text-muted-foreground text-xs uppercase tracking-wide'>
+                    Barcode
+                  </p>
+                  <p className='text-foreground font-mono font-medium'>
+                    {existingIngredient.barcode}
+                  </p>
+                </div>
+                <a
+                  href={`https://www.google.com/search?q=${encodeURIComponent(existingIngredient.barcode)}`}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                >
+                  <Button type='button' variant='secondary'>
+                    🔍 Search Live Price
+                  </Button>
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -605,6 +649,19 @@ export function IngredientDetail() {
               />
             </div>
           )}
+        </div>
+
+        <div>
+          <Label htmlFor='barcode'>
+            Barcode
+          </Label>
+          <Input
+            id='barcode'
+            type='text'
+            value={barcode}
+            onChange={(e) => setBarcode(e.target.value)}
+            placeholder='e.g. 4 012345 678905'
+          />
         </div>
 
         <div className='border-border border-t pt-6'>
