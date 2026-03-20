@@ -217,6 +217,14 @@ export function MealDetail() {
             <div className='flex shrink-0 gap-2'>
               <Button
                 type='button'
+                variant='primary'
+                onClick={() => navigate(`/meals/${existingMeal.id}/cook`)}
+                disabled={existingMeal.instructions.length === 0}
+              >
+                🍳 Cook
+              </Button>
+              <Button
+                type='button'
                 variant='secondary'
                 onClick={() => setIsViewMode(false)}
               >

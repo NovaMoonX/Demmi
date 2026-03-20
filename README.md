@@ -191,6 +191,15 @@ A cooking app powered with local LLM using Ollama.
   - **Ingredient Modal Entry**: Adding or editing an ingredient opens a modal with ingredient, quantity, and unit fields (unit is fully editable to allow custom units per meal)
   - **Create Ingredients Inline**: Jump directly to `/ingredients/new` from meal editing and return with the new ingredient ready to add
   - Form includes: title, description, category, prep time, cook time, servings, image upload, dynamic ingredient list, and interactive instructions list
+- **Cook Mode**: Immersive, step-by-step cooking experience inspired by popular cooking apps (e.g., Tasty)
+  - **Start Cooking**: A "🍳 Cook" button on the meal detail view launches Cook Mode (disabled if no instructions)
+  - **Step-by-Step View**: Each instruction step is displayed one at a time in a clean, focused layout with a large, readable font
+  - **Step Navigation**: Previous/Next buttons with a "🎉 Done!" button on the last step that returns to the meal detail; navigates back to the meal on completion
+  - **Progress Indicators**: A linear progress bar at the top of the screen fills as you advance through steps; dot indicators below the step content show overall progress and let you jump to any step directly
+  - **Ingredients Drawer (Mobile)**: An "Ingredients" button in the mobile header slides up a bottom Drawer listing all meal ingredients with drag-to-close support
+  - **Desktop Side Panel**: On `md+` screens the left column displays the meal image (or a category emoji placeholder), meal title, description, timing stats (prep/cook/servings), and a full ingredient list — always visible while cooking
+  - **Responsive Layout**: Mobile-optimized full-screen focused view; desktop two-column layout with meal info on the left and cooking step on the right
+  - **Route**: Accessible at `/meals/:id/cook`
 - **Cloud Persistence**: All meal changes are synced to Firestore for signed-in users
   - **Create**: New meals are stored in Firestore under the authenticated user's account
   - **Update**: Edits are persisted to Firestore with ownership verification (only the owner can update)
@@ -538,6 +547,7 @@ src/
 │   ├── About.tsx            # About/manifesto page
 │   ├── Auth.tsx             # Authentication screen
 │   ├── Chat.tsx             # AI chat interface
+│   ├── CookMode.tsx         # Immersive step-by-step cook mode
 │   ├── IngredientDetail.tsx # Detailed ingredient view for create/edit
 │   ├── Ingredients.tsx      # Ingredient inventory screen
 │   ├── MealDetail.tsx       # Detailed meal view for create/edit
