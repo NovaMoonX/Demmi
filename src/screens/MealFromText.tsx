@@ -21,6 +21,7 @@ import type {
 import type { RecipeStep } from '@lib/ollama/action-types/createMealAction.types';
 import type { MealIngredient } from '@lib/meals';
 import { generatedId } from '@utils/generatedId';
+import { ChatMessage } from '@/lib/chat';
 
 const NAVIGATE_DELAY_MS = 400;
 
@@ -234,7 +235,7 @@ export function MealFromText() {
     setPartialRecipe({ ...EMPTY_PARTIAL_RECIPE });
 
     const fakeMessageId = generatedId('msg');
-    const messages = [
+    const messages: ChatMessage[] = [
       {
         id: fakeMessageId,
         role: 'user' as const,
@@ -244,6 +245,7 @@ export function MealFromText() {
         rawContent: recipeText,
         agentAction: null,
         summary: null,
+        iterationInvalid: false,
       },
     ];
 
