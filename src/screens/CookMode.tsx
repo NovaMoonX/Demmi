@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button, Drawer } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useAppSelector } from '@store/hooks';
-import { MEAL_CATEGORY_EMOJIS } from '@lib/meals';
+import { MEAL_CATEGORY_EMOJIS, MEAL_PLACEHOLDER_IMAGE_URL } from '@lib/meals';
 
 export function CookMode() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +21,7 @@ export function CookMode() {
 
   useEffect(() => {
     if (meal?.servingSize !== undefined && servings === undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setServings(meal.servingSize);
     }
   }, [meal?.servingSize, servings]);
@@ -156,7 +157,7 @@ export function CookMode() {
         <div className='flex flex-col overflow-y-auto'>
           {meal.imageUrl ? (
             <img
-              src={meal.imageUrl}
+              src={meal.imageUrl || MEAL_PLACEHOLDER_IMAGE_URL}
               alt={meal.title}
               className='h-64 w-full object-cover lg:h-80'
             />

@@ -18,6 +18,7 @@ export function SharedMealView() {
 
   useEffect(() => {
     if (!shareId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNotFound(true);
       setLoading(false);
       return;

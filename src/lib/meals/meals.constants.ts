@@ -1,5 +1,7 @@
 import { MealCategory } from './meals.types';
 
+export const MEAL_PLACEHOLDER_IMAGE_URL = '/images/meal-placeholder.jpg';
+
 export const MEAL_CATEGORIES: MealCategory[] = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink'];
 
 export const MEAL_CATEGORY_COLORS: Record<MealCategory, string> = {

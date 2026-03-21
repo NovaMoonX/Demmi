@@ -1,6 +1,6 @@
 import { Card, Badge } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
-import { Meal, MEAL_CATEGORY_COLORS, MEAL_CATEGORY_EMOJIS } from '@lib/meals';
+import { Meal, MEAL_CATEGORY_COLORS, MEAL_CATEGORY_EMOJIS, MEAL_PLACEHOLDER_IMAGE_URL } from '@lib/meals';
 
 interface MealCardProps {
   meal: Meal;
@@ -20,7 +20,7 @@ export function MealCard({ meal, onClick }: MealCardProps) {
       {/* Cover Image */}
       <div className="w-full h-48 overflow-hidden bg-muted">
         <img
-          src={meal.imageUrl}
+          src={meal.imageUrl || MEAL_PLACEHOLDER_IMAGE_URL}
           alt={meal.title}
           className="w-full h-full object-cover"
           onError={(e) => {

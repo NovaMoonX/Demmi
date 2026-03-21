@@ -1,5 +1,6 @@
 import { capitalize } from '@/utils';
 import {
+  INGREDIENT_PLACEHOLDER_IMAGE_URL,
   INGREDIENT_TYPE_COLORS,
   INGREDIENT_TYPE_EMOJIS,
 } from '@lib/ingredients';
@@ -213,7 +214,7 @@ export function Ingredients() {
                 {/* Cover Image */}
                 <div className='bg-muted h-40 w-full overflow-hidden'>
                   <img
-                    src={ingredient.imageUrl}
+                    src={ingredient.imageUrl || INGREDIENT_PLACEHOLDER_IMAGE_URL}
                     alt={ingredient.name}
                     className='h-full w-full object-cover'
                     onError={(e) => {
