@@ -13,6 +13,7 @@ export const mockMeals: Meal[] = [
     cookTime: 15,
     servingSize: 4,
     imageUrl: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=80',
+    share: null,
     instructions: [
       'Mix flour, sugar, baking powder, and salt in a large bowl',
       'In another bowl, whisk together milk, eggs, and melted butter',
@@ -39,6 +40,7 @@ export const mockMeals: Meal[] = [
     cookTime: 20,
     servingSize: 2,
     imageUrl: 'https://images.unsplash.com/photo-1546793665-c74683f339c1?w=800&q=80',
+    share: null,
     instructions: [
       'Season chicken breasts with salt, pepper, and olive oil',
       'Grill chicken over medium-high heat for 6-8 minutes per side',
@@ -65,6 +67,7 @@ export const mockMeals: Meal[] = [
     cookTime: 20,
     servingSize: 4,
     imageUrl: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?w=800&q=80',
+    share: null,
     instructions: [
       'Cook spaghetti in salted boiling water until al dente',
       'While pasta cooks, crisp pancetta in a large pan',
@@ -87,6 +90,7 @@ export const mockMeals: Meal[] = [
     cookTime: 0,
     servingSize: 12,
     imageUrl: 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=800&q=80',
+    share: null,
     instructions: [
       'Combine oats, almonds, and dried cranberries in a food processor',
       'Pulse until mixture is finely chopped',
@@ -108,6 +112,7 @@ export const mockMeals: Meal[] = [
     cookTime: 12,
     servingSize: 4,
     imageUrl: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=800&q=80',
+    share: null,
     instructions: [
       'Preheat oven to 425°F (220°C)',
       'Butter and flour four ramekins',
@@ -132,6 +137,7 @@ export const mockMeals: Meal[] = [
     cookTime: 0,
     servingSize: 2,
     imageUrl: 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=800&q=80',
+    share: null,
     instructions: [
       'Peel and cube fresh mango',
       'Add mango, yogurt, milk, and honey to blender',
@@ -154,6 +160,7 @@ export const mockMeals: Meal[] = [
     cookTime: 10,
     servingSize: 2,
     imageUrl: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=800&q=80',
+    share: null,
     instructions: [
       'Toast bread slices until golden and crispy',
       'Mash ripe avocado with salt, pepper, and lemon juice',
@@ -181,6 +188,7 @@ export const mockMeals: Meal[] = [
     cookTime: 20,
     servingSize: 6,
     imageUrl: 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=800&q=80',
+    share: null,
     instructions: [
       'Brown ground beef in a large skillet over medium-high heat',
       'Drain excess fat and add taco seasoning with water',

@@ -1,5 +1,7 @@
 import { IngredientType, MeasurementUnit } from './ingredients.types';
 
+export const INGREDIENT_PLACEHOLDER_IMAGE_URL = '/images/ingredient-placeholder.jpg';
+
 export const INGREDIENT_TYPES: IngredientType[] = [
   'meat',
   'produce',

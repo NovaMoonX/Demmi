@@ -22,6 +22,8 @@ A cooking app powered with local LLM using Ollama.
 - **Auto Verification Check**: Refresh-safe verification status checks with automatic redirect
 - **Protected Routes**: Automatic redirection to auth screen for unauthenticated users (demo mode bypasses this)
 - **Session Management**: Persistent authentication state across page reloads
+- **Auth State Sync**: Authentication changes now update both AuthContext state and the Redux `user` slice in lockstep
+- **Centralized User Session Data Loading**: On sign-in, a single orchestrated auth data load action hydrates all user collections (ingredients, meals, chats, calendar, shopping list); on sign-out, a matching clear action resets user-scoped store data
 - **Password Requirements**: Minimum 6 characters for secure accounts
 - **Auth Form UI**: Beautiful authentication interface using Dreamer UI's AuthForm component
 - **Verification Flow**: Dedicated email verification screen with resend functionality
@@ -79,7 +81,18 @@ A cooking app powered with local LLM using Ollama.
 - **Rich Iteration Context**: Refinement requests send all user messages from proposal start through the latest reply (plus assistant summaries) so the agent retains full preference context while iterating
 - **Extensible Design**: The agent action system (`AgentAction` type + `CreateMealAgentActionCard` component) is architected to support additional action types beyond meal creation in the future
 
-### 🍳 Cooking-Themed Design
+### 🔗 Recipe Sharing
+- **Share with Anyone**: Authenticated users can share any of their saved recipes via a unique shareable link — no account required to view
+- **Auto-Copy on Share**: When a recipe is shared, the share link is automatically copied to the clipboard and a toast confirms *"Recipe shared — link copied"*
+- **Discreet Share Controls**: The sharing panel uses subtle inline text controls — no large buttons. When not shared, a small *"🔗 Share"* text link and a note clarify the recipe is shared as it is right now. When shared, the panel shows the share date alongside *"Copy link · Refresh · Stop sharing"* text actions
+- **Refresh Share**: If the recipe has been updated since it was last shared, users can click *"Refresh"* in the sharing panel to re-publish the latest version to the shared link
+- **Stop Sharing**: Users can remove the shared recipe at any time via *"Stop sharing"*, which deletes the data from the Realtime Database and invalidates the link
+- **Public Recipe View**: Unauthenticated visitors can view shared recipes at `/shared/:shareId` — showing title, category badge, prep/cook times, servings, ingredients, and instructions — without needing an account
+- **Not Found Empty State**: If a share link is no longer valid (recipe was unshared or link is incorrect), visitors see a friendly *"Recipe not found"* empty state with a **Back to Home** button instead of an automatic redirect
+- **Ingredient Snapshot**: The shared recipe stores a snapshot of ingredient names and servings at the time of sharing, so viewers see complete information even without an account
+- **Security**: Firebase Realtime Database rules allow anyone to read shared recipes but only allow writes from the authenticated owner (`userId` must match `auth.uid`)
+
+
 - **Orange Accent Color**: Warm, cooking-inspired orange accent color throughout the app
 - **Modern & Clean**: Simple black and white base with orange highlights
 - **Light & Dark Modes**: Full support for both themes with automatic color adjustments
@@ -495,13 +508,20 @@ interface PlannedMeal {
    ```bash
    VITE_FIREBASE_API_KEY=your-api-key
    VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+   VITE_FIREBASE_DATABASE_URL=https://your-project-default-rtdb.firebaseio.com
    VITE_FIREBASE_PROJECT_ID=your-project-id
    VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
    VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
    VITE_FIREBASE_APP_ID=your-app-id
    ```
 
-3. **Enable Email Verification**
+3. **Enable Realtime Database**
+   - In Firebase Console, go to Build > Realtime Database
+   - Click "Create Database" and choose a region
+   - Start in locked mode (the `database.rules.json` file will be deployed with the app)
+   - Deploy database rules: `firebase deploy --only database`
+
+4. **Enable Email Verification**
    - In Firebase Console, go to Authentication > Templates
    - Customize the email verification template (optional)
 

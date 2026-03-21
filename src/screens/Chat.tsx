@@ -448,6 +448,7 @@ export function Chat() {
             instructions: mealProposal.instructions,
             imageUrl: mealProposal.imageUrl,
             ingredients: mealIngredients,
+            share: null,
           }),
         ).unwrap();
 

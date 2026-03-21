@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth as firebaseAuth } from '@lib/firebase/firebase.config';
 import {
@@ -11,29 +11,55 @@ import {
   AuthUser,
 } from '@lib/firebase/auth.service';
 import { AuthContext } from '@hooks/useAuth';
+import { useAppDispatch } from '@store/hooks';
+import {
+  clearUserData,
+  loadUserData,
+  setLoading as setUserLoading,
+  setUser as setStoreUser,
+} from '@store/slices/userSlice';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const [user, setAuthUser] = useState<AuthUser | null>(null);
+  const [loading, setAuthLoading] = useState(true);
+
+  const updateAuthUser = useCallback((nextUser: AuthUser | null) => {
+    setAuthUser(nextUser);
+    dispatch(setStoreUser(nextUser));
+  }, [dispatch]);
+
+  const updateAuthLoading = useCallback((nextLoading: boolean) => {
+    setAuthLoading(nextLoading);
+    dispatch(setUserLoading(nextLoading));
+  }, [dispatch]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(firebaseAuth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
       const authUser = convertFirebaseUser(firebaseUser);
-      setUser(authUser);
-      setLoading(false);
+      updateAuthUser(authUser);
+
+      if (authUser != null) {
+        await dispatch(loadUserData());
+      } else {
+        await dispatch(clearUserData());
+      }
+
+      updateAuthLoading(false);
     });
 
     return unsubscribe;
-  }, []);
+  }, [dispatch, updateAuthLoading, updateAuthUser]);
 
   const signIn = async (
     email: string,
     password: string,
   ): Promise<{ error?: { message: string } }> => {
+    updateAuthLoading(true);
     const result = await authSignIn(email, password);
     
-    if (result.user) {
-      setUser(result.user);
+    if (result.error) {
+      updateAuthLoading(false);
     }
     
     return result.error ? { error: result.error } : {};
@@ -43,28 +69,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string,
   ): Promise<{ error?: { message: string } }> => {
+    updateAuthLoading(true);
     const result = await authSignUp(email, password);
     
-    if (result.user) {
-      setUser(result.user);
+    if (result.error) {
+      updateAuthLoading(false);
     }
     
     return result.error ? { error: result.error } : {};
   };
 
   const signInWithGoogle = async (): Promise<{ error?: { message: string } }> => {
+    updateAuthLoading(true);
     const result = await authSignInWithGoogle();
 
-    if (result.user) {
-      setUser(result.user);
+    if (result.error) {
+      updateAuthLoading(false);
     }
 
     return result.error ? { error: result.error } : {};
   };
 
   const logOut = async (): Promise<void> => {
+    updateAuthLoading(true);
     await authLogOut();
-    setUser(null);
   };
 
   const resendVerificationEmail = async (): Promise<{
