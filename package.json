@@ -10,12 +10,37 @@
     "preview": "vite preview",
     "predeploy": "npm run build && npm run preview",
     "fbdeploy": "npm run build && firebase deploy",
-    "devh": "vite --host"
+    "devh": "vite --host",
+    "electron:compile": "tsc -p tsconfig.electron.json",
+    "electron:dev": "npm run electron:compile && concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron electron-dist/electron/main.js\"",
+    "electron:build": "npm run build && npm run electron:compile && electron-builder"
+  },
+  "build": {
+    "appId": "dev.moondreams.demmi",
+    "productName": "Demmi",
+    "files": [
+      "dist/**/*",
+      "electron-dist/**/*"
+    ],
+    "directories": {
+      "buildResources": "public"
+    },
+    "main": "electron-dist/electron/main.js",
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   },
   "dependencies": {
     "@moondreamsdev/dreamer-ui": "^1.7.26",
     "@reduxjs/toolkit": "^2.11.2",
     "@tailwindcss/typography": "^0.5.19",
+    "cheerio": "^1.2.0",
     "firebase": "^12.9.0",
     "nanoid": "^5.1.6",
     "ollama": "^0.6.3",
@@ -35,6 +60,9 @@
     "@types/react-router-dom": "^5.3.3",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react-swc": "^4.2.2",
+    "concurrently": "^9.2.1",
+    "electron": "^41.0.3",
+    "electron-builder": "^26.8.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
@@ -45,6 +73,7 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4",
-    "vite-plugin-qrcode": "^0.3.0"
+    "vite-plugin-qrcode": "^0.3.0",
+    "wait-on": "^9.0.4"
   }
 }

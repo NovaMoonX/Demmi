@@ -26,8 +26,8 @@ dist-ssr
 # TypeScript build info
 tsconfig.app.tsbuildinfo
 
-# Firebase
-.firebase
+# Electron compiled output
+electron-dist
 
 # Scaffold files
 .scaffold-progress
