@@ -1,26 +1,76 @@
+import { useState, useEffect, useRef } from 'react';
+import { Toggle, Label } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { VoiceState } from '@hooks/useCookModeVoice';
 
 interface VoiceIndicatorProps {
   voiceState: VoiceState;
+  enabled: boolean;
+  onToggle: (enabled: boolean) => void;
 }
 
-export function VoiceIndicator({ voiceState }: VoiceIndicatorProps) {
+export function VoiceIndicator({ voiceState, enabled, onToggle }: VoiceIndicatorProps) {
+  const [showInitialAnimation, setShowInitialAnimation] = useState(false);
+  const wasEnabledRef = useRef(enabled);
+
+  useEffect(() => {
+    const wasEnabled = wasEnabledRef.current;
+    wasEnabledRef.current = enabled;
+
+    if (enabled && !wasEnabled) {
+      const enableTimer = setTimeout(() => {
+        setShowInitialAnimation(true);
+      }, 0);
+      const disableTimer = setTimeout(() => {
+        setShowInitialAnimation(false);
+      }, 2000);
+      return () => {
+        clearTimeout(enableTimer);
+        clearTimeout(disableTimer);
+      };
+    } else if (!enabled && wasEnabled) {
+      const timer = setTimeout(() => {
+        setShowInitialAnimation(false);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [enabled]);
+
   if (voiceState === 'unsupported') return null;
 
   return (
     <>
-      <div
-        className={join(
-          'pointer-events-none absolute top-3 left-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-opacity duration-300',
-          'bg-muted/80 text-muted-foreground backdrop-blur-sm',
-          voiceState === 'listening' ? 'opacity-0' : 'opacity-100',
-        )}
-        aria-hidden='true'
-      >
-        <span>🎤</span>
-        <span>Say "Hey Demmi"</span>
+      {/* Voice Mode Toggle - Top Left */}
+      <div className='absolute top-3 left-3 z-10'>
+        <div className='bg-background/95 flex items-center gap-2 rounded-full border border-border px-3 py-1.5 backdrop-blur-sm'>
+          <Label htmlFor='voice-toggle' className='text-xs'>
+            🎤 Voice
+          </Label>
+          <Toggle
+            id='voice-toggle'
+            checked={enabled}
+            onCheckedChange={onToggle}
+            size='sm'
+          />
+        </div>
       </div>
+
+      {/* Wake Word Notice - Bottom (above step indicators) */}
+      {enabled && voiceState !== 'listening' && (
+        <div
+          className={join(
+            'pointer-events-none absolute bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-2 text-xs transition-all duration-500',
+            'backdrop-blur-sm',
+            showInitialAnimation
+              ? 'bg-accent/90 text-accent-foreground animate-pulse'
+              : 'bg-muted/80 text-muted-foreground',
+          )}
+          aria-hidden='true'
+        >
+          <span className='mr-1.5'>🎤</span>
+          <span>Say "Hey Demmi"</span>
+        </div>
+      )}
 
       <div
         className={join(
@@ -55,7 +105,7 @@ export function VoiceIndicator({ voiceState }: VoiceIndicatorProps) {
               "Close ingredients"
             </p>
             <p>
-              "Go to step [number]"
+              "Go to step 4"
               <span aria-hidden='true'> · </span>
               "Exit"
             </p>

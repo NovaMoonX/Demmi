@@ -19,6 +19,7 @@ export function CookMode() {
   const [showIngredients, setShowIngredients] = useState(false);
   const [servings, setServings] = useState<number | undefined>(undefined);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -69,6 +70,7 @@ export function CookMode() {
   }, [totalSteps]);
 
   const { voiceState } = useCookModeVoice({
+    enabled: voiceEnabled,
     onNextStep: handleNext,
     onPrevStep: handlePrev,
     onGoToStep: handleGoToStep,
@@ -302,7 +304,11 @@ export function CookMode() {
             Ingredients
           </Button>
 
-          <VoiceIndicator voiceState={voiceState} />
+          <VoiceIndicator
+            voiceState={voiceState}
+            enabled={voiceEnabled}
+            onToggle={setVoiceEnabled}
+          />
 
           <div className='w-full max-w-2xl'>
             <div className='mb-4 flex items-center gap-3'>

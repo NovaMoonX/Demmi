@@ -81,6 +81,7 @@ function matchCommand(text: string): VoiceCommand | null {
 }
 
 export interface UseCookModeVoiceOptions {
+  enabled: boolean;
   onNextStep: () => void;
   onPrevStep: () => void;
   onGoToStep: (stepNumber: number) => void;
@@ -97,6 +98,7 @@ export interface UseCookModeVoiceResult {
 }
 
 export function useCookModeVoice({
+  enabled,
   onNextStep,
   onPrevStep,
   onGoToStep,
@@ -156,7 +158,7 @@ export function useCookModeVoice({
   }, []);
 
   useEffect(() => {
-    if (!isSupported) return;
+    if (!isSupported || !enabled) return;
 
     type ExtendedWindow = Window & { webkitSpeechRecognition?: typeof SpeechRecognition };
     const SpeechRecognitionCtor =
@@ -258,7 +260,7 @@ export function useCookModeVoice({
         // Ignore
       }
     };
-  }, [isSupported, exitCommandMode]);
+  }, [isSupported, enabled, exitCommandMode]);
 
   return { voiceState };
 }
