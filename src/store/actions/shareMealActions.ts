@@ -70,8 +70,6 @@ export const shareMeal = createAsyncThunk(
         sharedAt,
       };
 
-      await set(ref(rtdb, `sharedMeals/${shareId}`), sharedMeal);
-
       const shareValue = { id: shareId, sharedAt };
       const mealDocRef = doc(db, 'meals', meal.id);
       await runTransaction(db, async (tx: Transaction) => {
@@ -82,6 +80,8 @@ export const shareMeal = createAsyncThunk(
           throw new Error('You can only share your own meals.');
         tx.update(mealDocRef, { share: shareValue });
       });
+
+      await set(ref(rtdb, `sharedMeals/${shareId}`), sharedMeal);
 
       return { ...meal, share: shareValue };
     } catch (err) {
@@ -109,8 +109,6 @@ export const unshareMeal = createAsyncThunk(
       if (!userId) throw new Error('You must be signed in to unshare a meal.');
       if (!meal.share) throw new Error('Meal is not currently shared.');
 
-      await remove(ref(rtdb, `sharedMeals/${meal.share.id}`));
-
       const mealDocRef = doc(db, 'meals', meal.id);
       await runTransaction(db, async (tx: Transaction) => {
         const mealSnap = await tx.get(mealDocRef);
@@ -120,6 +118,8 @@ export const unshareMeal = createAsyncThunk(
           throw new Error('You can only unshare your own meals.');
         tx.update(mealDocRef, { share: null });
       });
+
+      await remove(ref(rtdb, `sharedMeals/${meal.share.id}`));
 
       return { ...meal, share: null };
     } catch (err) {
