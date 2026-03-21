@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@store/hooks';
 import { setSelectedModel } from '@store/slices/chatsSlice';
 import { listLocalModels, pullModelStream } from '@lib/ollama';
-import { isElectron, getElectronAPI } from '@lib/ipc';
+import { getElectronAPI } from '@lib/ipc';
 
 export interface PullProgress {
   status: string;
@@ -26,8 +26,8 @@ export function useOllamaModels() {
     setError(null);
     try {
       let models: string[];
-      if (isElectron()) {
-        const api = getElectronAPI()!;
+      const api = getElectronAPI();
+      if (api) {
         const ollamaModels = await api.listModels();
         models = ollamaModels.map((m) => m.name);
       } else {
@@ -57,8 +57,8 @@ export function useOllamaModels() {
       setError(null);
       try {
         let models: string[];
-        if (isElectron()) {
-          const api = getElectronAPI()!;
+        const api = getElectronAPI();
+        if (api) {
           const ollamaModels = await api.listModels();
           models = ollamaModels.map((m) => m.name);
         } else {
