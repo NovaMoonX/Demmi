@@ -196,7 +196,7 @@ A cooking app powered with local LLM using Ollama.
   - **Step-by-Step View**: Each instruction step is displayed one at a time in a clean, focused layout with a large, readable font
   - **Step Navigation**: Previous/Next buttons with a "🎉 Done!" button on the last step that returns to the meal detail; navigates back to the meal on completion
   - **Progress Indicators**: A linear progress bar at the top of the screen fills as you advance through steps; dot indicators below the step content show overall progress and let you jump to any step directly
-  - **Ingredients Drawer (Mobile)**: An "Ingredients" button in the mobile header slides up a bottom Drawer listing all meal ingredients with drag-to-close support
+  - **Ingredients Drawer (Mobile)**: A mobile-only "Ingredients" button in the step content area (top-right of the step view) slides up a bottom Drawer listing all meal ingredients with drag-to-close support
   - **Desktop Side Panel**: On `md+` screens the left column displays the meal image (or a category emoji placeholder), meal title, description, timing stats (prep/cook/servings), and a full ingredient list — always visible while cooking
   - **Responsive Layout**: Mobile-optimized full-screen focused view; desktop two-column layout with meal info on the left and cooking step on the right
   - **Route**: Accessible at `/meals/:id/cook`
