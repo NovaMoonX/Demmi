@@ -15,9 +15,15 @@ export function CookMode() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [showIngredients, setShowIngredients] = useState(false);
-  const [servings, setServings] = useState(meal?.servingSize ?? 1);
+  const [servings, setServings] = useState<number | undefined>(undefined);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (meal?.servingSize !== undefined && servings === undefined) {
+      setServings(meal.servingSize);
+    }
+  }, [meal?.servingSize, servings]);
 
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -64,7 +70,8 @@ export function CookMode() {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const scaleFactor = meal.servingSize > 0 ? servings / meal.servingSize : 1;
+  const effectiveServings = servings ?? meal.servingSize;
+  const scaleFactor = meal.servingSize > 0 ? effectiveServings / meal.servingSize : 1;
 
   const getScaledAmount = (baseServings: number) => {
     return Number((baseServings * scaleFactor).toFixed(2));
@@ -94,19 +101,19 @@ export function CookMode() {
             variant='secondary'
             size='icon'
             aria-label='Decrease servings'
-            onClick={() => setServings((s) => Math.max(1, s - 1))}
-            disabled={servings <= 1}
+            onClick={() => setServings((s) => Math.max(1, (s ?? 1) - 1))}
+            disabled={(servings ?? 1) <= 1}
           >
             −
           </Button>
           <span className='text-foreground w-8 text-center font-bold'>
-            {servings}
+            {effectiveServings}
           </span>
           <Button
             variant='secondary'
             size='icon'
             aria-label='Increase servings'
-            onClick={() => setServings((s) => s + 1)}
+            onClick={() => setServings((s) => (s ?? 1) + 1)}
           >
             +
           </Button>
