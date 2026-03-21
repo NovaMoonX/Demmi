@@ -12,6 +12,7 @@ import {
 } from '@lib/firebase/auth.service';
 import { AuthContext } from '@hooks/useAuth';
 import { useAppDispatch } from '@store/hooks';
+import { endDemoSessionIfActive } from '@store/slices/demoSlice';
 import {
   clearUserData,
   loadUserData,
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateAuthUser(authUser);
 
       if (authUser != null) {
+        await dispatch(endDemoSessionIfActive());
         await dispatch(loadUserData());
       } else {
         await dispatch(clearUserData());

@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import type { AppDispatch } from '@store/index';
+import type { AppDispatch, RootState } from '@store/index';
 import { addPlannedMeal, resetCalendar } from './calendarSlice';
 import { setConversations, resetChats } from './chatsSlice';
 import { setMeals, resetMeals } from './mealsSlice';
@@ -107,6 +107,18 @@ export const endDemoSession = createAsyncThunk<void, void, { dispatch: AppDispat
     await dispatch(clearDemoData());
     dispatch(disableDemo());
   }
+);
+
+export const endDemoSessionIfActive = createAsyncThunk<
+  void,
+  void,
+  { dispatch: AppDispatch; state: RootState }
+>(
+  'demo/endDemoSessionIfActive',
+  async (_, { dispatch }) => {
+    await dispatch(endDemoSession());
+  },
+  { condition: (_, { getState }) => getState().demo.isActive }
 );
 
 const demoSlice = createSlice({
