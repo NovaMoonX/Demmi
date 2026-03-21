@@ -84,7 +84,6 @@ export function MealDetail() {
       const ing = allIngredients.find((i) => i.id === newId);
       if (ing) {
         processedNewIngredientRef.current = newId;
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedIngredients((prev) => {
           if (prev.some((item) => item.ingredientId === newId)) {
             return prev;
@@ -105,7 +104,13 @@ export function MealDetail() {
 
   const formatSharedAt = (ts: number) => {
     const d = new Date(ts);
-    const result = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    const result = d.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
     return result;
   };
 

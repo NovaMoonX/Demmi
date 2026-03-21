@@ -85,6 +85,7 @@ A cooking app powered with local LLM using Ollama.
 - **Share with Anyone**: Authenticated users can share any of their saved recipes via a unique shareable link — no account required to view
 - **Share Link Copy**: Once shared, a "Copy Link" button appears so users can instantly copy the URL to their clipboard and send it to anyone
 - **Refresh Share**: If the recipe has been updated since it was last shared, users can click "Refresh Share" to re-publish the latest version to the shared link
+- **Shared Timestamp Detail**: Shared recipes now display both the share date and local time in the meal detail view for clearer context
 - **Stop Sharing**: Users can remove the shared recipe at any time via "Stop Sharing", which deletes the data from the Realtime Database and invalidates the link
 - **Public Recipe View**: Unauthenticated visitors can view shared recipes at `/shared/:shareId` — showing title, category badge, prep/cook times, servings, ingredients, and instructions — without needing an account
 - **Automatic Redirect**: If a share link is no longer valid (recipe was unshared or link is incorrect), visitors are automatically redirected to the home page
