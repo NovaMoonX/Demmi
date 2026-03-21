@@ -54,6 +54,9 @@ export function IngredientDetail() {
       barcode?: string | null;
       name?: string;
       imageUrl?: string;
+      servingSize?: number;
+      unit?: MeasurementUnit;
+      otherUnit?: string | null;
       protein?: number;
       carbs?: number;
       fat?: number;
@@ -72,13 +75,13 @@ export function IngredientDetail() {
     existingIngredient?.currentAmount.toString() ?? '0',
   );
   const [servingSize, setServingSize] = useState(
-    existingIngredient?.servingSize.toString() ?? '0',
+    existingIngredient?.servingSize.toString() ?? barcodePrefill?.servingSize?.toString() ?? '0',
   );
   const [unit, setUnit] = useState<MeasurementUnit>(
-    existingIngredient?.unit ?? 'g',
+    existingIngredient?.unit ?? barcodePrefill?.unit ?? 'g',
   );
   const [otherUnit, setOtherUnit] = useState<string>(
-    existingIngredient?.otherUnit ?? '',
+    existingIngredient?.otherUnit ?? barcodePrefill?.otherUnit ?? '',
   );
   const [imageUrl, setImageUrl] = useState<string>(
     existingIngredient?.imageUrl ?? barcodePrefill?.imageUrl ?? '',

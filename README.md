@@ -154,8 +154,13 @@ A cooking app powered with local LLM using Ollama.
   - **Enter Barcode Flow**: "Enter Barcode" option in the create modal takes users to a dedicated barcode entry screen
     - Visual sample barcode (SVG) shows the expected format with digits on the left, right, and below the bars
     - Instructional text prompts users to include all digits outside the bars
-    - Automatic lookup against the **Open Food Facts** public API (via TanStack React Query with caching) to pre-fill the ingredient name, image, and nutritional info (per 100 g)
-    - All barcode-prefilled nutrient numbers are normalized to one decimal place before navigating to the ingredient form
+    - Automatic lookup against the **Open Food Facts** public API (via TanStack React Query with caching) to pre-fill ingredient name, image, serving size/unit, and nutrition
+    - Barcode-derived serving units now prioritize `serving_size_imported` and only use values supported by `MEASUREMENT_UNITS` (fallback order: `serving_size_imported` → `serving_size` → supported `serving_quantity_unit`)
+    - Serving text parsing builds its unit matcher dynamically from `MEASUREMENT_UNITS` to stay aligned with supported units
+    - Serving size and unit are resolved together in a single parser flow to keep prefill values aligned
+    - Barcode prefill parsing/normalization utilities are centralized in `src/utils/barcodePrefill.ts`, with `getBarcodePrefillFromProduct` as the public helper consumed by screens
+    - Nutrient prefill now prioritizes per-serving values from Open Food Facts (`*_serving`) and falls back to computed values from `*_100g` using serving size when needed
+    - All barcode-prefilled numeric values are normalized to one decimal place before navigating to the ingredient form
     - During lookup, the UI shows an in-page loading status tied to query `isFetching` and hides stale result cards until the current request completes
     - Users can continue to the ingredient form with pre-filled data, or proceed to manual entry if the barcode is not found
   - **Search Live Price**: When a barcode is saved on an ingredient, a "🔍 Search Live Price" button appears on the ingredient detail page — it opens a Google search for the barcode number in a new tab

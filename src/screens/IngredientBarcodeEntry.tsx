@@ -3,16 +3,9 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button, Input, Label } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useLazyGetProductByBarcodeQuery } from '@store/api/openFoodFactsApi';
-
-function roundToFirstDecimal(value: number | string | null | undefined) {
-  const numericValue = Number(value ?? 0);
-  if (Number.isNaN(numericValue)) {
-    return 0;
-  }
-
-  const result = Math.round(numericValue * 10) / 10;
-  return result;
-}
+import {
+  getBarcodePrefillFromProduct,
+} from '@/utils';
 
 function SampleBarcode() {
   const bars = [
@@ -84,21 +77,7 @@ export function IngredientBarcodeEntry() {
 
   const handleContinue = () => {
     const product = data?.product;
-    const nutrients = product?.nutriments;
-    const sodiumInMg = Number(nutrients?.sodium_100g ?? 0) * 1000;
-
-    const prefill = {
-      barcode: submittedBarcode,
-      name: product?.product_name ?? '',
-      imageUrl: product?.image_url ?? '',
-      protein: roundToFirstDecimal(nutrients?.proteins_100g),
-      carbs: roundToFirstDecimal(nutrients?.carbohydrates_100g),
-      fat: roundToFirstDecimal(nutrients?.fat_100g),
-      fiber: roundToFirstDecimal(nutrients?.fiber_100g),
-      sugar: roundToFirstDecimal(nutrients?.sugars_100g),
-      sodium: roundToFirstDecimal(sodiumInMg),
-      calories: roundToFirstDecimal(nutrients?.['energy-kcal_100g']),
-    };
+    const prefill = getBarcodePrefillFromProduct(product, submittedBarcode);
 
     navigate('/ingredients/new', {
       state: { fromMealPath, barcodePrefill: prefill },
