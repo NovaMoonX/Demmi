@@ -87,7 +87,11 @@ export function IngredientBarcodeEntry() {
     if (selectedPrefill == null) return;
 
     navigate('/ingredients/new', {
-      state: { fromMealPath, barcodePrefill: selectedPrefill },
+      state: {
+        fromMealPath,
+        fromBarcodeEntry: true,
+        barcodePrefill: selectedPrefill,
+      },
     });
   };
 
@@ -95,6 +99,7 @@ export function IngredientBarcodeEntry() {
     navigate('/ingredients/new', {
       state: {
         fromMealPath,
+        fromBarcodeEntry: true,
         barcodePrefill: { barcode: barcodeInput.replace(/\s/g, '').trim() || null },
       },
     });

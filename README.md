@@ -145,6 +145,7 @@ A cooking app powered with local LLM using Ollama.
 - **Sort Options**: Sort ingredients by name or servings in both ascending and descending order
 - **Detailed Ingredient View**: Full-screen dedicated view for creating and editing ingredients
   - **Create Ingredients**: Navigate to `/ingredients/new` to add new ingredients
+  - **Create Mode Simplicity**: Product Pricing is hidden while creating a new ingredient and is shown only when editing an existing ingredient
   - **Edit Ingredients**: Click on any ingredient card to edit it with pre-populated form data
   - **Back to Ingredients**: Quick link to return to the ingredients list from the detail view
   - **Delete Ingredients**: Delete button on detailed view with confirmation dialog
@@ -164,6 +165,7 @@ A cooking app powered with local LLM using Ollama.
     - All barcode-prefilled numeric values are normalized to one decimal place before navigating to the ingredient form
     - During lookup, the UI shows an in-page loading status tied to query `isFetching` and hides stale result cards until the current request completes
     - Users can continue to the ingredient form with pre-filled data, or proceed to manual entry if the barcode is not found
+    - The create ingredient form includes a "Back to Barcode Entry" action when opened from this flow so users can quickly revise barcode-based prefill choices
   - **Search Live Price**: When a barcode is saved on an ingredient, a "🔍 Search Live Price" button appears on the ingredient detail page — it opens a Google search for the barcode number in a new tab
 - **Inventory Details**:
   - Ingredient name and type

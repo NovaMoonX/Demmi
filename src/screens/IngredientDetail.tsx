@@ -48,6 +48,20 @@ export function IngredientDetail() {
   const fromMealPath =
     (location.state as { fromMealPath?: string } | null)?.fromMealPath ?? null;
 
+  const fromBarcodeEntry =
+    (location.state as { fromBarcodeEntry?: boolean } | null)?.fromBarcodeEntry ?? false;
+
+  const backLinkTo =
+    fromMealPath ?? (fromBarcodeEntry ? '/ingredients/new/barcode-entry' : '/ingredients');
+  const backLinkState =
+    fromBarcodeEntry && fromMealPath ? { fromMealPath } : undefined;
+  const backLinkText =
+    fromMealPath
+      ? '← Back to Meal'
+      : fromBarcodeEntry
+        ? '← Back to Barcode Entry'
+        : '← Back to Ingredients';
+
   // Pre-fill data passed from IngredientBarcodeEntry
   const barcodePrefill = (location.state as {
     barcodePrefill?: {
@@ -337,10 +351,11 @@ export function IngredientDetail() {
       <div className='mx-auto mt-10 max-w-4xl p-6 md:mt-0'>
         <div className='mb-8'>
           <Link
-            to={fromMealPath ?? '/ingredients'}
+            to={backLinkTo}
+            state={backLinkState}
             className='text-muted-foreground hover:text-foreground mb-4 inline-block text-sm'
           >
-            {fromMealPath ? '← Back to Meal' : '← Back to Ingredients'}
+            {backLinkText}
           </Link>
           <div className='flex items-start justify-between gap-4'>
             <div>
@@ -519,10 +534,11 @@ export function IngredientDetail() {
     <div className='mx-auto mt-10 max-w-4xl p-6 md:mt-0'>
       <div className='mb-8'>
         <Link
-          to={fromMealPath ?? '/ingredients'}
+          to={backLinkTo}
+          state={backLinkState}
           className='text-muted-foreground hover:text-foreground mb-4 inline-block text-sm'
         >
-          {fromMealPath ? '← Back to Meal' : '← Back to Ingredients'}
+          {backLinkText}
         </Link>
         <h1 className='text-foreground mb-2 text-4xl font-bold'>
           {isEditing ? 'Edit Ingredient' : 'Create New Ingredient'}
@@ -780,7 +796,8 @@ export function IngredientDetail() {
           </div>
         </div>
 
-        <div className='border-border border-t pt-6'>
+        {isEditing && (
+          <div className='border-border border-t pt-6'>
           <div className='mb-4 flex items-center justify-between'>
             <h2 className='text-foreground text-xl font-semibold'>
               Product Pricing
@@ -1001,7 +1018,8 @@ export function IngredientDetail() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        )}
 
         <div className='border-border flex gap-3 border-t pt-4'>
           <Button type='submit' variant='primary' className='flex-1'>
