@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@store/hooks';
 import { setSelectedModel } from '@store/slices/chatsSlice';
 import { listLocalModels, pullModelStream } from '@lib/ollama';
+import { isElectron, getElectronAPI } from '@lib/ipc';
 
 export interface PullProgress {
   status: string;
@@ -24,7 +25,14 @@ export function useOllamaModels() {
     setIsLoading(true);
     setError(null);
     try {
-      const models = await listLocalModels();
+      let models: string[];
+      if (isElectron()) {
+        const api = getElectronAPI()!;
+        const ollamaModels = await api.listModels();
+        models = ollamaModels.map((m) => m.name);
+      } else {
+        models = await listLocalModels();
+      }
       setAvailableModels(models);
       if (models.length > 0 && !selectedModelRef.current) {
         dispatch(setSelectedModel(models[0]));
@@ -48,7 +56,14 @@ export function useOllamaModels() {
       setIsLoading(true);
       setError(null);
       try {
-        const models = await listLocalModels();
+        let models: string[];
+        if (isElectron()) {
+          const api = getElectronAPI()!;
+          const ollamaModels = await api.listModels();
+          models = ollamaModels.map((m) => m.name);
+        } else {
+          models = await listLocalModels();
+        }
         if (!cancelled) {
           setAvailableModels(models);
           if (models.length > 0 && !selectedModelRef.current) {
