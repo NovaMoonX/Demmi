@@ -4,6 +4,16 @@ import { Button, Input, Label } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useLazyGetProductByBarcodeQuery } from '@store/api/openFoodFactsApi';
 
+function roundToFirstDecimal(value: number | string | null | undefined) {
+  const numericValue = Number(value ?? 0);
+  if (Number.isNaN(numericValue)) {
+    return 0;
+  }
+
+  const result = Math.round(numericValue * 10) / 10;
+  return result;
+}
+
 function SampleBarcode() {
   const bars = [
     3, 1, 2, 1, 3, 1, 1, 1, 2, 2, 1, 3, 2, 1, 2, 1, 3, 1, 2, 2,
@@ -75,18 +85,19 @@ export function IngredientBarcodeEntry() {
   const handleContinue = () => {
     const product = data?.product;
     const nutrients = product?.nutriments;
+    const sodiumInMg = Number(nutrients?.sodium_100g ?? 0) * 1000;
 
     const prefill = {
       barcode: submittedBarcode,
       name: product?.product_name ?? '',
       imageUrl: product?.image_url ?? '',
-      protein: nutrients?.proteins_100g ?? 0,
-      carbs: nutrients?.carbohydrates_100g ?? 0,
-      fat: nutrients?.fat_100g ?? 0,
-      fiber: nutrients?.fiber_100g ?? 0,
-      sugar: nutrients?.sugars_100g ?? 0,
-      sodium: (nutrients?.sodium_100g ?? 0) * 1000,
-      calories: nutrients?.['energy-kcal_100g'] ?? 0,
+      protein: roundToFirstDecimal(nutrients?.proteins_100g),
+      carbs: roundToFirstDecimal(nutrients?.carbohydrates_100g),
+      fat: roundToFirstDecimal(nutrients?.fat_100g),
+      fiber: roundToFirstDecimal(nutrients?.fiber_100g),
+      sugar: roundToFirstDecimal(nutrients?.sugars_100g),
+      sodium: roundToFirstDecimal(sodiumInMg),
+      calories: roundToFirstDecimal(nutrients?.['energy-kcal_100g']),
     };
 
     navigate('/ingredients/new', {
