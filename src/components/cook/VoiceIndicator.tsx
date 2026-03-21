@@ -113,6 +113,11 @@ export function VoiceIndicator({
               <div>
                 <p className='text-foreground font-medium'>Servings:</p>
                 <p className='ml-2'>"More servings" · "Less servings"</p>
+                <p className='ml-2'>"Four servings" · "Six servings"</p>
+              </div>
+              <div>
+                <p className='text-foreground font-medium'>Other:</p>
+                <p className='ml-2'>"Cancel" · "Nevermind"</p>
               </div>
               <div>
                 <p className='text-foreground font-medium'>Exit:</p>
@@ -180,17 +185,17 @@ export function VoiceIndicator({
             <p>
               "Show ingredients"
               <span aria-hidden='true'> · </span>
-              "Close ingredients"
+              "Four servings"
             </p>
             <p>
               "Go to step 4"
               <span aria-hidden='true'> · </span>
-              "Exit"
+              "Last step"
             </p>
             <p>
-              "More servings"
+              "Cancel"
               <span aria-hidden='true'> · </span>
-              "Less servings"
+              "Exit"
             </p>
           </div>
         </div>

@@ -10,7 +10,8 @@ type VoiceCommand =
   | 'increase_servings'
   | 'decrease_servings'
   | 'exit'
-  | 'last_step';
+  | 'last_step'
+  | 'cancel';
 
 const WAKE_WORD_PATTERN = /hey\s+dem(?:m?[iy]|m?e{1,2}|m+i?)/i;
 const COMMAND_TIMEOUT_MS = 8000;
@@ -65,12 +66,29 @@ function matchLastStep(text: string): boolean {
   return /\b(?:go\s+to|jump\s+to|skip\s+to|navigate\s+to)?\s*(?:last|final)\s+step\b/.test(t);
 }
 
+function matchSetServings(text: string): number | null {
+  const t = text.toLowerCase().trim();
+  const pattern = /\b(\w+)\s+servings?\b/;
+  const m = pattern.exec(t);
+  if (m) {
+    const result = parseStepNumber(m[1]);
+    return result;
+  }
+  return null;
+}
+
+function matchCancel(text: string): boolean {
+  const t = text.toLowerCase().trim();
+  return /\b(cancel|nevermind|never\s+mind|nothing|stop)\b/.test(t);
+}
+
 function matchCommand(text: string): VoiceCommand | null {
   const t = text.toLowerCase().trim();
 
   if (/\b(next(\s+step)?|forward|continue)\b/.test(t)) return 'next';
   if (/\b((previous|prev)(\s+step)?|go\s+back|backward)\b/.test(t)) return 'previous';
   if (matchLastStep(t)) return 'last_step';
+  if (matchCancel(t)) return 'cancel';
   if (/\b(open|show|see|display)\s+ingredients?\b/.test(t) || /^ingredients?\s*$/.test(t)) return 'open_ingredients';
   if (/\b(close|hide|dismiss)\s+ingredients?\b/.test(t)) return 'close_ingredients';
   if (/\b(increase|add|more)\s+(servings?|portions?)\b/.test(t)) return 'increase_servings';
@@ -86,6 +104,7 @@ export interface UseCookModeVoiceOptions {
   onPrevStep: () => void;
   onGoToStep: (stepNumber: number) => void;
   onGoToLastStep: () => void;
+  onSetServings: (servings: number) => void;
   onOpenIngredients: () => void;
   onCloseIngredients: () => void;
   onIncreaseServings: () => void;
@@ -103,6 +122,7 @@ export function useCookModeVoice({
   onPrevStep,
   onGoToStep,
   onGoToLastStep,
+  onSetServings,
   onOpenIngredients,
   onCloseIngredients,
   onIncreaseServings,
@@ -126,6 +146,7 @@ export function useCookModeVoice({
     onPrevStep,
     onGoToStep,
     onGoToLastStep,
+    onSetServings,
     onOpenIngredients,
     onCloseIngredients,
     onIncreaseServings,
@@ -143,13 +164,14 @@ export function useCookModeVoice({
       onPrevStep,
       onGoToStep,
       onGoToLastStep,
+      onSetServings,
       onOpenIngredients,
       onCloseIngredients,
       onIncreaseServings,
       onDecreaseServings,
       onExit,
     };
-  }, [onNextStep, onPrevStep, onGoToStep, onGoToLastStep, onOpenIngredients, onCloseIngredients, onIncreaseServings, onDecreaseServings, onExit]);
+  }, [onNextStep, onPrevStep, onGoToStep, onGoToLastStep, onSetServings, onOpenIngredients, onCloseIngredients, onIncreaseServings, onDecreaseServings, onExit]);
 
   const exitCommandMode = useCallback(() => {
     if (commandTimeoutRef.current) clearTimeout(commandTimeoutRef.current);
@@ -193,6 +215,13 @@ export function useCookModeVoice({
           return;
         }
 
+        const servings = matchSetServings(transcript);
+        if (servings !== null) {
+          exitCommandMode();
+          callbacksRef.current.onSetServings(servings);
+          return;
+        }
+
         const command = matchCommand(transcript);
         if (command !== null) {
           exitCommandMode();
@@ -205,6 +234,8 @@ export function useCookModeVoice({
               break;
             case 'last_step':
               callbacksRef.current.onGoToLastStep();
+              break;
+            case 'cancel':
               break;
             case 'open_ingredients':
               callbacksRef.current.onOpenIngredients();

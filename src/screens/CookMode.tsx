@@ -69,12 +69,17 @@ export function CookMode() {
     setCurrentStep(Math.max(0, totalSteps - 1));
   }, [totalSteps]);
 
+  const handleSetServings = useCallback((newServings: number) => {
+    setServings(Math.max(1, newServings));
+  }, []);
+
   const { voiceState } = useCookModeVoice({
     enabled: voiceEnabled,
     onNextStep: handleNext,
     onPrevStep: handlePrev,
     onGoToStep: handleGoToStep,
     onGoToLastStep: handleGoToLastStep,
+    onSetServings: handleSetServings,
     onOpenIngredients: handleOpenIngredients,
     onCloseIngredients: handleCloseIngredients,
     onIncreaseServings: handleIncreaseServings,
