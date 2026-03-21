@@ -38,12 +38,20 @@ export const shareMeal = createAsyncThunk(
       const allIngredients = state.ingredients.items;
       const sharedIngredients = meal.ingredients.map((ing) => {
         const ingredient = allIngredients.find((i) => i.id === ing.ingredientId);
-        return {
+
+        const resolvedUnit =
+          ingredient?.unit === 'other'
+            ? ingredient.otherUnit ?? 'other'
+            : ingredient?.unit ?? 'other';
+
+        const sharedIngredient = {
           ingredientId: ing.ingredientId,
           name: ingredient?.name ?? 'Unknown Ingredient',
           servings: ing.servings,
-          unit: ingredient?.unit ?? 'other',
+          unit: resolvedUnit,
         };
+
+        return sharedIngredient;
       });
 
       const sharedMeal: SharedMeal = {
