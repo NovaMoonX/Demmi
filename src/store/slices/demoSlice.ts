@@ -5,6 +5,7 @@ import { setConversations, resetChats } from './chatsSlice';
 import { setMeals, resetMeals } from './mealsSlice';
 import { setIngredients, resetIngredients } from './ingredientsSlice';
 import { setShoppingList, resetShoppingList } from './shoppingListSlice';
+import { clearUserData } from './userSlice';
 import { generateDemoCalendarData } from '@lib/calendar';
 import { mockChatConversations } from '@lib/chat';
 import { mockMeals } from '@lib/meals';
@@ -119,6 +120,18 @@ export const endDemoSessionIfActive = createAsyncThunk<
     await dispatch(endDemoSession());
   },
   { condition: (_, { getState }) => getState().demo.isActive }
+);
+
+export const clearUserDataUnlessDemo = createAsyncThunk<
+  void,
+  void,
+  { dispatch: AppDispatch; state: RootState }
+>(
+  'demo/clearUserDataUnlessDemo',
+  async (_, { dispatch }) => {
+    await dispatch(clearUserData());
+  },
+  { condition: (_, { getState }) => !getState().demo.isActive }
 );
 
 const demoSlice = createSlice({
