@@ -9,7 +9,8 @@ type VoiceCommand =
   | 'close_ingredients'
   | 'increase_servings'
   | 'decrease_servings'
-  | 'exit';
+  | 'exit'
+  | 'last_step';
 
 const WAKE_WORD_PATTERN = /hey\s+dem(?:m?[iy]|m?e{1,2}|m+i?)/i;
 const COMMAND_TIMEOUT_MS = 8000;
@@ -59,11 +60,17 @@ function matchGoToStep(text: string): number | null {
   return null;
 }
 
+function matchLastStep(text: string): boolean {
+  const t = text.toLowerCase().trim();
+  return /\b(?:go\s+to|jump\s+to|skip\s+to|navigate\s+to)?\s*(?:last|final)\s+step\b/.test(t);
+}
+
 function matchCommand(text: string): VoiceCommand | null {
   const t = text.toLowerCase().trim();
 
   if (/\b(next(\s+step)?|forward|continue)\b/.test(t)) return 'next';
   if (/\b((previous|prev)(\s+step)?|go\s+back|backward)\b/.test(t)) return 'previous';
+  if (matchLastStep(t)) return 'last_step';
   if (/\b(open|show|see|display)\s+ingredients?\b/.test(t) || /^ingredients?\s*$/.test(t)) return 'open_ingredients';
   if (/\b(close|hide|dismiss)\s+ingredients?\b/.test(t)) return 'close_ingredients';
   if (/\b(increase|add|more)\s+(servings?|portions?)\b/.test(t)) return 'increase_servings';
@@ -77,6 +84,7 @@ export interface UseCookModeVoiceOptions {
   onNextStep: () => void;
   onPrevStep: () => void;
   onGoToStep: (stepNumber: number) => void;
+  onGoToLastStep: () => void;
   onOpenIngredients: () => void;
   onCloseIngredients: () => void;
   onIncreaseServings: () => void;
@@ -92,6 +100,7 @@ export function useCookModeVoice({
   onNextStep,
   onPrevStep,
   onGoToStep,
+  onGoToLastStep,
   onOpenIngredients,
   onCloseIngredients,
   onIncreaseServings,
@@ -114,6 +123,7 @@ export function useCookModeVoice({
     onNextStep,
     onPrevStep,
     onGoToStep,
+    onGoToLastStep,
     onOpenIngredients,
     onCloseIngredients,
     onIncreaseServings,
@@ -130,13 +140,14 @@ export function useCookModeVoice({
       onNextStep,
       onPrevStep,
       onGoToStep,
+      onGoToLastStep,
       onOpenIngredients,
       onCloseIngredients,
       onIncreaseServings,
       onDecreaseServings,
       onExit,
     };
-  }, [onNextStep, onPrevStep, onGoToStep, onOpenIngredients, onCloseIngredients, onIncreaseServings, onDecreaseServings, onExit]);
+  }, [onNextStep, onPrevStep, onGoToStep, onGoToLastStep, onOpenIngredients, onCloseIngredients, onIncreaseServings, onDecreaseServings, onExit]);
 
   const exitCommandMode = useCallback(() => {
     if (commandTimeoutRef.current) clearTimeout(commandTimeoutRef.current);
@@ -189,6 +200,9 @@ export function useCookModeVoice({
               break;
             case 'previous':
               callbacksRef.current.onPrevStep();
+              break;
+            case 'last_step':
+              callbacksRef.current.onGoToLastStep();
               break;
             case 'open_ingredients':
               callbacksRef.current.onOpenIngredients();
