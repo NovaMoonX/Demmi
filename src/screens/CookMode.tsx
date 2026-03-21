@@ -30,7 +30,7 @@ export function CookMode() {
 
   if (!meal) {
     return (
-      <div className='flex h-screen flex-col items-center justify-center gap-4'>
+      <div className='flex h-full flex-col items-center justify-center gap-4'>
         <p className='text-muted-foreground text-lg'>Meal not found.</p>
         <Button variant='secondary' onClick={() => navigate('/meals')}>
           Back to Meals
@@ -41,7 +41,7 @@ export function CookMode() {
 
   if (meal.instructions.length === 0) {
     return (
-      <div className='flex h-screen flex-col items-center justify-center gap-4 p-6'>
+      <div className='flex h-full flex-col items-center justify-center gap-4 p-6'>
         <p className='text-muted-foreground text-lg'>
           This meal has no instructions yet.
         </p>
