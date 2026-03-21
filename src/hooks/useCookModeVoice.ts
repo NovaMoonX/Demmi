@@ -98,13 +98,12 @@ export function useCookModeVoice({
   useEffect(() => {
     if (!isSupported) return;
 
-    // type ExtendedWindow = Window & { webkitSpeechRecognition?: typeof SpeechRecognition };
-    // const SpeechRecognitionCtor =
-    //   window.SpeechRecognition ??
-    //   (window as ExtendedWindow).webkitSpeechRecognition!;
+    type ExtendedWindow = Window & { webkitSpeechRecognition?: typeof SpeechRecognition };
+    const SpeechRecognitionCtor =
+      window.SpeechRecognition ??
+      (window as ExtendedWindow).webkitSpeechRecognition!;
 
     const recognition = new SpeechRecognitionCtor();
-    SpeechRecognitionAlternative
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
