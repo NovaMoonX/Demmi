@@ -6,8 +6,8 @@ import { useLazyGetProductByBarcodeQuery } from '@store/api/openFoodFactsApi';
 
 function SampleBarcode() {
   const bars = [
-    3, 1, 2, 1, 3, 1, 1, 1, 2, 3, 1, 1, 2, 1, 2, 1, 3, 2, 1, 2, 1, 3, 1, 2, 2,
-    1, 1, 3, 2, 1, 2, 1, 1, 2, 3, 1, 2, 1, 3, 2, 1, 1, 2, 1, 3, 2, 1, 3, 1, 2,
+    3, 1, 2, 1, 3, 1, 1, 1, 2, 2, 1, 3, 2, 1, 2, 1, 3, 1, 2, 2,
+    1, 1, 3, 2, 1, 2, 1, 1, 2, 3, 2, 1, 3, 2, 1, 3, 1, 2,
     1, 1, 3, 1, 2, 1, 2, 3, 1, 1,
   ];
 
@@ -34,7 +34,7 @@ function SampleBarcode() {
   return (
     <div className='flex flex-col items-center gap-2'>
       <div className='flex items-end gap-1'>
-        <span className='text-foreground mb-2 text-sm font-bold'>4</span>
+        <span className='text-foreground mb-2 text-sm font-bold'>0</span>
         <svg
           viewBox={`0 0 ${totalWidth} 80`}
           width={260}
@@ -44,10 +44,10 @@ function SampleBarcode() {
         >
           {barElements}
         </svg>
-        <span className='text-foreground mb-2 text-sm font-bold'>5</span>
+        <span className='text-foreground mb-2 text-sm font-bold'>6</span>
       </div>
       <span className='text-foreground font-mono text-sm tracking-widest'>
-        4 012345 678905
+        78742 09522
       </span>
     </div>
   );
@@ -62,14 +62,14 @@ export function IngredientBarcodeEntry() {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [submittedBarcode, setSubmittedBarcode] = useState<string | null>(null);
 
-  const [triggerLookup, { data, isLoading, isError }] =
+  const [triggerLookup, { data, isFetching, isError }] =
     useLazyGetProductByBarcodeQuery();
 
   const handleLookup = () => {
     const cleaned = barcodeInput.replace(/\s/g, '').trim();
     if (!cleaned) return;
     setSubmittedBarcode(cleaned);
-    void triggerLookup(cleaned);
+    void triggerLookup(cleaned, true); // pull from cache if available
   };
 
   const handleContinue = () => {
@@ -98,14 +98,15 @@ export function IngredientBarcodeEntry() {
     navigate('/ingredients/new', {
       state: {
         fromMealPath,
-        barcodePrefill: { barcode: barcodeInput.replace(/\s/g, '') || null },
+        barcodePrefill: { barcode: barcodeInput.replace(/\s/g, '').trim() || null },
       },
     });
   };
 
   const productFound =
-    data != null && data.status === 1 && data.product != null;
-  const productNotFound = data != null && data.status !== 1;
+    !isFetching && data != null && data.status === 1 && data.product != null;
+  const productNotFound =
+    !isFetching && data != null && data.status !== 1;
 
   return (
     <div className='mx-auto mt-10 max-w-2xl p-6 md:mt-0'>
@@ -138,6 +139,8 @@ export function IngredientBarcodeEntry() {
           &nbsp;— with a full number printed underneath. Include{' '}
           <em>all</em> digits (including those outside the bars) when entering
           below.
+          <br/>
+          So, for the sample barcode above, you would enter <strong>078742095226</strong>.
         </div>
       </div>
 
@@ -146,7 +149,7 @@ export function IngredientBarcodeEntry() {
           <Label htmlFor='ingredient-barcode'>Barcode Number</Label>
           <Input
             id='ingredient-barcode'
-            type='text'
+            type='number'
             value={barcodeInput}
             onChange={(e) => setBarcodeInput(e.target.value)}
             placeholder='e.g. 4 012345 678905'
@@ -159,11 +162,25 @@ export function IngredientBarcodeEntry() {
         <Button
           variant='primary'
           onClick={handleLookup}
-          disabled={!barcodeInput.trim() || isLoading}
+          disabled={!barcodeInput.trim() || isFetching}
           className='w-full'
         >
-          {isLoading ? 'Looking up…' : 'Look Up Barcode'}
+          {isFetching ? 'Looking up…' : 'Look Up Barcode'}
         </Button>
+
+        {isFetching && (
+          <div
+            className={join(
+              'rounded-lg border p-4',
+              'border-border bg-muted/50',
+            )}
+          >
+            <p className='text-muted-foreground text-sm'>
+              Looking up barcode{' '}
+              <strong className='text-foreground'>{submittedBarcode}</strong>…
+            </p>
+          </div>
+        )}
 
         {isError && (
           <div className='text-destructive rounded-lg border border-red-200 bg-red-50 p-3 text-sm dark:border-red-900 dark:bg-red-950/30'>

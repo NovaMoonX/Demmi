@@ -155,6 +155,7 @@ A cooking app powered with local LLM using Ollama.
     - Visual sample barcode (SVG) shows the expected format with digits on the left, right, and below the bars
     - Instructional text prompts users to include all digits outside the bars
     - Automatic lookup against the **Open Food Facts** public API (via TanStack React Query with caching) to pre-fill the ingredient name, image, and nutritional info (per 100 g)
+    - During lookup, the UI shows an in-page loading status tied to query `isFetching` and hides stale result cards until the current request completes
     - Users can continue to the ingredient form with pre-filled data, or proceed to manual entry if the barcode is not found
   - **Search Live Price**: When a barcode is saved on an ingredient, a "🔍 Search Live Price" button appears on the ingredient detail page — it opens a Google search for the barcode number in a new tab
 - **Inventory Details**:
