@@ -1,4 +1,7 @@
 export * from './capitalize';
 export * from './generatedId';
 export * from './formatDate';
-export { getBarcodePrefillFromProduct } from './barcodePrefill';
+export {
+	getBarcodePrefillFromProduct,
+	getBarcodePrefillOptions,
+} from './barcodePrefill';

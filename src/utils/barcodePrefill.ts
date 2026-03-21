@@ -15,6 +15,8 @@ const SERVING_INFO_REGEX = new RegExp(
   'gi',
 );
 
+type ServingInfoSource = 'imported' | 'label' | 'quantity' | 'fallback';
+
 function isMeasurementUnit(value: string): value is MeasurementUnit {
   const result = MEASUREMENT_UNITS.includes(value as MeasurementUnit);
   return result;
@@ -84,6 +86,7 @@ function roundToFirstDecimal(value: number | string | null | undefined) {
 }
 
 interface ServingInfo {
+  source: ServingInfoSource;
   servingSize: number;
   unit: MeasurementUnit;
   otherUnit: string | null;
@@ -105,13 +108,47 @@ interface BarcodePrefill {
   calories: number;
 }
 
+interface BarcodePrefillOption {
+  id: string;
+  label: string;
+  description: string;
+  prefill: BarcodePrefill;
+}
+
+interface BarcodePrefillOptionsResult {
+  options: BarcodePrefillOption[];
+  defaultOptionId: string;
+  hasMultipleOptions: boolean;
+}
+
 function getServingInfoFromProduct(
   product: OpenFoodFactsProduct | null | undefined,
 ): ServingInfo {
+  const quantityServingInfo = getServingInfoFromQuantity(product);
+  const labelServingInfo = getServingInfoFromLabel(product);
+  const importedServingInfo = getServingInfoFromImported(product);
+
+  const result =
+    quantityServingInfo ??
+    labelServingInfo ??
+    importedServingInfo ?? {
+      source: 'fallback',
+      servingSize: 100,
+      unit: 'g',
+      otherUnit: null,
+    };
+
+  return result;
+}
+
+function getServingInfoFromImported(
+  product: OpenFoodFactsProduct | null | undefined,
+) {
   const importedServingSizeText = product?.serving_size_imported ?? '';
   const importedServingInfo = parseServingInfoFromText(importedServingSizeText);
   if (importedServingInfo != null) {
     const result: ServingInfo = {
+      source: 'imported',
       servingSize: importedServingInfo.servingSize,
       unit: importedServingInfo.unit,
       otherUnit: null,
@@ -119,21 +156,37 @@ function getServingInfoFromProduct(
     return result;
   }
 
+  const result = null;
+  return result;
+}
+
+function getServingInfoFromLabel(
+  product: OpenFoodFactsProduct | null | undefined,
+) {
   const servingSizeText = product?.serving_size ?? '';
-  const servingInfo = parseServingInfoFromText(servingSizeText);
-  if (servingInfo != null) {
+  const labelServingInfo = parseServingInfoFromText(servingSizeText);
+  if (labelServingInfo != null) {
     const result: ServingInfo = {
-      servingSize: servingInfo.servingSize,
-      unit: servingInfo.unit,
+      source: 'label',
+      servingSize: labelServingInfo.servingSize,
+      unit: labelServingInfo.unit,
       otherUnit: null,
     };
     return result;
   }
 
+  const result = null;
+  return result;
+}
+
+function getServingInfoFromQuantity(
+  product: OpenFoodFactsProduct | null | undefined,
+) {
   const rawUnit = (product?.serving_quantity_unit ?? '').toLowerCase().trim();
   const explicitServingQuantity = Number(product?.serving_quantity ?? 0);
   if (explicitServingQuantity > 0 && isMeasurementUnit(rawUnit) && rawUnit !== 'other') {
     const result: ServingInfo = {
+      source: 'quantity',
       servingSize: explicitServingQuantity,
       unit: rawUnit,
       otherUnit: null,
@@ -141,27 +194,185 @@ function getServingInfoFromProduct(
     return result;
   }
 
-  const result: ServingInfo = {
-    servingSize: 100,
-    unit: 'g',
-    otherUnit: null,
-  };
+  const result = null;
   return result;
 }
 
 function getServingNutrientValue(
   servingValue: number | undefined,
   per100Value: number | undefined,
-  servingSize: number,
+  targetServingSize: number,
+  referenceServingSize: number,
 ) {
-  if (servingValue != null) {
-    const result = roundToFirstDecimal(servingValue);
+  const safeReferenceServingSize = Number(referenceServingSize);
+  const hasUsableReference =
+    !Number.isNaN(safeReferenceServingSize) && safeReferenceServingSize > 0;
+
+  if (servingValue != null && hasUsableReference) {
+    const adjustedServingValue =
+      Number(servingValue) * (targetServingSize / safeReferenceServingSize);
+    const result = roundToFirstDecimal(adjustedServingValue);
     return result;
   }
 
   const normalizedPer100Value = Number(per100Value ?? 0);
-  const computedServingValue = (normalizedPer100Value * servingSize) / 100;
+  const computedServingValue = (normalizedPer100Value * targetServingSize) / 100;
   const result = roundToFirstDecimal(computedServingValue);
+  return result;
+}
+
+function getServingInfoCandidates(product: OpenFoodFactsProduct | null | undefined) {
+  const candidates: ServingInfo[] = [];
+
+  const quantityServingInfo = getServingInfoFromQuantity(product);
+  if (quantityServingInfo != null) {
+    candidates.push(quantityServingInfo);
+  }
+
+  const importedServingInfo = getServingInfoFromImported(product);
+  if (importedServingInfo != null) {
+    candidates.push(importedServingInfo);
+  }
+
+  const labelServingInfo = getServingInfoFromLabel(product);
+  if (labelServingInfo != null) {
+    candidates.push(labelServingInfo);
+  }
+
+  const uniqueCandidates: ServingInfo[] = [];
+  const seenCandidateKeys = new Set<string>();
+
+  candidates.forEach((candidate) => {
+    const candidateKey = `${candidate.servingSize}|${candidate.unit}|${candidate.otherUnit ?? ''}`;
+    if (seenCandidateKeys.has(candidateKey)) {
+      return;
+    }
+    seenCandidateKeys.add(candidateKey);
+    uniqueCandidates.push(candidate);
+  });
+
+  if (uniqueCandidates.length === 0) {
+    const fallbackCandidate: ServingInfo = {
+      source: 'fallback',
+      servingSize: 100,
+      unit: 'g',
+      otherUnit: null,
+    };
+    uniqueCandidates.push(fallbackCandidate);
+  }
+
+  const result = uniqueCandidates;
+  return result;
+}
+
+function getServingOptionDescription(servingInfo: ServingInfo) {
+  const sizeText = roundToFirstDecimal(servingInfo.servingSize).toString();
+  const result = `${sizeText} ${servingInfo.unit} serving`;
+  return result;
+}
+
+function buildPrefillFromServingInfo(
+  product: OpenFoodFactsProduct | null | undefined,
+  barcode: string | null,
+  targetServingInfo: ServingInfo,
+  referenceServingInfo: ServingInfo,
+): BarcodePrefill {
+  const nutrients = product?.nutriments;
+  const sodiumServingInMg = Number(nutrients?.sodium_serving ?? 0) * 1000;
+  const sodiumPer100InMg = Number(nutrients?.sodium_100g ?? 0) * 1000;
+
+  const targetServingSize = targetServingInfo.servingSize;
+  const referenceServingSize = referenceServingInfo.servingSize;
+
+  const result: BarcodePrefill = {
+    barcode,
+    name: product?.product_name ?? '',
+    imageUrl: product?.image_url ?? '',
+    servingSize: roundToFirstDecimal(targetServingSize),
+    unit: targetServingInfo.unit,
+    otherUnit: targetServingInfo.otherUnit,
+    protein: getServingNutrientValue(
+      nutrients?.proteins_serving,
+      nutrients?.proteins_100g,
+      targetServingSize,
+      referenceServingSize,
+    ),
+    carbs: getServingNutrientValue(
+      nutrients?.carbohydrates_serving,
+      nutrients?.carbohydrates_100g,
+      targetServingSize,
+      referenceServingSize,
+    ),
+    fat: getServingNutrientValue(
+      nutrients?.fat_serving,
+      nutrients?.fat_100g,
+      targetServingSize,
+      referenceServingSize,
+    ),
+    fiber: getServingNutrientValue(
+      nutrients?.fiber_serving,
+      nutrients?.fiber_100g,
+      targetServingSize,
+      referenceServingSize,
+    ),
+    sugar: getServingNutrientValue(
+      nutrients?.sugars_serving,
+      nutrients?.sugars_100g,
+      targetServingSize,
+      referenceServingSize,
+    ),
+    sodium: getServingNutrientValue(
+      sodiumServingInMg,
+      sodiumPer100InMg,
+      targetServingSize,
+      referenceServingSize,
+    ),
+    calories: getServingNutrientValue(
+      nutrients?.['energy-kcal_serving'],
+      nutrients?.['energy-kcal_100g'],
+      targetServingSize,
+      referenceServingSize,
+    ),
+  };
+
+  return result;
+}
+
+export function getBarcodePrefillOptions(
+  product: OpenFoodFactsProduct | null | undefined,
+  barcode: string | null,
+): BarcodePrefillOptionsResult {
+  const candidates = getServingInfoCandidates(product);
+  const referenceServingInfo = getServingInfoFromProduct(product);
+
+  const options = candidates.map((candidate, index) => {
+    const optionId = `${candidate.source}-${index}`;
+    const alphabetLabel = String.fromCharCode(65 + index);
+    const option: BarcodePrefillOption = {
+      id: optionId,
+      label: `Option ${alphabetLabel}`,
+      description: getServingOptionDescription(candidate),
+      prefill: buildPrefillFromServingInfo(
+        product,
+        barcode,
+        candidate,
+        referenceServingInfo,
+      ),
+    };
+
+    return option;
+  });
+
+  const defaultOption =
+    options.find((option) => option.id.startsWith(`${referenceServingInfo.source}-`)) ??
+    options[0];
+
+  const result: BarcodePrefillOptionsResult = {
+    options,
+    defaultOptionId: defaultOption?.id ?? '',
+    hasMultipleOptions: options.length > 1,
+  };
+
   return result;
 }
 
@@ -169,55 +380,25 @@ export function getBarcodePrefillFromProduct(
   product: OpenFoodFactsProduct | null | undefined,
   barcode: string | null,
 ): BarcodePrefill {
-  const nutrients = product?.nutriments;
-  const servingInfo = getServingInfoFromProduct(product);
-  const servingSize = servingInfo.servingSize;
-  const sodiumServingInMg = Number(nutrients?.sodium_serving ?? 0) * 1000;
-  const sodiumPer100InMg = Number(nutrients?.sodium_100g ?? 0) * 1000;
-
-  const result: BarcodePrefill = {
+  const optionsResult = getBarcodePrefillOptions(product, barcode);
+  const fallbackPrefill = buildPrefillFromServingInfo(
+    product,
     barcode,
-    name: product?.product_name ?? '',
-    imageUrl: product?.image_url ?? '',
-    servingSize: roundToFirstDecimal(servingSize),
-    unit: servingInfo.unit,
-    otherUnit: servingInfo.otherUnit,
-    protein: getServingNutrientValue(
-      nutrients?.proteins_serving,
-      nutrients?.proteins_100g,
-      servingSize,
-    ),
-    carbs: getServingNutrientValue(
-      nutrients?.carbohydrates_serving,
-      nutrients?.carbohydrates_100g,
-      servingSize,
-    ),
-    fat: getServingNutrientValue(
-      nutrients?.fat_serving,
-      nutrients?.fat_100g,
-      servingSize,
-    ),
-    fiber: getServingNutrientValue(
-      nutrients?.fiber_serving,
-      nutrients?.fiber_100g,
-      servingSize,
-    ),
-    sugar: getServingNutrientValue(
-      nutrients?.sugars_serving,
-      nutrients?.sugars_100g,
-      servingSize,
-    ),
-    sodium: getServingNutrientValue(
-      sodiumServingInMg,
-      sodiumPer100InMg,
-      servingSize,
-    ),
-    calories: getServingNutrientValue(
-      nutrients?.['energy-kcal_serving'],
-      nutrients?.['energy-kcal_100g'],
-      servingSize,
-    ),
-  };
+    {
+      source: 'fallback',
+      servingSize: 100,
+      unit: 'g',
+      otherUnit: null,
+    },
+    getServingInfoFromProduct(product),
+  );
+
+  const selectedDefaultOption =
+    optionsResult.options.find((option) => option.id === optionsResult.defaultOptionId) ??
+    optionsResult.options[0] ??
+    null;
+
+  const result = selectedDefaultOption?.prefill ?? fallbackPrefill;
 
   return result;
 }

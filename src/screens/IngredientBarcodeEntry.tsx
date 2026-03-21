@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button, Input, Label } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useLazyGetProductByBarcodeQuery } from '@store/api/openFoodFactsApi';
 import {
-  getBarcodePrefillFromProduct,
+  getBarcodePrefillOptions,
 } from '@/utils';
 
 function SampleBarcode() {
@@ -64,6 +64,7 @@ export function IngredientBarcodeEntry() {
 
   const [barcodeInput, setBarcodeInput] = useState('');
   const [submittedBarcode, setSubmittedBarcode] = useState<string | null>(null);
+  const [selectedPrefillOptionId, setSelectedPrefillOptionId] = useState<string | null>(null);
 
   const [triggerLookup, { data, isFetching, isError }] =
     useLazyGetProductByBarcodeQuery();
@@ -77,10 +78,16 @@ export function IngredientBarcodeEntry() {
 
   const handleContinue = () => {
     const product = data?.product;
-    const prefill = getBarcodePrefillFromProduct(product, submittedBarcode);
+    const optionsResult = getBarcodePrefillOptions(product, submittedBarcode);
+    const selectedPrefill =
+      optionsResult.options.find((option) => option.id === selectedPrefillOptionId)?.prefill ??
+      optionsResult.options[0]?.prefill ??
+      null;
+
+    if (selectedPrefill == null) return;
 
     navigate('/ingredients/new', {
-      state: { fromMealPath, barcodePrefill: prefill },
+      state: { fromMealPath, barcodePrefill: selectedPrefill },
     });
   };
 
@@ -97,6 +104,22 @@ export function IngredientBarcodeEntry() {
     !isFetching && data != null && data.status === 1 && data.product != null;
   const productNotFound =
     !isFetching && data != null && data.status !== 1;
+
+  const prefillOptionsResult = useMemo(
+    () => getBarcodePrefillOptions(data?.product, submittedBarcode),
+    [data?.product, submittedBarcode],
+  );
+
+  const selectedOptionId =
+    selectedPrefillOptionId ?? prefillOptionsResult.defaultOptionId;
+
+  const selectedPrefillOption = useMemo(
+    () =>
+      prefillOptionsResult.options.find(
+        (option) => option.id === selectedOptionId,
+      ) ?? prefillOptionsResult.options[0] ?? null,
+    [prefillOptionsResult.options, selectedOptionId],
+  );
 
   return (
     <div className='mx-auto mt-10 max-w-2xl p-6 md:mt-0'>
@@ -210,9 +233,85 @@ export function IngredientBarcodeEntry() {
               />
             )}
             <p className='text-muted-foreground mt-2 text-xs'>
-              Nutritional info will be pre-filled on the next screen (per 100
-              g).
+              Review serving and nutrient preview below before continuing.
             </p>
+          </div>
+        )}
+
+        {productFound && selectedPrefillOption != null && (
+          <div className='border-border rounded-lg border p-4'>
+            <p className='text-muted-foreground mb-2 text-xs tracking-wide uppercase'>
+              Quick Nutrient Preview
+            </p>
+            <div className='mb-3'>
+              <p className='text-foreground text-sm font-semibold'>
+                Serving: {selectedPrefillOption.prefill.servingSize}{' '}
+                {selectedPrefillOption.prefill.unit}
+              </p>
+              <p className='text-muted-foreground text-xs'>
+                {selectedPrefillOption.label} • {selectedPrefillOption.description}
+              </p>
+            </div>
+            <div className='grid grid-cols-2 gap-2 text-sm md:grid-cols-4'>
+              <div className='bg-muted/40 rounded-md p-2'>
+                <p className='text-muted-foreground text-xs'>Calories</p>
+                <p className='text-foreground font-semibold'>
+                  {selectedPrefillOption.prefill.calories} kcal
+                </p>
+              </div>
+              <div className='bg-muted/40 rounded-md p-2'>
+                <p className='text-muted-foreground text-xs'>Protein</p>
+                <p className='text-foreground font-semibold'>
+                  {selectedPrefillOption.prefill.protein} g
+                </p>
+              </div>
+              <div className='bg-muted/40 rounded-md p-2'>
+                <p className='text-muted-foreground text-xs'>Carbs</p>
+                <p className='text-foreground font-semibold'>
+                  {selectedPrefillOption.prefill.carbs} g
+                </p>
+              </div>
+              <div className='bg-muted/40 rounded-md p-2'>
+                <p className='text-muted-foreground text-xs'>Fat</p>
+                <p className='text-foreground font-semibold'>
+                  {selectedPrefillOption.prefill.fat} g
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {productFound && prefillOptionsResult.hasMultipleOptions && (
+          <div className='border-border rounded-lg border p-4'>
+            <p className='text-foreground text-sm font-semibold'>
+              Choose the Best Match
+            </p>
+            <p className='text-muted-foreground mt-1 text-xs'>
+              We found more than one possible nutrition profile. Which option
+              looks right based on your package label?
+            </p>
+            <div className='mt-3 space-y-2'>
+              {prefillOptionsResult.options.map((option) => (
+                <button
+                  type='button'
+                  key={option.id}
+                  onClick={() => setSelectedPrefillOptionId(option.id)}
+                  className={join(
+                    'w-full rounded-md border p-3 text-left',
+                    selectedPrefillOption?.id === option.id
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border bg-background hover:bg-muted/40',
+                  )}
+                >
+                  <p className='text-foreground text-sm font-semibold'>
+                    {option.label}
+                  </p>
+                  <p className='text-muted-foreground text-xs'>
+                    {option.description}
+                  </p>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

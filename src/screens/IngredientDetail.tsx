@@ -499,7 +499,7 @@ export function IngredientDetail() {
                   </p>
                 </div>
                 <a
-                  href={`https://www.google.com/search?q=${encodeURIComponent(existingIngredient.barcode)}`}
+                  href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(existingIngredient.barcode)}`}
                   target='_blank'
                   rel='noopener noreferrer'
                 >

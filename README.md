@@ -159,6 +159,7 @@ A cooking app powered with local LLM using Ollama.
     - Serving text parsing builds its unit matcher dynamically from `MEASUREMENT_UNITS` to stay aligned with supported units
     - Serving size and unit are resolved together in a single parser flow to keep prefill values aligned
     - Barcode prefill parsing/normalization utilities are centralized in `src/utils/barcodePrefill.ts`, with `getBarcodePrefillFromProduct` as the public helper consumed by screens
+    - When barcode data contains conflicting serving definitions, users are shown multiple serving-based prefill options (Option A, Option B, etc.) with a quick nutrient preview (serving size, calories, protein, carbs, fat) and can choose the best match before continuing
     - Nutrient prefill now prioritizes per-serving values from Open Food Facts (`*_serving`) and falls back to computed values from `*_100g` using serving size when needed
     - All barcode-prefilled numeric values are normalized to one decimal place before navigating to the ingredient form
     - During lookup, the UI shows an in-page loading status tied to query `isFetching` and hides stale result cards until the current request completes
