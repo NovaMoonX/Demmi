@@ -23,20 +23,22 @@ interface OpenFoodFactsResponse {
   product?: OpenFoodFactsProduct;
 }
 
-async function fetchOpenFoodFacts(barcode: string): Promise<OpenFoodFactsResponse> {
+async function fetchOpenFoodFacts(
+  barcode: string,
+): Promise<OpenFoodFactsResponse> {
   const res = await fetch(
     `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`,
   );
   if (!res.ok) throw new Error('Network response was not ok');
-  const data = await res.json() as OpenFoodFactsResponse;
+  const data = (await res.json()) as OpenFoodFactsResponse;
   return data;
 }
 
 function SampleBarcode() {
   const bars = [
-    3,1,2,1,3,1,1,1,2,3,1,1,2,1,2,1,3,2,1,2,
-    1,3,1,2,2,1,1,3,2,1,2,1,1,2,3,1,2,1,3,2,
-    1,1,2,1,3,2,1,3,1,2,1,1,3,1,2,1,2,3,1,1,
+    3, 1, 2, 1, 3, 1, 1, 1, 2, 3, 1, 1, 2, 1, 2, 1, 3, 2, 1, 2, 1, 3, 1, 2, 2,
+    1, 1, 3, 2, 1, 2, 1, 1, 2, 3, 1, 2, 1, 3, 2, 1, 1, 2, 1, 3, 2, 1, 3, 1, 2,
+    1, 1, 3, 1, 2, 1, 2, 3, 1, 1,
   ];
 
   let x = 0;
@@ -45,7 +47,14 @@ function SampleBarcode() {
     const width = w * 3;
     if (i % 2 === 0) {
       barElements.push(
-        <rect key={i} x={x} y={0} width={width} height={80} fill='currentColor' />,
+        <rect
+          key={i}
+          x={x}
+          y={0}
+          width={width}
+          height={80}
+          fill='currentColor'
+        />,
       );
     }
     x += width;
@@ -67,7 +76,7 @@ function SampleBarcode() {
         </svg>
         <span className='text-foreground mb-2 text-sm font-bold'>5</span>
       </div>
-      <span className='text-foreground text-sm font-mono tracking-widest'>
+      <span className='text-foreground font-mono text-sm tracking-widest'>
         4 012345 678905
       </span>
     </div>
@@ -83,12 +92,7 @@ export function IngredientBarcodeEntry() {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [submittedBarcode, setSubmittedBarcode] = useState<string | null>(null);
 
-  const {
-    data,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery<OpenFoodFactsResponse>({
+  const { data, isLoading, error, refetch } = useQuery<OpenFoodFactsResponse>({
     queryKey: ['openfoodfacts', submittedBarcode],
     queryFn: () => fetchOpenFoodFacts(submittedBarcode!),
     enabled: false,
@@ -97,7 +101,7 @@ export function IngredientBarcodeEntry() {
   });
 
   const handleLookup = async () => {
-    const cleaned = barcodeInput.replace(/\s/g, '');
+    const cleaned = barcodeInput.replace(/\s/g, '').trim();
     if (!cleaned) return;
     setSubmittedBarcode(cleaned);
     await refetch();
@@ -127,11 +131,15 @@ export function IngredientBarcodeEntry() {
 
   const handleSkip = () => {
     navigate('/ingredients/new', {
-      state: { fromMealPath, barcodePrefill: { barcode: barcodeInput.replace(/\s/g, '') || null } },
+      state: {
+        fromMealPath,
+        barcodePrefill: { barcode: barcodeInput.replace(/\s/g, '') || null },
+      },
     });
   };
 
-  const productFound = data != null && data.status === 1 && data.product != null;
+  const productFound =
+    data != null && data.status === 1 && data.product != null;
   const productNotFound = data != null && data.status !== 1;
 
   return (
@@ -144,7 +152,9 @@ export function IngredientBarcodeEntry() {
         >
           {fromMealPath ? '← Back to Meal' : '← Back to Ingredients'}
         </Link>
-        <h1 className='text-foreground mb-2 text-4xl font-bold'>Enter Barcode</h1>
+        <h1 className='text-foreground mb-2 text-4xl font-bold'>
+          Enter Barcode
+        </h1>
         <p className='text-muted-foreground'>
           Type in the full barcode number to look up the product.
         </p>
@@ -156,18 +166,22 @@ export function IngredientBarcodeEntry() {
         </p>
         <SampleBarcode />
         <div className='text-muted-foreground max-w-sm text-center text-xs leading-relaxed'>
-          A typical barcode has a single digit on the <strong className='text-foreground'>far left</strong>,
-          bars in the middle, and a digit on the <strong className='text-foreground'>far right</strong>
-          &nbsp;— with a full number printed underneath. Include <em>all</em> digits
-          (including those outside the bars) when entering below.
+          A typical barcode has a single digit on the{' '}
+          <strong className='text-foreground'>far left</strong>, bars in the
+          middle, and a digit on the{' '}
+          <strong className='text-foreground'>far right</strong>
+          &nbsp;— with a full number printed underneath. Include <em>
+            all
+          </em>{' '}
+          digits (including those outside the bars) when entering below.
         </div>
       </div>
 
       <div className='space-y-4'>
         <div>
-          <Label htmlFor='barcode'>Barcode Number</Label>
+          <Label htmlFor='ingredient-barcode'>Barcode Number</Label>
           <Input
-            id='barcode'
+            id='ingredient-barcode'
             type='text'
             value={barcodeInput}
             onChange={(e) => setBarcodeInput(e.target.value)}
@@ -189,17 +203,21 @@ export function IngredientBarcodeEntry() {
 
         {error != null && (
           <div className='text-destructive rounded-lg border border-red-200 bg-red-50 p-3 text-sm dark:border-red-900 dark:bg-red-950/30'>
-            Failed to reach Open Food Facts. Check your connection and try again.
+            Failed to reach Open Food Facts. Check your connection and try
+            again.
           </div>
         )}
 
         {productNotFound && (
-          <div className={join(
-            'rounded-lg border p-4',
-            'border-border bg-muted/50',
-          )}>
+          <div
+            className={join(
+              'rounded-lg border p-4',
+              'border-border bg-muted/50',
+            )}
+          >
             <p className='text-muted-foreground text-sm'>
-              No product found for <strong className='text-foreground'>{submittedBarcode}</strong>.
+              No product found for{' '}
+              <strong className='text-foreground'>{submittedBarcode}</strong>.
               You can still continue and fill in the details manually.
             </p>
           </div>
@@ -207,7 +225,7 @@ export function IngredientBarcodeEntry() {
 
         {productFound && data.product != null && (
           <div className='border-border rounded-lg border p-4'>
-            <p className='text-muted-foreground mb-1 text-xs uppercase tracking-wide'>
+            <p className='text-muted-foreground mb-1 text-xs tracking-wide uppercase'>
               Product found
             </p>
             <p className='text-foreground font-semibold'>
@@ -221,7 +239,8 @@ export function IngredientBarcodeEntry() {
               />
             )}
             <p className='text-muted-foreground mt-2 text-xs'>
-              Nutritional info will be pre-filled on the next screen (per 100 g).
+              Nutritional info will be pre-filled on the next screen (per 100
+              g).
             </p>
           </div>
         )}
@@ -239,11 +258,7 @@ export function IngredientBarcodeEntry() {
         )}
 
         {submittedBarcode == null && (
-          <Button
-            variant='secondary'
-            onClick={handleSkip}
-            className='w-full'
-          >
+          <Button variant='secondary' onClick={handleSkip} className='w-full'>
             Skip — go to manual entry
           </Button>
         )}
