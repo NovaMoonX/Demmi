@@ -58,12 +58,24 @@ export function CookMode() {
   }, [meal, navigate]);
 
   const handleOpenIngredients = useCallback(() => setShowIngredients(true), []);
-  const handleCloseIngredients = useCallback(() => setShowIngredients(false), []);
-  const handleIncreaseServings = useCallback(() => setServings((s) => (s ?? 1) + 1), []);
-  const handleDecreaseServings = useCallback(() => setServings((s) => Math.max(1, (s ?? 1) - 1)), []);
-  const handleGoToStep = useCallback((stepNumber: number) => {
-    setCurrentStep(Math.min(Math.max(0, stepNumber - 1), totalSteps - 1));
-  }, [totalSteps]);
+  const handleCloseIngredients = useCallback(
+    () => setShowIngredients(false),
+    [],
+  );
+  const handleIncreaseServings = useCallback(
+    () => setServings((s) => (s ?? 1) + 1),
+    [],
+  );
+  const handleDecreaseServings = useCallback(
+    () => setServings((s) => Math.max(1, (s ?? 1) - 1)),
+    [],
+  );
+  const handleGoToStep = useCallback(
+    (stepNumber: number) => {
+      setCurrentStep(Math.min(Math.max(0, stepNumber - 1), totalSteps - 1));
+    },
+    [totalSteps],
+  );
 
   const handleGoToLastStep = useCallback(() => {
     setCurrentStep(Math.max(0, totalSteps - 1));
@@ -124,7 +136,8 @@ export function CookMode() {
   };
 
   const effectiveServings = servings ?? meal.servingSize;
-  const scaleFactor = meal.servingSize > 0 ? effectiveServings / meal.servingSize : 1;
+  const scaleFactor =
+    meal.servingSize > 0 ? effectiveServings / meal.servingSize : 1;
 
   const getScaledAmount = (baseServings: number) => {
     const result = Number((baseServings * scaleFactor).toFixed(2));
@@ -226,32 +239,24 @@ export function CookMode() {
               </p>
             </div>
 
-            <div className='border-border grid grid-cols-3 gap-3 rounded-lg border p-3 text-center text-sm'>
-              <div>
-                <div className='text-foreground font-bold'>
+            <div className='border-border grid grid-cols-2 rounded-lg border p-2 text-sm'>
+              <div className='flex items-center justify-center gap-1.5'>
+                <span className='text-muted-foreground text-xs'>Prep</span>
+                <span className='text-foreground font-bold'>
                   {meal.prepTime}m
-                </div>
-                <div className='text-muted-foreground text-xs'>Prep</div>
+                </span>
               </div>
-              <div>
-                <div className='text-foreground font-bold'>
+              <div className='flex items-center justify-center gap-1.5'>
+                <span className='text-muted-foreground text-xs'>Cook</span>
+                <span className='text-foreground font-bold'>
                   {meal.cookTime}m
-                </div>
-                <div className='text-muted-foreground text-xs'>Cook</div>
-              </div>
-              <div>
-                <div className='text-foreground font-bold'>
-                  {meal.servingSize}
-                </div>
-                <div className='text-muted-foreground text-xs'>
-                  {meal.servingSize === 1 ? 'Serving' : 'Servings'}
-                </div>
+                </span>
               </div>
             </div>
 
             {meal.ingredients.length > 0 && (
               <div>
-                <h2 className='text-foreground mb-2 text-sm font-semibold uppercase tracking-wide'>
+                <h2 className='text-foreground mb-2 text-sm font-semibold tracking-wide uppercase'>
                   Ingredients
                 </h2>
                 {ingredientsContent}
@@ -366,11 +371,7 @@ export function CookMode() {
             >
               ← Previous
             </Button>
-            <Button
-              variant='primary'
-              onClick={handleNext}
-              className='flex-1'
-            >
+            <Button variant='primary' onClick={handleNext} className='flex-1'>
               {isLastStep ? '🎉 Done!' : 'Next →'}
             </Button>
           </div>
@@ -385,9 +386,7 @@ export function CookMode() {
         showCloseButton
         enableDragGestures
       >
-        <div className='px-4 pb-6'>
-          {ingredientsContent}
-        </div>
+        <div className='px-4 pb-6'>{ingredientsContent}</div>
       </Drawer>
     </div>
   );
