@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Badge, Button } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { fetchSharedMeal } from '@store/actions/shareMealActions';
 import { SharedMeal } from '@lib/meals/sharedMeal.types';
 import { MEAL_CATEGORY_COLORS, MEAL_CATEGORY_EMOJIS } from '@lib/meals';
 import { useAppDispatch } from '@store/hooks';
-import { useNavigate } from 'react-router-dom';
 
 export function SharedMealView() {
   const { shareId } = useParams<{ shareId: string }>();

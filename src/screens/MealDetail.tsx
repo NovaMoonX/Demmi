@@ -129,7 +129,9 @@ export function MealDetail() {
     try {
       const result = await dispatch(shareMeal(existingMeal)).unwrap();
       const shareUrl = `${window.location.origin}/shared/${result.share!.id}`;
-      navigator.clipboard.writeText(shareUrl).catch(() => {});
+      navigator.clipboard.writeText(shareUrl).catch((err) => {
+        console.error('Failed to copy share link:', err);
+      });
       addToast({
         title: 'Recipe shared — link copied',
         description: 'Anyone with this link can view the recipe as it is right now.',
