@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button, Drawer } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { useAppSelector } from '@store/hooks';
 import { MEAL_CATEGORY_EMOJIS, MEAL_PLACEHOLDER_IMAGE_URL } from '@lib/meals';
+import { useCookModeVoice } from '@hooks/useCookModeVoice';
+import { VoiceIndicator } from '@components/cook';
 
 export function CookMode() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +37,40 @@ export function CookMode() {
     };
   }, []);
 
+  const totalSteps = meal?.instructions.length ?? 0;
+
+  const handlePrev = useCallback(() => {
+    setCurrentStep((s) => Math.max(0, s - 1));
+  }, []);
+
+  const handleNext = useCallback(() => {
+    if (!meal) return;
+    if (currentStep < totalSteps - 1) {
+      setCurrentStep((s) => s + 1);
+    } else {
+      navigate(`/meals/${meal.id}`);
+    }
+  }, [meal, currentStep, totalSteps, navigate]);
+
+  const handleExit = useCallback(() => {
+    if (meal) navigate(`/meals/${meal.id}`);
+  }, [meal, navigate]);
+
+  const handleOpenIngredients = useCallback(() => setShowIngredients(true), []);
+  const handleCloseIngredients = useCallback(() => setShowIngredients(false), []);
+  const handleIncreaseServings = useCallback(() => setServings((s) => (s ?? 1) + 1), []);
+  const handleDecreaseServings = useCallback(() => setServings((s) => Math.max(1, (s ?? 1) - 1)), []);
+
+  const { voiceState } = useCookModeVoice({
+    onNextStep: handleNext,
+    onPrevStep: handlePrev,
+    onOpenIngredients: handleOpenIngredients,
+    onCloseIngredients: handleCloseIngredients,
+    onIncreaseServings: handleIncreaseServings,
+    onDecreaseServings: handleDecreaseServings,
+    onExit: handleExit,
+  });
+
   if (!meal) {
     return (
       <div className='flex h-full flex-col items-center justify-center gap-4'>
@@ -62,32 +98,21 @@ export function CookMode() {
     );
   }
 
-  const totalSteps = meal.instructions.length;
   const progress = ((currentStep + 1) / totalSteps) * 100;
 
   const formatTime = (totalSecs: number) => {
     const minutes = Math.floor(totalSecs / 60);
     const seconds = totalSecs % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const result = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return result;
   };
 
   const effectiveServings = servings ?? meal.servingSize;
   const scaleFactor = meal.servingSize > 0 ? effectiveServings / meal.servingSize : 1;
 
   const getScaledAmount = (baseServings: number) => {
-    return Number((baseServings * scaleFactor).toFixed(2));
-  };
-
-  const handlePrev = () => {
-    setCurrentStep((s) => Math.max(0, s - 1));
-  };
-
-  const handleNext = () => {
-    if (currentStep < totalSteps - 1) {
-      setCurrentStep((s) => s + 1);
-    } else {
-      navigate(`/meals/${meal.id}`);
-    }
+    const result = Number((baseServings * scaleFactor).toFixed(2));
+    return result;
   };
 
   const isLastStep = currentStep === totalSteps - 1;
@@ -102,7 +127,7 @@ export function CookMode() {
             variant='secondary'
             size='icon'
             aria-label='Decrease servings'
-            onClick={() => setServings((s) => Math.max(1, (s ?? 1) - 1))}
+            onClick={handleDecreaseServings}
             disabled={(servings ?? 1) <= 1}
           >
             −
@@ -114,7 +139,7 @@ export function CookMode() {
             variant='secondary'
             size='icon'
             aria-label='Increase servings'
-            onClick={() => setServings((s) => (s ?? 1) + 1)}
+            onClick={handleIncreaseServings}
           >
             +
           </Button>
@@ -262,11 +287,14 @@ export function CookMode() {
         <div className='relative flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-8 md:px-12'>
           <Button
             variant='tertiary'
-            onClick={() => setShowIngredients(true)}
+            onClick={handleOpenIngredients}
             className='absolute top-3 right-3 md:hidden'
           >
             Ingredients
           </Button>
+
+          <VoiceIndicator voiceState={voiceState} />
+
           <div className='w-full max-w-2xl'>
             <div className='mb-4 flex items-center gap-3'>
               <span className='bg-primary text-primary-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-bold'>
@@ -332,7 +360,7 @@ export function CookMode() {
       {/* Mobile: Ingredients Drawer */}
       <Drawer
         isOpen={showIngredients}
-        onClose={() => setShowIngredients(false)}
+        onClose={handleCloseIngredients}
         title='Ingredients'
         showCloseButton
         enableDragGestures

@@ -232,6 +232,13 @@ A cooking app powered with local LLM using Ollama.
   - **Desktop Side Panel**: On `md+` screens the left column displays the meal image (or a category emoji placeholder), meal title, description, timing stats (prep/cook/servings), and a full ingredient list — always visible while cooking
   - **Responsive Layout**: Mobile-optimized full-screen focused view; desktop two-column layout with meal info on the left and cooking step on the right
   - **Route**: Accessible at `/meals/:id/cook`
+  - **Voice Navigation**: Hands-free control via the Web Speech API so cooks with messy or busy hands can navigate without touching the screen
+    - **Wake Word**: Say **"Hey Demi"** (also understands "Hey Demmi", "Hey Demy", "Hey Deme", and similar phonetic variants) to activate voice command mode
+    - **Listening Indicator**: When the wake word is detected, a pulsing microphone overlay appears in the step content area with a "Listening…" banner and a hint of available commands
+    - **Idle Hint**: While waiting for the wake word, a subtle 🎤 "Say 'Hey Demi'" label sits in the corner of the step content area
+    - **Supported Commands**: "Next step", "Previous step", "Show ingredients", "Close ingredients", "More servings", "Less servings", "Exit" (and natural variations like "forward", "go back", "increase servings", etc.)
+    - **Auto-timeout**: If no recognised command is spoken within 8 seconds of wake-word activation, voice command mode dismisses automatically
+    - **Browser Support**: Gracefully hidden on browsers that don't support the `SpeechRecognition` API (e.g. Firefox)
 - **Cloud Persistence**: All meal changes are synced to Firestore for signed-in users
   - **Create**: New meals are stored in Firestore under the authenticated user's account
   - **Update**: Edits are persisted to Firestore with ownership verification (only the owner can update)
