@@ -19,7 +19,7 @@ export function VoiceIndicator({ voiceState }: VoiceIndicatorProps) {
         aria-hidden='true'
       >
         <span>🎤</span>
-        <span>Say "Hey Demi"</span>
+        <span>Say "Hey Demmi"</span>
       </div>
 
       <div
@@ -52,7 +52,7 @@ export function VoiceIndicator({ voiceState }: VoiceIndicatorProps) {
             <p>
               "Show ingredients"
               <span aria-hidden='true'> · </span>
-              "Close ingredients"
+              "Hide ingredients"
             </p>
             <p>
               "More servings"
