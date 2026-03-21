@@ -33,3 +33,4 @@ tsconfig.app.tsbuildinfo
 .scaffold-progress
 .scaffold-config
 *.env
+dist-preview/
