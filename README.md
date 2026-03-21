@@ -22,6 +22,7 @@ A cooking app powered with local LLM using Ollama.
 - **Auto Verification Check**: Refresh-safe verification status checks with automatic redirect
 - **Protected Routes**: Automatic redirection to auth screen for unauthenticated users (demo mode bypasses this)
 - **Session Management**: Persistent authentication state across page reloads
+- **Auth State Sync**: Authentication changes now update both AuthContext state and the Redux `user` slice in lockstep
 - **Password Requirements**: Minimum 6 characters for secure accounts
 - **Auth Form UI**: Beautiful authentication interface using Dreamer UI's AuthForm component
 - **Verification Flow**: Dedicated email verification screen with resend functionality
