@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Badge, Button } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
 import { fetchSharedMeal } from '@store/actions/shareMealActions';
 import { SharedMeal } from '@lib/meals/sharedMeal.types';
 import { MEAL_CATEGORY_COLORS, MEAL_CATEGORY_EMOJIS } from '@lib/meals';
 import { useAppDispatch } from '@store/hooks';
+import { useNavigate } from 'react-router-dom';
 
 export function SharedMealView() {
   const { shareId } = useParams<{ shareId: string }>();
@@ -14,10 +15,12 @@ export function SharedMealView() {
 
   const [meal, setMeal] = useState<SharedMeal | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (!shareId) {
-      navigate('/');
+      setNotFound(true);
+      setLoading(false);
       return;
     }
 
@@ -25,18 +28,18 @@ export function SharedMealView() {
       .unwrap()
       .then((result) => {
         if (!result) {
-          navigate('/');
+          setNotFound(true);
         } else {
           setMeal(result);
         }
       })
       .catch(() => {
-        navigate('/');
+        setNotFound(true);
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [shareId, dispatch, navigate]);
+  }, [shareId, dispatch]);
 
   if (loading) {
     return (
@@ -46,7 +49,20 @@ export function SharedMealView() {
     );
   }
 
-  if (!meal) return null;
+  if (notFound || !meal) {
+    return (
+      <div className='flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center'>
+        <p className='text-foreground text-5xl'>🍽️</p>
+        <h1 className='text-foreground text-2xl font-semibold'>Recipe not found</h1>
+        <p className='text-muted-foreground max-w-sm text-sm'>
+          We couldn&apos;t find anything matching this link. The recipe may have been removed or the link may be incorrect.
+        </p>
+        <Button type='button' variant='primary' onClick={() => navigate('/')}>
+          Back to Home
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className='mx-auto max-w-4xl px-6 py-10'>

@@ -14,9 +14,9 @@ function isDemoActive(getState: () => unknown): boolean {
 
 /**
  * Share a meal by writing its data to the Realtime Database.
- * Generates a shareId if the meal has none, or re-uses the existing one (refresh).
- * Also updates the meal's shareId field in Firestore.
- * No-ops silently when demo mode is active.
+ * Generates a share.id if the meal has none, or re-uses the existing one (refresh).
+ * Also updates the meal's share field in Firestore.
+ * In demo mode, generates a local share object without touching the database.
  */
 export const shareMeal = createAsyncThunk(
   'meals/shareMeal',
@@ -24,15 +24,16 @@ export const shareMeal = createAsyncThunk(
     const state = getState() as RootState;
 
     if (isDemoActive(getState)) {
-      const shareId = meal.shareId ?? generatedId('meal');
-      return { ...meal, shareId };
+      const shareId = meal.share?.id ?? generatedId('meal');
+      return { ...meal, share: { id: shareId, sharedAt: Date.now() } };
     }
 
     try {
       const userId = state.user.user?.uid;
       if (!userId) throw new Error('You must be signed in to share a meal.');
 
-      const shareId = meal.shareId ?? generatedId('meal');
+      const shareId = meal.share?.id ?? generatedId('meal');
+      const sharedAt = Date.now();
 
       const allIngredients = state.ingredients.items;
       const sharedIngredients = meal.ingredients.map((ing) => {
@@ -58,11 +59,12 @@ export const shareMeal = createAsyncThunk(
         imageUrl: meal.imageUrl,
         instructions: meal.instructions,
         ingredients: sharedIngredients,
-        sharedAt: Date.now(),
+        sharedAt,
       };
 
       await set(ref(rtdb, `sharedMeals/${shareId}`), sharedMeal);
 
+      const shareValue = { id: shareId, sharedAt };
       const mealDocRef = doc(db, 'meals', meal.id);
       await runTransaction(db, async (tx: Transaction) => {
         const mealSnap = await tx.get(mealDocRef);
@@ -70,10 +72,10 @@ export const shareMeal = createAsyncThunk(
         const existing = mealSnap.data() as Meal;
         if (existing.userId !== userId)
           throw new Error('You can only share your own meals.');
-        tx.update(mealDocRef, { shareId });
+        tx.update(mealDocRef, { share: shareValue });
       });
 
-      return { ...meal, shareId };
+      return { ...meal, share: shareValue };
     } catch (err) {
       console.error('Error sharing meal:', err);
       throw err;
@@ -83,23 +85,23 @@ export const shareMeal = createAsyncThunk(
 
 /**
  * Stop sharing a meal by removing its data from the Realtime Database
- * and clearing the shareId in Firestore.
- * No-ops silently when demo mode is active.
+ * and clearing the share field in Firestore.
+ * In demo mode, clears the local share object without touching the database.
  */
 export const unshareMeal = createAsyncThunk(
   'meals/unshareMeal',
   async (meal: Meal, { getState }) => {
     if (isDemoActive(getState)) {
-      return { ...meal, shareId: null };
+      return { ...meal, share: null };
     }
 
     const state = getState() as RootState;
     try {
       const userId = state.user.user?.uid;
       if (!userId) throw new Error('You must be signed in to unshare a meal.');
-      if (!meal.shareId) throw new Error('Meal is not currently shared.');
+      if (!meal.share) throw new Error('Meal is not currently shared.');
 
-      await remove(ref(rtdb, `sharedMeals/${meal.shareId}`));
+      await remove(ref(rtdb, `sharedMeals/${meal.share.id}`));
 
       const mealDocRef = doc(db, 'meals', meal.id);
       await runTransaction(db, async (tx: Transaction) => {
@@ -108,10 +110,10 @@ export const unshareMeal = createAsyncThunk(
         const existing = mealSnap.data() as Meal;
         if (existing.userId !== userId)
           throw new Error('You can only unshare your own meals.');
-        tx.update(mealDocRef, { shareId: null });
+        tx.update(mealDocRef, { share: null });
       });
 
-      return { ...meal, shareId: null };
+      return { ...meal, share: null };
     } catch (err) {
       console.error('Error unsharing meal:', err);
       throw err;

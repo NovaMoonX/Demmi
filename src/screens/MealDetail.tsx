@@ -103,6 +103,12 @@ export function MealDetail() {
     }),
   );
 
+  const formatSharedAt = (ts: number) => {
+    const d = new Date(ts);
+    const result = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    return result;
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -121,10 +127,12 @@ export function MealDetail() {
     if (!existingMeal) return;
     setShareLoading(true);
     try {
-      await dispatch(shareMeal(existingMeal)).unwrap();
+      const result = await dispatch(shareMeal(existingMeal)).unwrap();
+      const shareUrl = `${window.location.origin}/shared/${result.share!.id}`;
+      navigator.clipboard.writeText(shareUrl).catch(() => {});
       addToast({
-        title: 'Recipe shared',
-        description: 'Anyone with the link can now view this recipe.',
+        title: 'Recipe shared — link copied',
+        description: 'Anyone with this link can view the recipe as it is right now.',
         type: 'success',
       });
     } catch (err) {
@@ -173,8 +181,8 @@ export function MealDetail() {
   };
 
   const handleCopyShareLink = () => {
-    if (!existingMeal?.shareId) return;
-    const shareUrl = `${window.location.origin}/shared/${existingMeal.shareId}`;
+    if (!existingMeal?.share) return;
+    const shareUrl = `${window.location.origin}/shared/${existingMeal.share.id}`;
     navigator.clipboard.writeText(shareUrl).then(() => {
       addToast({
         title: 'Link copied',
@@ -208,7 +216,7 @@ export function MealDetail() {
       imageUrl: imageUrl,
       instructions: instructionsList,
       ingredients: ingredientsList,
-      shareId: existingMeal?.shareId ?? null,
+      share: existingMeal?.share ?? null,
     };
 
     try {
@@ -401,58 +409,53 @@ export function MealDetail() {
           </div>
 
           <div className='border-border rounded-lg border p-4'>
-            {existingMeal.shareId ? (
-              <div className='space-y-3'>
-                <div className='flex items-center gap-2'>
-                  <Badge variant='base' className='bg-green-500/20 text-green-700 dark:bg-green-500/10 dark:text-green-400'>
-                    🔗 Shared
-                  </Badge>
-                  <span className='text-muted-foreground text-sm'>
-                    Anyone with the link can view this recipe
+            {existingMeal.share ? (
+              <div className='flex flex-col gap-1'>
+                <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
+                  <span className='text-muted-foreground text-xs'>
+                    🔗 Shared on {formatSharedAt(existingMeal.share.sharedAt)}
                   </span>
-                </div>
-                <div className='flex flex-wrap gap-2'>
-                  <Button
+                  <button
                     type='button'
-                    variant='secondary'
                     onClick={handleCopyShareLink}
+                    className='text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline'
                   >
-                    📋 Copy Link
-                  </Button>
-                  <Button
+                    Copy link
+                  </button>
+                  <button
                     type='button'
-                    variant='secondary'
                     onClick={handleShare}
                     disabled={shareLoading}
+                    className='text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline disabled:opacity-50'
                   >
-                    🔄 Refresh Share
-                  </Button>
-                  <Button
+                    Refresh
+                  </button>
+                  <button
                     type='button'
-                    variant='destructive'
                     onClick={handleUnshare}
                     disabled={shareLoading}
+                    className='text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline disabled:opacity-50'
                   >
-                    🚫 Stop Sharing
-                  </Button>
+                    Stop sharing
+                  </button>
                 </div>
+                <p className='text-muted-foreground text-xs'>
+                  Refresh to update the shared link with your latest changes.
+                </p>
               </div>
             ) : (
               <div className='flex items-center justify-between gap-4'>
-                <div>
-                  <p className='text-foreground text-sm font-medium'>Share this recipe</p>
-                  <p className='text-muted-foreground text-xs'>
-                    Generate a link so anyone can view this recipe
-                  </p>
-                </div>
-                <Button
+                <p className='text-muted-foreground text-xs'>
+                  Share this recipe as it is right now — generates a public link anyone can view.
+                </p>
+                <button
                   type='button'
-                  variant='secondary'
                   onClick={handleShare}
                   disabled={shareLoading}
+                  className='text-muted-foreground hover:text-foreground shrink-0 text-xs underline-offset-2 hover:underline disabled:opacity-50'
                 >
                   🔗 Share
-                </Button>
+                </button>
               </div>
             )}
           </div>
