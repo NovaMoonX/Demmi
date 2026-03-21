@@ -771,7 +771,7 @@ export function IngredientDetail() {
               <Input
                 id='sodium'
                 type='number'
-                step='1'
+                step='0.1'
                 min='0'
                 value={sodium}
                 onChange={(e) => setSodium(e.target.value)}
@@ -786,7 +786,7 @@ export function IngredientDetail() {
               <Input
                 id='calories'
                 type='number'
-                step='1'
+                step='0.1'
                 min='0'
                 value={calories}
                 onChange={(e) => setCalories(e.target.value)}
