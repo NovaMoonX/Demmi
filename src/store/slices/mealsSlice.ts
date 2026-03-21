@@ -7,6 +7,7 @@ import {
   updateMeal as updateMealAsync,
   deleteMeal as deleteMealAsync,
 } from '@store/actions/mealActions';
+import { shareMeal, unshareMeal } from '@store/actions/shareMealActions';
 
 interface MealsState {
   items: Meal[];
@@ -65,6 +66,18 @@ const mealsSlice = createSlice({
       })
       .addCase(deleteMealAsync.fulfilled, (state, action) => {
         state.items = state.items.filter((m) => m.id !== action.payload);
+      })
+      .addCase(shareMeal.fulfilled, (state, action) => {
+        const index = state.items.findIndex((m) => m.id === action.payload.id);
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
+      })
+      .addCase(unshareMeal.fulfilled, (state, action) => {
+        const index = state.items.findIndex((m) => m.id === action.payload.id);
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
       });
   },
 });

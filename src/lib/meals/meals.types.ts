@@ -17,4 +17,5 @@ export interface Meal {
   instructions: string[];
   imageUrl: string;
   ingredients: MealIngredient[]; // ingredients and quantities used in this meal
+  shareId: string | null;
 }

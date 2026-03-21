@@ -79,7 +79,19 @@ A cooking app powered with local LLM using Ollama.
 - **Rich Iteration Context**: Refinement requests send all user messages from proposal start through the latest reply (plus assistant summaries) so the agent retains full preference context while iterating
 - **Extensible Design**: The agent action system (`AgentAction` type + `CreateMealAgentActionCard` component) is architected to support additional action types beyond meal creation in the future
 
-### 🍳 Cooking-Themed Design
+### 🔗 Recipe Sharing
+- **Share with Anyone**: Authenticated users can share any of their saved recipes via a unique shareable link — no account required to view
+- **Google Docs-Style Sharing**: A "Share" button on the recipe detail page generates a unique share ID and publishes the recipe to Firebase Realtime Database
+- **Share Link Copy**: Once shared, a "Copy Link" button appears so users can instantly copy the URL to their clipboard and send it to anyone
+- **Shared Badge**: A green "Shared 🔗" badge on the recipe detail page clearly indicates when a recipe is currently shared
+- **Refresh Share**: If the recipe has been updated since it was last shared, users can click "Refresh Share" to re-publish the latest version to the shared link
+- **Stop Sharing**: Users can remove the shared recipe at any time via "Stop Sharing", which deletes the data from the Realtime Database and invalidates the link
+- **Public Recipe View**: Unauthenticated visitors can view shared recipes at `/shared/:shareId` — showing title, category badge, prep/cook times, servings, ingredients, and instructions — without needing an account
+- **Automatic Redirect**: If a share link is no longer valid (recipe was unshared or link is incorrect), visitors are automatically redirected to the home page
+- **Ingredient Snapshot**: The shared recipe stores a snapshot of ingredient names and servings at the time of sharing, so viewers see complete information even without an account
+- **Security**: Firebase Realtime Database rules allow anyone to read shared recipes but only allow writes from the authenticated owner (`userId` must match `auth.uid`)
+
+
 - **Orange Accent Color**: Warm, cooking-inspired orange accent color throughout the app
 - **Modern & Clean**: Simple black and white base with orange highlights
 - **Light & Dark Modes**: Full support for both themes with automatic color adjustments
@@ -495,13 +507,20 @@ interface PlannedMeal {
    ```bash
    VITE_FIREBASE_API_KEY=your-api-key
    VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+   VITE_FIREBASE_DATABASE_URL=https://your-project-default-rtdb.firebaseio.com
    VITE_FIREBASE_PROJECT_ID=your-project-id
    VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
    VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
    VITE_FIREBASE_APP_ID=your-app-id
    ```
 
-3. **Enable Email Verification**
+3. **Enable Realtime Database**
+   - In Firebase Console, go to Build > Realtime Database
+   - Click "Create Database" and choose a region
+   - Start in locked mode (the `database.rules.json` file will be deployed with the app)
+   - Deploy database rules: `firebase deploy --only database`
+
+4. **Enable Email Verification**
    - In Firebase Console, go to Authentication > Templates
    - Customize the email verification template (optional)
 

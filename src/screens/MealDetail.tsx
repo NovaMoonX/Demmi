@@ -19,6 +19,7 @@ import {
   updateMeal as updateMealAsync,
   deleteMeal as deleteMealAsync,
 } from '@store/actions/mealActions';
+import { shareMeal, unshareMeal } from '@store/actions/shareMealActions';
 import { createShoppingListItem } from '@store/actions/shoppingListActions';
 import type { DynamicListItem } from '@moondreamsdev/dreamer-ui/components';
 import { MealIngredientSelector } from '@components/meals/MealIngredientSelector';
@@ -40,6 +41,7 @@ export function MealDetail() {
   const [pendingShoppingListIngredients, setPendingShoppingListIngredients] =
     useState<MealIngredient[] | null>(null);
   const [shoppingListPhase, setShoppingListPhase] = useState<'prompt' | 'adding' | 'done' | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
 
   const fromMealPath =
     isEditing && existingMeal ? `/meals/${existingMeal.id}` : '/meals/new';
@@ -115,6 +117,73 @@ export function MealDetail() {
     }
   };
 
+  const handleShare = async () => {
+    if (!existingMeal) return;
+    setShareLoading(true);
+    try {
+      await dispatch(shareMeal(existingMeal)).unwrap();
+      addToast({
+        title: 'Recipe shared',
+        description: 'Anyone with the link can now view this recipe.',
+        type: 'success',
+      });
+    } catch (err) {
+      console.error('Failed to share meal:', err);
+      addToast({
+        title: 'Failed to share recipe',
+        description: 'An error occurred. Please try again.',
+        type: 'destructive',
+      });
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleUnshare = async () => {
+    if (!existingMeal) return;
+
+    const confirmed = await confirm({
+      title: 'Stop Sharing',
+      message: 'Are you sure you want to stop sharing this recipe? The share link will no longer work.',
+      confirmText: 'Stop Sharing',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+
+    if (!confirmed) return;
+
+    setShareLoading(true);
+    try {
+      await dispatch(unshareMeal(existingMeal)).unwrap();
+      addToast({
+        title: 'Sharing stopped',
+        description: 'This recipe is no longer shared.',
+        type: 'success',
+      });
+    } catch (err) {
+      console.error('Failed to unshare meal:', err);
+      addToast({
+        title: 'Failed to stop sharing',
+        description: 'An error occurred. Please try again.',
+        type: 'destructive',
+      });
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleCopyShareLink = () => {
+    if (!existingMeal?.shareId) return;
+    const shareUrl = `${window.location.origin}/shared/${existingMeal.shareId}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      addToast({
+        title: 'Link copied',
+        description: 'Share link copied to clipboard.',
+        type: 'success',
+      });
+    });
+  };
+
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
 
@@ -139,6 +208,7 @@ export function MealDetail() {
       imageUrl: imageUrl,
       instructions: instructionsList,
       ingredients: ingredientsList,
+      shareId: existingMeal?.shareId ?? null,
     };
 
     try {
@@ -328,6 +398,63 @@ export function MealDetail() {
                 {existingMeal.servingSize === 1 ? 'Serving' : 'Servings'}
               </div>
             </div>
+          </div>
+
+          <div className='border-border rounded-lg border p-4'>
+            {existingMeal.shareId ? (
+              <div className='space-y-3'>
+                <div className='flex items-center gap-2'>
+                  <Badge variant='base' className='bg-green-500/20 text-green-700 dark:bg-green-500/10 dark:text-green-400'>
+                    🔗 Shared
+                  </Badge>
+                  <span className='text-muted-foreground text-sm'>
+                    Anyone with the link can view this recipe
+                  </span>
+                </div>
+                <div className='flex flex-wrap gap-2'>
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={handleCopyShareLink}
+                  >
+                    📋 Copy Link
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={handleShare}
+                    disabled={shareLoading}
+                  >
+                    🔄 Refresh Share
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='destructive'
+                    onClick={handleUnshare}
+                    disabled={shareLoading}
+                  >
+                    🚫 Stop Sharing
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className='flex items-center justify-between gap-4'>
+                <div>
+                  <p className='text-foreground text-sm font-medium'>Share this recipe</p>
+                  <p className='text-muted-foreground text-xs'>
+                    Generate a link so anyone can view this recipe
+                  </p>
+                </div>
+                <Button
+                  type='button'
+                  variant='secondary'
+                  onClick={handleShare}
+                  disabled={shareLoading}
+                >
+                  🔗 Share
+                </Button>
+              </div>
+            )}
           </div>
 
           {existingMeal.ingredients.length > 0 && (

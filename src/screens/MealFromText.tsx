@@ -368,6 +368,7 @@ export function MealFromText() {
           instructions: proposal.instructions,
           imageUrl: proposal.imageUrl,
           ingredients: mealIngredients,
+          shareId: null,
         }),
       ).unwrap();
 

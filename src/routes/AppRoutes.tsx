@@ -40,6 +40,14 @@ export const router = createBrowserRouter([
           return { Component: VerifyEmail };
         },
       },
+      {
+        path: 'shared/:shareId',
+        HydrateFallback: Loading,
+        lazy: async () => {
+          const { default: SharedMealView } = await import('@screens/SharedMealView');
+          return { Component: SharedMealView };
+        },
+      },
       // Protected routes - require authentication and email verification (unless demo mode is active)
       {
         element: <ProtectedRoutes />,
