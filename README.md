@@ -82,9 +82,7 @@ A cooking app powered with local LLM using Ollama.
 
 ### 🔗 Recipe Sharing
 - **Share with Anyone**: Authenticated users can share any of their saved recipes via a unique shareable link — no account required to view
-- **Google Docs-Style Sharing**: A "Share" button on the recipe detail page generates a unique share ID and publishes the recipe to Firebase Realtime Database
 - **Share Link Copy**: Once shared, a "Copy Link" button appears so users can instantly copy the URL to their clipboard and send it to anyone
-- **Shared Badge**: A green "Shared 🔗" badge on the recipe detail page clearly indicates when a recipe is currently shared
 - **Refresh Share**: If the recipe has been updated since it was last shared, users can click "Refresh Share" to re-publish the latest version to the shared link
 - **Stop Sharing**: Users can remove the shared recipe at any time via "Stop Sharing", which deletes the data from the Realtime Database and invalidates the link
 - **Public Recipe View**: Unauthenticated visitors can view shared recipes at `/shared/:shareId` — showing title, category badge, prep/cook times, servings, ingredients, and instructions — without needing an account
