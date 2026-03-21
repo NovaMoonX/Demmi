@@ -93,6 +93,7 @@ export function CookMode() {
           <Button
             variant='secondary'
             size='icon'
+            aria-label='Decrease servings'
             onClick={() => setServings((s) => Math.max(1, s - 1))}
             disabled={servings <= 1}
           >
@@ -104,6 +105,7 @@ export function CookMode() {
           <Button
             variant='secondary'
             size='icon'
+            aria-label='Increase servings'
             onClick={() => setServings((s) => s + 1)}
           >
             +
