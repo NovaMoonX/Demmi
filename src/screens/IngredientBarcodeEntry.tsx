@@ -2,37 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button, Input, Label } from '@moondreamsdev/dreamer-ui/components';
 import { join } from '@moondreamsdev/dreamer-ui/utils';
-import { useQuery } from '@tanstack/react-query';
-
-interface OpenFoodFactsProduct {
-  product_name?: string;
-  nutriments?: {
-    proteins_100g?: number;
-    carbohydrates_100g?: number;
-    fat_100g?: number;
-    fiber_100g?: number;
-    sugars_100g?: number;
-    sodium_100g?: number;
-    'energy-kcal_100g'?: number;
-  };
-  image_url?: string;
-}
-
-interface OpenFoodFactsResponse {
-  status: number;
-  product?: OpenFoodFactsProduct;
-}
-
-async function fetchOpenFoodFacts(
-  barcode: string,
-): Promise<OpenFoodFactsResponse> {
-  const res = await fetch(
-    `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`,
-  );
-  if (!res.ok) throw new Error('Network response was not ok');
-  const data = (await res.json()) as OpenFoodFactsResponse;
-  return data;
-}
+import { useLazyGetProductByBarcodeQuery } from '@store/api/openFoodFactsApi';
 
 function SampleBarcode() {
   const bars = [
@@ -92,19 +62,14 @@ export function IngredientBarcodeEntry() {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [submittedBarcode, setSubmittedBarcode] = useState<string | null>(null);
 
-  const { data, isLoading, error, refetch } = useQuery<OpenFoodFactsResponse>({
-    queryKey: ['openfoodfacts', submittedBarcode],
-    queryFn: () => fetchOpenFoodFacts(submittedBarcode!),
-    enabled: false,
-    retry: 1,
-    staleTime: 1000 * 60 * 10,
-  });
+  const [triggerLookup, { data, isLoading, isError }] =
+    useLazyGetProductByBarcodeQuery();
 
-  const handleLookup = async () => {
+  const handleLookup = () => {
     const cleaned = barcodeInput.replace(/\s/g, '').trim();
     if (!cleaned) return;
     setSubmittedBarcode(cleaned);
-    await refetch();
+    void triggerLookup(cleaned);
   };
 
   const handleContinue = () => {
@@ -170,10 +135,9 @@ export function IngredientBarcodeEntry() {
           <strong className='text-foreground'>far left</strong>, bars in the
           middle, and a digit on the{' '}
           <strong className='text-foreground'>far right</strong>
-          &nbsp;— with a full number printed underneath. Include <em>
-            all
-          </em>{' '}
-          digits (including those outside the bars) when entering below.
+          &nbsp;— with a full number printed underneath. Include{' '}
+          <em>all</em> digits (including those outside the bars) when entering
+          below.
         </div>
       </div>
 
@@ -187,21 +151,21 @@ export function IngredientBarcodeEntry() {
             onChange={(e) => setBarcodeInput(e.target.value)}
             placeholder='e.g. 4 012345 678905'
             onKeyDown={(e) => {
-              if (e.key === 'Enter') void handleLookup();
+              if (e.key === 'Enter') handleLookup();
             }}
           />
         </div>
 
         <Button
           variant='primary'
-          onClick={() => void handleLookup()}
+          onClick={handleLookup}
           disabled={!barcodeInput.trim() || isLoading}
           className='w-full'
         >
           {isLoading ? 'Looking up…' : 'Look Up Barcode'}
         </Button>
 
-        {error != null && (
+        {isError && (
           <div className='text-destructive rounded-lg border border-red-200 bg-red-50 p-3 text-sm dark:border-red-900 dark:bg-red-950/30'>
             Failed to reach Open Food Facts. Check your connection and try
             again.
