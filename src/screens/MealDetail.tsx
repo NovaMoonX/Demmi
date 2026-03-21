@@ -413,10 +413,11 @@ export function MealDetail() {
           <div className='border-border rounded-lg border p-4'>
             {existingMeal.share ? (
               <div className='flex flex-col gap-1'>
-                <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
+                <div className='flex flex-wrap justify-between gap-x-3 gap-y-1'>
                   <span className='text-muted-foreground text-xs'>
                     🔗 Shared on {formatSharedAt(existingMeal.share.sharedAt)}
                   </span>
+                  <div className='flex flex-wrap gap-x-3 gap-y-1'>
                   <button
                     type='button'
                     onClick={handleCopyShareLink}
@@ -440,6 +441,7 @@ export function MealDetail() {
                   >
                     Stop sharing
                   </button>
+                  </div>
                 </div>
                 <p className='text-muted-foreground text-xs'>
                   Refresh to update the shared link with your latest changes.
