@@ -83,12 +83,12 @@ A cooking app powered with local LLM using Ollama.
 
 ### 🔗 Recipe Sharing
 - **Share with Anyone**: Authenticated users can share any of their saved recipes via a unique shareable link — no account required to view
-- **Share Link Copy**: Once shared, a "Copy Link" button appears so users can instantly copy the URL to their clipboard and send it to anyone
-- **Refresh Share**: If the recipe has been updated since it was last shared, users can click "Refresh Share" to re-publish the latest version to the shared link
-- **Shared Timestamp Detail**: Shared recipes now display both the share date and local time in the meal detail view for clearer context
-- **Stop Sharing**: Users can remove the shared recipe at any time via "Stop Sharing", which deletes the data from the Realtime Database and invalidates the link
+- **Auto-Copy on Share**: When a recipe is shared, the share link is automatically copied to the clipboard and a toast confirms *"Recipe shared — link copied"*
+- **Discreet Share Controls**: The sharing panel uses subtle inline text controls — no large buttons. When not shared, a small *"🔗 Share"* text link and a note clarify the recipe is shared as it is right now. When shared, the panel shows the share date alongside *"Copy link · Refresh · Stop sharing"* text actions
+- **Refresh Share**: If the recipe has been updated since it was last shared, users can click *"Refresh"* in the sharing panel to re-publish the latest version to the shared link
+- **Stop Sharing**: Users can remove the shared recipe at any time via *"Stop sharing"*, which deletes the data from the Realtime Database and invalidates the link
 - **Public Recipe View**: Unauthenticated visitors can view shared recipes at `/shared/:shareId` — showing title, category badge, prep/cook times, servings, ingredients, and instructions — without needing an account
-- **Automatic Redirect**: If a share link is no longer valid (recipe was unshared or link is incorrect), visitors are automatically redirected to the home page
+- **Not Found Empty State**: If a share link is no longer valid (recipe was unshared or link is incorrect), visitors see a friendly *"Recipe not found"* empty state with a **Back to Home** button instead of an automatic redirect
 - **Ingredient Snapshot**: The shared recipe stores a snapshot of ingredient names and servings at the time of sharing, so viewers see complete information even without an account
 - **Security**: Firebase Realtime Database rules allow anyone to read shared recipes but only allow writes from the authenticated owner (`userId` must match `auth.uid`)
 
