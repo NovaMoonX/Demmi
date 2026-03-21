@@ -13,7 +13,8 @@ import {
 import { AuthContext } from '@hooks/useAuth';
 import { useAppDispatch } from '@store/hooks';
 import {
-  clearUser,
+  clearUserData,
+  loadUserData,
   setLoading as setUserLoading,
   setUser as setStoreUser,
 } from '@store/slices/userSlice';
@@ -34,14 +35,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [dispatch]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(firebaseAuth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
       const authUser = convertFirebaseUser(firebaseUser);
       updateAuthUser(authUser);
+
+      if (authUser != null) {
+        await dispatch(loadUserData());
+      } else {
+        await dispatch(clearUserData());
+      }
+
       updateAuthLoading(false);
     });
 
     return unsubscribe;
-  }, [updateAuthLoading, updateAuthUser]);
+  }, [dispatch, updateAuthLoading, updateAuthUser]);
 
   const signIn = async (
     email: string,
@@ -50,11 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateAuthLoading(true);
     const result = await authSignIn(email, password);
     
-    if (result.user) {
-      updateAuthUser(result.user);
+    if (result.error) {
+      updateAuthLoading(false);
     }
-
-    updateAuthLoading(false);
     
     return result.error ? { error: result.error } : {};
   };
@@ -66,11 +72,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateAuthLoading(true);
     const result = await authSignUp(email, password);
     
-    if (result.user) {
-      updateAuthUser(result.user);
+    if (result.error) {
+      updateAuthLoading(false);
     }
-
-    updateAuthLoading(false);
     
     return result.error ? { error: result.error } : {};
   };
@@ -79,11 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateAuthLoading(true);
     const result = await authSignInWithGoogle();
 
-    if (result.user) {
-      updateAuthUser(result.user);
+    if (result.error) {
+      updateAuthLoading(false);
     }
-
-    updateAuthLoading(false);
 
     return result.error ? { error: result.error } : {};
   };
@@ -91,9 +93,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logOut = async (): Promise<void> => {
     updateAuthLoading(true);
     await authLogOut();
-    setAuthUser(null);
-    dispatch(clearUser());
-    updateAuthLoading(false);
   };
 
   const resendVerificationEmail = async (): Promise<{
