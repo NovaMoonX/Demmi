@@ -162,6 +162,8 @@ export function useCookModeVoice({
     recognition.onend = () => {
       if (shouldRestartRef.current) {
         try {
+          // Restart recognition to keep it active. 
+          // This is needed because some browsers stop recognition after a while or on certain errors.
           recognition.start();
         } catch {
           // Ignore restart errors (e.g. already running)
