@@ -60,10 +60,14 @@ export function CookMode() {
   const handleCloseIngredients = useCallback(() => setShowIngredients(false), []);
   const handleIncreaseServings = useCallback(() => setServings((s) => (s ?? 1) + 1), []);
   const handleDecreaseServings = useCallback(() => setServings((s) => Math.max(1, (s ?? 1) - 1)), []);
+  const handleGoToStep = useCallback((stepNumber: number) => {
+    setCurrentStep(Math.min(Math.max(0, stepNumber - 1), totalSteps - 1));
+  }, [totalSteps]);
 
   const { voiceState } = useCookModeVoice({
     onNextStep: handleNext,
     onPrevStep: handlePrev,
+    onGoToStep: handleGoToStep,
     onOpenIngredients: handleOpenIngredients,
     onCloseIngredients: handleCloseIngredients,
     onIncreaseServings: handleIncreaseServings,

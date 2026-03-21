@@ -14,6 +14,51 @@ type VoiceCommand =
 const WAKE_WORD_PATTERN = /hey\s+dem(?:m?[iy]|m?e{1,2}|m+i?)/i;
 const COMMAND_TIMEOUT_MS = 8000;
 
+const WORD_TO_NUMBER: Record<string, number> = {
+  one: 1, first: 1,
+  two: 2, second: 2,
+  three: 3, third: 3,
+  four: 4, fourth: 4,
+  five: 5, fifth: 5,
+  six: 6, sixth: 6,
+  seven: 7, seventh: 7,
+  eight: 8, eighth: 8,
+  nine: 9, ninth: 9,
+  ten: 10, tenth: 10,
+  eleven: 11, eleventh: 11,
+  twelve: 12, twelfth: 12,
+  thirteen: 13, thirteenth: 13,
+  fourteen: 14, fourteenth: 14,
+  fifteen: 15, fifteenth: 15,
+  sixteen: 16, sixteenth: 16,
+  seventeen: 17, seventeenth: 17,
+  eighteen: 18, eighteenth: 18,
+  nineteen: 19, nineteenth: 19,
+  twenty: 20, twentieth: 20,
+};
+
+function parseStepNumber(raw: string): number | null {
+  const asInt = parseInt(raw, 10);
+  if (!isNaN(asInt) && asInt > 0) return asInt;
+  const fromWords = WORD_TO_NUMBER[raw.toLowerCase()];
+  return fromWords ?? null;
+}
+
+function matchGoToStep(text: string): number | null {
+  const t = text.toLowerCase().trim();
+  const pattern =
+    /\b(?:go\s+to|jump\s+to|skip\s+to|navigate\s+to)?\s*step\s+(\w+)\b/;
+  const ordinalPattern = /\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth)\s+step\b/;
+
+  const m = pattern.exec(t);
+  if (m) return parseStepNumber(m[1]);
+
+  const ord = ordinalPattern.exec(t);
+  if (ord) return parseStepNumber(ord[1]);
+
+  return null;
+}
+
 function matchCommand(text: string): VoiceCommand | null {
   const t = text.toLowerCase().trim();
 
@@ -31,6 +76,7 @@ function matchCommand(text: string): VoiceCommand | null {
 export interface UseCookModeVoiceOptions {
   onNextStep: () => void;
   onPrevStep: () => void;
+  onGoToStep: (stepNumber: number) => void;
   onOpenIngredients: () => void;
   onCloseIngredients: () => void;
   onIncreaseServings: () => void;
@@ -45,6 +91,7 @@ export interface UseCookModeVoiceResult {
 export function useCookModeVoice({
   onNextStep,
   onPrevStep,
+  onGoToStep,
   onOpenIngredients,
   onCloseIngredients,
   onIncreaseServings,
@@ -66,6 +113,7 @@ export function useCookModeVoice({
   const callbacksRef = useRef({
     onNextStep,
     onPrevStep,
+    onGoToStep,
     onOpenIngredients,
     onCloseIngredients,
     onIncreaseServings,
@@ -81,13 +129,14 @@ export function useCookModeVoice({
     callbacksRef.current = {
       onNextStep,
       onPrevStep,
+      onGoToStep,
       onOpenIngredients,
       onCloseIngredients,
       onIncreaseServings,
       onDecreaseServings,
       onExit,
     };
-  }, [onNextStep, onPrevStep, onOpenIngredients, onCloseIngredients, onIncreaseServings, onDecreaseServings, onExit]);
+  }, [onNextStep, onPrevStep, onGoToStep, onOpenIngredients, onCloseIngredients, onIncreaseServings, onDecreaseServings, onExit]);
 
   const exitCommandMode = useCallback(() => {
     if (commandTimeoutRef.current) clearTimeout(commandTimeoutRef.current);
@@ -124,6 +173,13 @@ export function useCookModeVoice({
           }, COMMAND_TIMEOUT_MS);
         }
       } else if (voiceStateRef.current === 'listening' && result.isFinal) {
+        const stepNumber = matchGoToStep(transcript);
+        if (stepNumber !== null) {
+          exitCommandMode();
+          callbacksRef.current.onGoToStep(stepNumber);
+          return;
+        }
+
         const command = matchCommand(transcript);
         if (command !== null) {
           exitCommandMode();
@@ -162,8 +218,6 @@ export function useCookModeVoice({
     recognition.onend = () => {
       if (shouldRestartRef.current) {
         try {
-          // Restart recognition to keep it active. 
-          // This is needed because some browsers stop recognition after a while or on certain errors.
           recognition.start();
         } catch {
           // Ignore restart errors (e.g. already running)
@@ -194,3 +248,4 @@ export function useCookModeVoice({
 
   return { voiceState };
 }
+

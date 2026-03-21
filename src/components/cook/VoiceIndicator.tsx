@@ -52,14 +52,17 @@ export function VoiceIndicator({ voiceState }: VoiceIndicatorProps) {
             <p>
               "Show ingredients"
               <span aria-hidden='true'> · </span>
-              "Hide ingredients"
+              "Close ingredients"
+            </p>
+            <p>
+              "Go to step [number]"
+              <span aria-hidden='true'> · </span>
+              "Exit"
             </p>
             <p>
               "More servings"
               <span aria-hidden='true'> · </span>
               "Less servings"
-              <span aria-hidden='true'> · </span>
-              "Exit"
             </p>
           </div>
         </div>

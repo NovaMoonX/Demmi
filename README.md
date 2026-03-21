@@ -236,7 +236,7 @@ A cooking app powered with local LLM using Ollama.
     - **Wake Word**: Say **"Hey Demi"** (also understands "Hey Demmi", "Hey Demy", "Hey Deme", and similar phonetic variants) to activate voice command mode
     - **Listening Indicator**: When the wake word is detected, a pulsing microphone overlay appears in the step content area with a "Listening…" banner and a hint of available commands
     - **Idle Hint**: While waiting for the wake word, a subtle 🎤 "Say 'Hey Demi'" label sits in the corner of the step content area
-    - **Supported Commands**: "Next step", "Previous step", "Show ingredients", "Close ingredients", "More servings", "Less servings", "Exit" (and natural variations like "forward", "go back", "increase servings", etc.)
+    - **Supported Commands**: "Next step", "Previous step", "Go to step [number]" (e.g. "Go to step 3", "Step five", "Third step"), "Show ingredients", "Close ingredients", "More servings", "Less servings", "Exit" (and natural variations like "forward", "go back", "increase servings", etc.)
     - **Auto-timeout**: If no recognised command is spoken within 8 seconds of wake-word activation, voice command mode dismisses automatically
     - **Browser Support**: Gracefully hidden on browsers that don't support the `SpeechRecognition` API (e.g. Firefox)
 - **Cloud Persistence**: All meal changes are synced to Firestore for signed-in users
